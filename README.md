@@ -32,6 +32,77 @@ A complexidade do sistema justifica POO através de:
 - Regras de negócio variáveis (critérios de identificação de dificuldades, permissões por perfil, validações contextuais)
 - Composição dinâmica (Planos de Ação agregam materiais, Turmas agregam alunos)
 
+## Estrutura de pastas
+```
+educalin/
+│
+├── src/
+│   └── educalin/
+│       ├── domain/
+│       │   ├── __init__.py
+│       │   ├── usuario.py
+│       │   ├── turma.py
+│       │   ├── material.py
+│       │   ├── avaliacao.py
+│       │   ├── plano_acao.py
+│       │   └── meta.py
+│       │
+│       ├── services/
+│       │   ├── __init__.py
+│       │   ├── analisador.py
+│       │   ├── relatorio.py
+│       │   └── notificador.py
+│       │
+│       ├── factories/
+│       │   ├── __init__.py
+│       │   └── material_factory.py
+│       │
+│       ├── repositories/
+│       │   ├── __init__.py
+│       │   ├── base.py
+│       │   └── models.py
+│       │
+│       ├── api/
+│       │   ├── __init__.py
+│       │   ├── main.py
+│       │   ├── dependencies.py
+│       │   └── routes/
+│       │       ├── auth.py
+│       │       ├── turmas.py
+│       │       └── materiais.py
+│       │
+│       └── utils/
+│           ├── __init__.py
+│           └── mixins.py
+│
+├── tests/
+│   ├── domain/
+│   ├── services/
+│   └── integration/
+│
+├── templates/
+│   ├── base.html
+│   ├── login.html
+│   └── dashboard/
+│
+├── static/
+│   ├── css/
+│   └── js/
+│
+├── database/
+│   └── educalin.db
+│
+├── docs/
+│   ├── poo_especificacao_projeto.md
+│   ├── Requisitos_EducAlin.md
+│   └── proposta.md
+│
+├── .gitignore
+├── LICENSE
+├── poetry.lock
+├── pyproject.toml
+└── README.md
+```
 ## Justificativa da complexidade do sistema
 
 1. Análisde de Dados Individualizada:
