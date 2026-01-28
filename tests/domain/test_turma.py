@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import Mock, MagicMock
 from datetime import datetime
-from educalin.domain.turma import Turma
+from educalin.domain.turma import Turma, Observer, AlunoDuplicadoException, AlunoNaoEncontradoException
 
 class TestTurmaInicializacao:
     """Testes de criação e inicialização da Turma"""
@@ -58,6 +58,8 @@ class TestTurmaInicializacao:
         assert turma.disciplina == "POO"
         assert turma.semestre == "2025.2"
             
+
+
 class TestTurmaGestaoAlunos:
     """Testes de adição e remoção de alunos"""
 
@@ -125,6 +127,8 @@ class TestTurmaGestaoAlunos:
 
         assert aluno_encontrado is None
 
+
+
 class TestTurmaDesempenho:
     """Testes de cálculo de desempenho"""
 
@@ -180,16 +184,71 @@ class TestTurmaDesempenho:
         assert len(alunos_dificuldade) == 1
         assert alunos_dificuldade[0].matricula == "002"
 
+
+
 class TestTurmaObserverPattern:
     """Testes do padrão Observer"""
 
-    def test_implementa_interface_subject(self):
+    @pytest.fixture
+    def turma(self):
+        return Turma("ES-01", "POO", "2025.2")
+    
+    @pytest.fixture
+    def observer_mock(self):
+        observer = Mock(spec=Observer)
+        return observer
+    
+    def test_implementa_interface_subject(self, turma):
         """Verifica se a Turma tem os métodos do padrão Observer (Subject)"""
-        turma = Turma("ES-01", "POO", "2025.2")
-
         assert hasattr(turma, 'adicionar_observer')
         assert hasattr(turma, 'remover_observer')
         assert hasattr(turma, 'notificar_observers')
+
+    def test_adicionar_observer(self, turma, observer_mock):
+        """Deve adicionar observer à lista"""
+        turma.adicionar_observer(observer_mock)
+
+        turma.notificar_observers({'teste': 'evento'})
+        observer_mock.atualizar.assert_called_once_with({'teste': 'evento'})
+
+    def test_remover_observer(self, turma, observer_mock):
+        """Deve remover observer da lista"""
+        turma.adicionar_observer(observer_mock)
+        turma.remover_observer(observer_mock)
+
+        turma.notificar_observers({'teste': 'evento'})
+        observer_mock.atualizar.asser_not_called()
+
+    def test_notificar_multiplos_observers(self, turma):
+        """Deve notificar todos os observers"""
+        obs1 = Mock(spec=Observer)
+        obs2 = Mock(spec=Observer)
+
+        turma.adicionar_observer(obs1)
+        turma.adicionar_observer(obs2)
+
+        turma.notificar_observers({'evento': 'teste'})
+
+        obs1.atualizar.assert_called_once()
+        obs2.atualizar.assert_called_once()
+
+    def test_adicionar_aluno_notifica_observers(self, turma, observer_mock):
+        """Deve notificar observers quando aluno é adicionado"""
+        turma.adicionar_observer(observer_mock)
+
+        aluno_mock = Mock()
+        aluno_mock.matricula = "12345"
+        aluno_mock.nome = "Fulano de Tal"
+
+        turma.adicionar_aluno(aluno_mock)
+
+        observer_mock.atualizar.assert_called_once()
+
+        evento = observer_mock.atualizar.call_args[0][0]
+        assert evento['evento'] == 'aluno_adicionado'
+        assert evento['aluno_matricula'] == "12345"
+
+
 
 class TestTurmaMetodosEspeciais:
     """Testes de métodos especiais"""

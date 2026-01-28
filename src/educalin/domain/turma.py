@@ -1,5 +1,31 @@
 from typing import List, Optional, Dict
 from datetime import datetime
+from abc import ABC, abstractmethod
+class Observer(ABC):
+    """Interface para observers do padrão Observer"""
+
+    @abstractmethod
+    def atualizar(self, evento: Dict) -> None:
+        """Atualiza o observer com informações do evento"""
+        pass
+
+class Subject(ABC):
+    """Interface para subjects do padrão Observer"""
+
+    @abstractmethod
+    def adicionar_observer(self, observer: Observer) -> None:
+        """Adiciona um observer à lista de observadores"""
+        pass
+
+    @abstractmethod
+    def remover_observer(self, observer: Observer) -> None:
+        """Remove um observer da lista de observadores"""
+        pass
+
+    @abstractmethod
+    def notificar_observers(self, event: Dict) -> None:
+        """Notifica todos os observadores sobre um evento"""
+        pass
 
 class AlunoDuplicadoException(Exception):
     """Exceção lançada quando tenta adicionar aluno duplicado com flag strict"""
@@ -7,7 +33,7 @@ class AlunoDuplicadoException(Exception):
 
 class AlunoNaoEncontradoException(Exception):
     """Exceção lançada quanto tenta remover aluno inexistente com flag strict"""
-class Turma():
+class Turma(Subject):
     """
     Representa uma turma escolar com alunos e notificações.
 
@@ -100,6 +126,12 @@ class Turma():
         
         self._professor = professor
         # TODO tenho que implementar interface observer aqui possivelmente
+
+        self.notificar_observers({
+            'evento': 'professor_atribuido',
+            'turma': self.codigo,
+            'professor': professor.nome
+        })
     
     @property
     def alunos(self) -> List['Aluno']:
@@ -163,6 +195,13 @@ class Turma():
         self._alunos.append(aluno)
 
         # TODO implementação interface observers
+        self.notificar_observers({
+            'evento': 'aluno_adicionado',
+            'turma': self.codigo,
+            'aluno_matricula': aluno.matricula,
+            'aluno_nome': aluno.nome,
+            'total_alunos': len(self.alunos)
+        })
 
         return True
     
@@ -199,6 +238,12 @@ class Turma():
         self._alunos.remove(aluno)
 
         # TODO implementação notificação observer
+        self.notificar_observers({
+            'evento': 'aluno_removido',
+            'turma': self.codigo,
+            'aluno_matricula': aluno.matricula,
+            'total_alunos': len(self.alunos)
+        })
 
         return True
     
@@ -303,6 +348,49 @@ class Turma():
                     alunos_dificuldade.append(aluno)
 
         return alunos_dificuldade
+    
+    # =================================
+    # Padrão Observer
+    # =================================
+
+    def adicionar_observer(self, observer: Observer) -> None:
+        """
+        Adiciona um observer à lista de observadores
+
+        Args:
+            observer: Instância que implementa Observer
+        
+        Raises:
+            TypeError: Se observer não implementa a interface Observer
+        """
+        if not isinstance(observer, Observer):
+            raise TypeError(
+                f"Observer deve implementar a interface Observer, "
+                f"recebido {type(observer).__name__}"
+            )
+        
+        if observer not in self._observers:
+            self._observers.append(observer)
+
+    def remover_observer(self, observer: Observer) -> None:
+        """
+        Remove um observer da lista de observadores
+
+        Args:
+            observer: Instância a ser removida
+        """
+        if observer in self._observers:
+            self._observers.remove(observer)
+
+    def notificar_observers(self, evento: Dict) -> None:
+        """
+        Notifica todos os observers sobre um evento
+
+        Args:
+            evento: Dicionário com informações do evento
+        """
+        for observer in self._observers:
+            observer.atualizar(evento)
     
     # =================================
     # Métodos especiais
