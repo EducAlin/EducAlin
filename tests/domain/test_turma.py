@@ -173,6 +173,16 @@ class TestTurmaDesempenho:
         assert desempenho['alunos_com_dificuldade'] == 1
         assert desempenho['taxa_aprovacao'] == pytest.approx(66.67, abs=0.01)
 
+    def test_obter_alunos_com_dificuldade(self, turma_com_alunos):
+        """Deve retornar apenas alunos com média < 6.0"""
+        alunos_dificuldade = turma_com_alunos.obter_alunos_com_dificuldade()
+
+        assert len(alunos_dificuldade) == 1
+        assert alunos_dificuldade[0].matricula == "002"
+
+class TestTurmaObserverPattern:
+    """Testes do padrão Observer"""
+
     def test_implementa_interface_subject(self):
         """Verifica se a Turma tem os métodos do padrão Observer (Subject)"""
         turma = Turma("ES-01", "POO", "2025.2")
@@ -180,3 +190,48 @@ class TestTurmaDesempenho:
         assert hasattr(turma, 'adicionar_observer')
         assert hasattr(turma, 'remover_observer')
         assert hasattr(turma, 'notificar_observers')
+
+class TestTurmaMetodosEspeciais:
+    """Testes de métodos especiais"""
+
+    def test_repr(self):
+        """Deve retornar representação oficial"""
+        turma = Turma("ES-01", "POO", "2025.2")
+
+        repr_str = repr(turma)
+
+        assert "Turma(codigo='ES-01'" in repr_str
+        assert "disciplina='POO'" in repr_str
+        assert "alunos=0" in repr_str
+
+    def test_str(self):
+        """Deve retornar representação amigável"""
+        turma = Turma("ES-01", "POO", "2025.2")
+
+        str_repr = str(turma)
+
+        assert "Turma ES-01 - POO (2025.2) - 0 alunos" == str_repr
+
+    def test_igualdade_turmas_mesmo_codigo(self):
+        """Turmas com mesmo código devem ser iguais"""
+        turma1 = Turma("ES-01", "POO", "2025.2")
+        turma2 = Turma("ES-01", "Algoritmos", "2026.2")
+
+        assert turma1 == turma2
+
+    def test_igualdade_turmas_codigos_diferentes(self):
+        """Turmas com códigos diferentes não devem ser iguais"""
+        turma1 = Turma("ES-01", "POO", "2025.2")
+        turma2 = Turma("ES-02", "Algoritmos", "2026.2")
+        
+        assert turma1 != turma2
+
+    def test_hash_permite_uso_em_set(self):
+        """Deve poder usar Turma em sets/dicts"""
+        turma1 = Turma("ES-01", "POO", "2025.2")
+        turma2 = Turma("ES-02", "Algoritmos", "2026.2")
+
+        turmas_set = {turma1, turma2}
+
+        assert len(turmas_set) == 2
+        assert turma1 in turmas_set

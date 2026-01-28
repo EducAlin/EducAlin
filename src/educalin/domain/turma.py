@@ -1,9 +1,12 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 
 class AlunoDuplicadoException(Exception):
     """Exceção lançada quando tenta adicionar aluno duplicado com flag strict"""
     pass
+
+class AlunoNaoEncontradoException(Exception):
+    """Exceção lançada quanto tenta remover aluno inexistente com flag strict"""
 class Turma():
     """
     Representa uma turma escolar com alunos e notificações.
@@ -118,7 +121,9 @@ class Turma():
         """Retorna a data de criação da turma"""
         return self._data_criacao
     
+    # =================================
     # Métodos de gestãod e alunos
+    # =================================
 
     def adicionar_aluno(self, aluno: 'Aluno', strict: bool = False) -> bool:
         """
@@ -145,7 +150,7 @@ class Turma():
         from educalin.domain.usuario import Aluno
 
         # Verifica tipo
-        if not isinstance(aluno, Aluno):
+        if not hasattr(aluno, 'matricula'): # TODO substituir por isinstance(aluno, Aluno) quando implementado
             raise TypeError(f"Esperado instância de Aluno, recebido {type(aluno).__name__}")
         
         # Verifica duplicação
@@ -160,3 +165,171 @@ class Turma():
         # TODO implementação interface observers
 
         return True
+    
+    def remover_aluno(self, aluno: 'Aluno', strict: bool = False) -> bool:
+        """
+        Remove um aluno da turma
+
+        Args:
+            aluno: Instância de Aluno a ser removida
+            strict: Se True, lança exceção se aluno não existir.
+                    Se False (padrão), ignora silenciosamente.
+
+        Returns:
+            True se aluno foi removido, False se não estava na turma
+
+        Raises:
+            TypeError: Se aluno não for instância de Aluno
+            AlunoNaoEncontradoException: Se aluno não existe e strict=True
+        
+        Examples:
+            >>> turma.remover_aluno(aluno1)  # True
+            >>> turma.remover_aluno(aluno1)  # False (não existe mais)
+        """
+        from educalin.domain.usuario import Aluno
+
+        if not hasattr(aluno, 'matricula'): # TODO substituir por isinstance(aluno, Aluno) quando implementado
+            raise TypeError(f"Esperado instância de Aluno, recebido {type(aluno).__name__}")
+        
+        if not self._aluno_existe(aluno):
+            if strict:
+                raise AlunoNaoEncontradoException(f"Aluno {aluno.matricula} não está na turma {self.codigo}")
+            return False
+        
+        self._alunos.remove(aluno)
+
+        # TODO implementação notificação observer
+
+        return True
+    
+    def _aluno_existe(self, aluno: 'Aluno') -> bool:
+        """
+        Verifica se aluno já está na turma (por matrícula)
+
+        Args:
+            aluno: Instância de Aluno
+        
+        Returns:
+            True se aluno já está na lista
+        """
+        return any(a.matricula == aluno.matricula for a in self._alunos)
+
+    def buscar_aluno_por_matricula(self, matricula: str) -> Optional['Aluno']:
+        """
+        Busca um aluno na turma pela matrícula
+
+        Args:
+            matricula: Matrícula do aluno
+        
+        Returns:
+            Instância de Aluno se encontrado, None caso contrário
+        """
+        return next(
+            (aluno for aluno in self._alunos if aluno.matricula == matricula),
+            None
+        )
+    
+    # =================================
+    # Métodos de desempenho
+    # =================================
+
+    def obter_desempenho_geral(self) -> Dict:
+        """
+        Calcula estatísticas gerais de desempenho da turma
+
+        Returns:
+            Dicionário com métricas:
+            - media_geral: Média de todas as notas da turma
+            - total_alunos: Número de alunos
+            - alunos_com_dificuldade: Alunos com média < 6.0
+            - taxa_aprovacao: Percentual de alunos com média >= 6.0
+
+        Examples:
+            >>> turma.obter_desempenho_geral()
+            {
+                'media_geral': 7.5,
+                'total_alunos': 30,
+                'alunos_com_dificuldade': 5,
+                'taxa_aprovacao': 83.33
+            }
+        """
+        if not self._alunos:
+            return {
+                'media_geral': 0.0,
+                'total_alunos': 0,
+                'alunos_com_dificuldade': 0,
+                'taxa_aprovacao': 0.0
+            }
+        
+        # Cálculo de médias individuais
+        medias = []
+        alunos_com_dificuldade = 0
+
+        for aluno in self._alunos:
+            if hasattr(aluno, 'calcular_media'):
+                media = aluno.calcular_media()
+                medias.append(media)
+                if media < 6.0:
+                    alunos_com_dificuldade += 1
+
+        media_geral = sum(medias) / len(medias) if medias else 0.0
+        taxa_aprovacao = (
+            ((len(medias) - alunos_com_dificuldade) / len(medias)) * 100
+            if medias else 0.0
+        )
+
+        return {
+            'media_geral': round(media_geral, 2),
+            'total_alunos': len(self._alunos),
+            'alunos_com_dificuldade': alunos_com_dificuldade,
+            'taxa_aprovacao': round(taxa_aprovacao, 2)
+        }
+    
+    def obter_alunos_com_dificuldade(self, limite: float = 6.0) -> List['Aluno']:
+        """
+        Retorna lista de alunos com média abaixo do limite
+
+        Args:
+            limite: Nota mínima considerada satisfatória (padrão 6.0)
+        
+        Returns:
+            Lista de alunos com dificuldade
+        """
+        alunos_dificuldade = []
+
+        for aluno in self._alunos:
+            if hasattr(aluno, 'calcular_media'):
+                if aluno.calcular_media() < limite:
+                    alunos_dificuldade.append(aluno)
+
+        return alunos_dificuldade
+    
+    # =================================
+    # Métodos especiais
+    # =================================
+
+    def __repr__(self) -> str:
+        """Representação oficial da turma"""
+        return (
+            f"Turma(codigo='{self.codigo}', "
+            f"disciplina='{self.disciplina}', "
+            f"semestre='{self.semestre}', "
+            f"alunos={len(self._alunos)})"
+        )
+    
+    def __str__(self) -> str:
+        """Representação amigável da turma"""
+        return (
+            f"Turma {self.codigo} - {self.disciplina} "
+            f"({self.semestre}) - {len(self.alunos)} alunos"
+        )
+    
+    def __eq__(self, other) -> bool:
+        """Compara turmas pelo código"""
+        if not isinstance(other, Turma):
+            return False
+        return self.codigo == other.codigo
+
+    def __hash__(self) -> int:
+        """Hash baseado no código (para usar em sets/dicts)"""
+        return hash(self.codigo) 
