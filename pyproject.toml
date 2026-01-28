@@ -5,11 +5,16 @@ description = ""
 authors = [
     {name = "Samuel Silveira",email = "samuelsilveira100@gmail.com"},
     {name = "Rayan Oliveira",email = "elderrayanago2004@gmail.com"},
-    {name = "Pedro Yan Alcantara",email = "pedroya0203@gmail.com}
+    {name = "Pedro Yan Alcantara",email = "pedroya0203@gmail.com"},
 ]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi (>=0.128.0,<0.129.0)",
+    "uvicorn (>=0.40.0,<0.41.0)",
+    "pytest (>=9.0.2,<10.0.0)",
+    "jinja2 (>=3.1.6,<4.0.0)",
+    "pytest-cov (>=7.0.0,<8.0.0)"
 ]
 
 [tool.poetry]
