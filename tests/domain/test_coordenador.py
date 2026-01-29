@@ -1,10 +1,6 @@
 import pytest
 from src.educalin.domain.coordenador import Coordenador
-
-# mock de uma classe ainda nao implementada
-class DummyTurma:
-    def __init__(self, codigo):
-        self.codigo = codigo
+from src.educalin.domain.turma import Turma
 
 def test_criar_coordenador_com_sucesso():
     """
@@ -38,9 +34,9 @@ def test_comparar_turmas_coordenador():
     """
     Testa o método que compara duas turmas pelo código.
     """
-    turma1 = DummyTurma("T1A")
-    turma2 = DummyTurma("T1A")
-    turma3 = DummyTurma("T1B")
+    turma1 = Turma(codigo="T1A", disciplina="POO", semestre="2026.1")
+    turma2 = Turma(codigo="T1A", disciplina="Algoritmos", semestre="2026.1")
+    turma3 = Turma(codigo="T1B", disciplina="POO", semestre="2026.1")
     
     assert Coordenador.comparar_turmas(turma1, turma2) is True
     assert Coordenador.comparar_turmas(turma1, turma3) is False

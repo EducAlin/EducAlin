@@ -1,6 +1,10 @@
 from typing import List, Optional, Dict
 from datetime import datetime
 from abc import ABC, abstractmethod
+from educalin.domain.avaliacao import Avaliacao
+from educalin.domain.aluno import Aluno
+from educalin.domain.professor import Professor
+
 class Observer(ABC):
     """Interface para observers do padrão Observer"""
 
@@ -81,6 +85,7 @@ class Turma(Subject):
         self._professor = professor
 
         self._alunos: List['Aluno'] = []
+        self._avaliacoes: List['Avaliacao'] = []
         self._observers: List[Observer] = []
 
         self._data_criacao = datetime.now()
@@ -118,14 +123,10 @@ class Turma(Subject):
         Raises:
             TypeError: Se não for uma instância de Professor
         """
-        # Importação local para evitar importação circular
-        from educalin.domain.usuario import Professor
-
         if not isinstance(professor, Professor):
             raise TypeError("Professor deve ser uma instância da classe Professor")
         
         self._professor = professor
-        # TODO tenho que implementar interface observer aqui possivelmente
 
         self.notificar_observers({
             'evento': 'professor_atribuido',
@@ -153,6 +154,15 @@ class Turma(Subject):
         """Retorna a data de criação da turma"""
         return self._data_criacao
     
+    @property
+    def avaliacoes(self) -> List['Avaliacao']:
+        """
+        Retorna uma cópia da lista de avaliações da turma.
+        
+        Use o método adicionar_avaliacao() para incluir novas avaliações.
+        """
+        return self._avaliacoes.copy()
+    
     # =================================
     # Métodos de gestãod e alunos
     # =================================
@@ -177,12 +187,9 @@ class Turma(Subject):
             >>> turma.adicionar_aluno(aluno1)  # True
             >>> turma.adicionar_aluno(aluno1)  # False (duplicado ignorado)
             >>> turma.adicionar_aluno(aluno1, strict=True)  # Raises AlunoDuplicadoException
-        """
-        # Importação local para evitar importação circular
-        from educalin.domain.usuario import Aluno
-
+        """        
         # Verifica tipo
-        if not hasattr(aluno, 'matricula'): # TODO substituir por isinstance(aluno, Aluno) quando implementado
+        if not isinstance(aluno, Aluno):
             raise TypeError(f"Esperado instância de Aluno, recebido {type(aluno).__name__}")
         
         # Verifica duplicação
@@ -194,7 +201,6 @@ class Turma(Subject):
         # Adicionar aluno
         self._alunos.append(aluno)
 
-        # TODO implementação interface observers
         self.notificar_observers({
             'evento': 'aluno_adicionado',
             'turma': self.codigo,
@@ -225,10 +231,8 @@ class Turma(Subject):
             >>> turma.remover_aluno(aluno1)  # True
             >>> turma.remover_aluno(aluno1)  # False (não existe mais)
         """
-        from educalin.domain.usuario import Aluno
-
-        if not hasattr(aluno, 'matricula'): # TODO substituir por isinstance(aluno, Aluno) quando implementado
-            raise TypeError(f"Esperado instância de Aluno, recebido {type(aluno).__name__}")
+        if not isinstance(aluno, Aluno):
+            raise TypeError(f"Esperado instância de Aluno, recebido {type(aluno).__name__}")        
         
         if not self._aluno_existe(aluno):
             if strict:
@@ -237,7 +241,6 @@ class Turma(Subject):
         
         self._alunos.remove(aluno)
 
-        # TODO implementação notificação observer
         self.notificar_observers({
             'evento': 'aluno_removido',
             'turma': self.codigo,
@@ -273,6 +276,24 @@ class Turma(Subject):
             (aluno for aluno in self._alunos if aluno.matricula == matricula),
             None
         )
+
+    # =================================
+    # Métodos de gestão de avaliações
+    # =================================
+
+    def adicionar_avaliacao(self, avaliacao: 'Avaliacao') -> None:
+        """
+        Adiciona uma avaliação à lista de avaliações da turma.
+
+        Args:
+            avaliacao: A instância de Avaliacao a ser adicionada.
+
+        Raises:
+            TypeError: Se o objeto fornecido não for uma instância de Avaliacao.
+        """
+        if not isinstance(avaliacao, Avaliacao):
+            raise TypeError("O objeto adicionado deve ser uma instância de Avaliacao.")
+        self._avaliacoes.append(avaliacao)
     
     # =================================
     # Métodos de desempenho

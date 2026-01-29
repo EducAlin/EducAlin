@@ -1,11 +1,7 @@
 import pytest
 from src.educalin.domain.professor import Professor
-
-# mock de uma classe ainda nao implementada
-class DummyTurma:
-    def __init__(self, codigo):
-        self.codigo = codigo
-
+from src.educalin.domain.turma import Turma
+ 
 @pytest.fixture
 def professor_exemplo():
     """Cria uma instância de Professor para ser usada nos testes."""
@@ -35,7 +31,7 @@ def test_validar_credenciais_professor(professor_exemplo):
 
 def test_adicionar_turma_professor(professor_exemplo):
     """Testa a adição de uma turma usando mock com dummy à lista do professor."""
-    turma_a = DummyTurma("T1A")
+    turma_a = Turma(codigo="T1A", disciplina="POO", semestre="2026.1")
     professor_exemplo.adicionar_turma(turma_a)
     
     assert len(professor_exemplo.turmas) == 1

@@ -1,5 +1,7 @@
+from typing import List
 from .usuario import Usuario
 from ..utils.mixins import AutenticavelMixin
+ 
 
 class Aluno(Usuario, AutenticavelMixin):
     """
@@ -22,7 +24,7 @@ class Aluno(Usuario, AutenticavelMixin):
         self._email = email
         self.__senha = self._hash_senha(senha)
         self._matricula = matricula
-        self.__desempenho = {}
+        self.__desempenho: List['Nota'] = []
 
     @property
     def nome(self):
@@ -86,47 +88,53 @@ class Aluno(Usuario, AutenticavelMixin):
 
     @property
     def desempenho(self):
-        """Pega o dicionário de desempenho do aluno."""
-        return self.__desempenho
+        """Retorna uma cópia da lista de notas (desempenho) do aluno."""
+        return self.__desempenho.copy()
 
-    @desempenho.setter
-    def desempenho(self, novo_desempenho):
+    def adicionar_nota(self, nota: 'Nota'):
         """
-        Atualiza o dicionário de desempenho do aluno.
+        Adiciona uma nota ao desempenho do aluno.
 
         Args:
-            novo_desempenho (dict): O novo dicionário com as notas e etc.
+            nota (Nota): A instância de Nota a ser adicionada.
 
         Raises:
-            ValueError: Se o valor passado não for um dicionário.
+            TypeError: Se o objeto não for uma instância de Nota.
+            ValueError: Se a nota pertencer a outro aluno.
         """
-        if not isinstance(novo_desempenho, dict):
-            raise ValueError("Desempenho deve ser um dicionário.")
-        self.__desempenho = novo_desempenho 
+        from .nota import Nota
+        if not isinstance(nota, Nota):
+            raise TypeError("O objeto adicionado deve ser uma instância de Nota.")
+        if nota.aluno is not self:
+            raise ValueError("Esta nota pertence a outro aluno.")
+        self.__desempenho.append(nota)
 
     def calcular_media(self) -> float:
         """
-        Calcula a média das notas numéricas do aluno.
+        Calcula a média das notas do aluno.
 
-        As notas são pegas do dicionário de desempenho. Valores não numéricos
-        são ignorados no cálculo.
+        As notas são pegas da lista de objetos Nota no desempenho.
 
         Returns:
-            float: A média das notas. Retorna 0.0 se não houver notas numéricas.
+            float: A média das notas. Retorna 0.0 se não houver notas.
         """
-        notas_numericas = [nota for nota in self.__desempenho.values() if isinstance(nota, (int, float))]
-        if not notas_numericas:
+        if not self.__desempenho:
             return 0.0
-        return sum(notas_numericas) / len(notas_numericas)
+        
+        soma_das_notas = sum(nota.valor for nota in self.__desempenho)
+        return soma_das_notas / len(self.__desempenho)
 
     def visualizar_desempenho(self):
         """
         Mostra o desempenho do aluno na tela.
-
-        Returns:
-            None: A função só imprime o resultado, não retorna nada.
         """
-        return print(self.desempenho)
+        if not self.__desempenho:
+            print(f"Nenhum desempenho registrado para {self.nome}.")
+            return
+        print(f"Desempenho de {self.nome} ({self.matricula}):")
+        for nota in self.__desempenho:
+            print(f"- {nota.avaliacao.titulo}: {nota.valor:.1f} / {nota.avaliacao.valor_maximo:.1f}")
+        print(f"Média Geral: {self.calcular_media():.2f}")
     
     def acessar_material(self, material_id):
         """
