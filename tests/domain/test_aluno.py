@@ -58,3 +58,28 @@ def test_email_invalido_aluno_lanca_erro():
     aluno = Aluno("Teste", "email.valido@teste.com", "senha", "123")
     with pytest.raises(ValueError, match="Formato de e-mail inválido."):
         aluno.email = "emailinvalido"
+
+def test_calcular_media_aluno():
+    """
+    Testa o cálculo da média de notas do aluno.
+    """
+    aluno = Aluno(
+        nome="Ana Lima",
+        email="ana.l@email.com",
+        senha="senha",
+        matricula="2024004"
+    )
+    # Teste vazio
+    assert aluno.calcular_media() == 0.0
+
+    # Teste good path
+    aluno.desempenho = {"Prova 1": 8.0, "Trabalho 1": 10.0, "Prova 2": 7.0}
+    assert aluno.calcular_media() == (8.0 + 10.0 + 7.0) / 3
+
+    # Teste bad path com valores não numéricos que devem ser ignorados
+    aluno.desempenho = {"Prova 1": 9.0, "Trabalho 1": "Ausente", "Prova 2": 6.0}
+    assert aluno.calcular_media() == (9.0 + 6.0) / 2
+
+    # Teste bad path apenas com valores não numéricos
+    aluno.desempenho = {"Prova 1": "N/A", "Trabalho 1": "Pendente"}
+    assert aluno.calcular_media() == 0.0

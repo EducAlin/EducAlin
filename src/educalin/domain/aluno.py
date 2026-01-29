@@ -103,7 +103,22 @@ class Aluno(Usuario, AutenticavelMixin):
         if not isinstance(novo_desempenho, dict):
             raise ValueError("Desempenho deve ser um dicionário.")
         self.__desempenho = novo_desempenho 
-        
+
+    def calcular_media(self) -> float:
+        """
+        Calcula a média das notas numéricas do aluno.
+
+        As notas são pegas do dicionário de desempenho. Valores não numéricos
+        são ignorados no cálculo.
+
+        Returns:
+            float: A média das notas. Retorna 0.0 se não houver notas numéricas.
+        """
+        notas_numericas = [nota for nota in self.__desempenho.values() if isinstance(nota, (int, float))]
+        if not notas_numericas:
+            return 0.0
+        return sum(notas_numericas) / len(notas_numericas)
+
     def visualizar_desempenho(self):
         """
         Mostra o desempenho do aluno na tela.
