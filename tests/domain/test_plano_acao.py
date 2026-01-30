@@ -6,7 +6,7 @@ from educalin.domain.plano_acao import (
     PlanoAcao, 
     StatusPlano,
     PlanoJaConcluidoException,
-    TransicaoStatusInvalidaException, # Sem testes pra transição status?
+    TransicaoStatusInvalidaException,
     MaterialObrigatorioException
 )
 
@@ -124,7 +124,7 @@ class TestPlanoAcaoComposicaoMateirais:
         plano.adicionar_material(material_pdf_mock)
         plano.adicionar_material(material_video_mock)
 
-        assert plano.total_materiais == 1
+        assert plano.total_materiais == 2
 
     def test_nao_deve_adicionar_material_duplicado(self, plano, material_pdf_mock):
         """Deve ignorar tentativa de adicionar mesmo material duas vezes"""
@@ -211,8 +211,8 @@ class TestPlanoAcaoGerenciamentoStatus:
 
     def test_iniciar_plano_nao_enviado_deve_falhar(self, plano_com_material):
         """Não deve permitir iniciar plano que não foi enviado"""
-        with pytest.raises():
-            plano_com_material.iniciar(TansicaoStatusInvalidaException)
+        with pytest.raises(TransicaoStatusInvalidaException):
+            plano_com_material.iniciar()
 
     def test_concluir_plano_em_andamento(self, plano_com_material):
         """Deve permitir concluir plano EM_ANDAMENTO"""
@@ -406,7 +406,7 @@ class TestPlanoAcaoMetodosEspeciais:
         repr_str = repr(plano)
 
         assert "PlanoAcao" in repr_str
-        assert plano.id in repr_str
+        assert plano.id[:8] in repr_str
 
     def test_str(self):
         """Deve retornar representação amigável"""
@@ -428,6 +428,6 @@ class TestPlanoAcaoMetodosEspeciais:
         plano1 = PlanoAcao(aluno_mock, "Teste 1", 30)
         plano2 = PlanoAcao(aluno_mock, "Teste 2", 30)
 
-        plano2.__id = plano1.id
+        plano2._PlanoAcao__id = plano1.id
 
         assert plano1 == plano2

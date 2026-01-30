@@ -392,6 +392,64 @@ class PlanoAcao(Subject):
 
 
     # =================================
+    # Métodos de gerenciamento de status
+    # =================================
+
+    def pode_ser_editado(self) -> bool:
+        """
+        Verifica se o plano pode ser editado
+
+        Returns:
+            True se status for RASCUNHO ou ENVIADO
+        """
+        return self._status in [StatusPlano.RASCUNHO, StatusPlano.ENVIADO]
+
+    def esta_vencido(self) -> bool:
+        """
+        Verifica se o plano está vencido
+
+        Returns:
+            True se passou da data limite e não está concluido
+        """
+        if self._status == StatusPlano.CONCLUIDO:
+            return False
+
+        return datetime.now() > self.data_limite
+
+    def dias_restantes(self) -> int:
+        """
+        Calcula dias restantes até o prazo
+
+        Returns:
+            Número de dias (negativo se vencido)
+        """
+        delta = self.data_limite - datetime.now()
+        return delta.days
+
+    def calcular_progresso(self) -> float:
+        """
+        Calcula progresso do plano (0-100%)
+
+        Por enquanto, baseado apenas em materiais.
+        Implementação futura pode rastrear materiais visualizados.
+
+        Returns:
+            Percentual de progresso
+        """
+        if len(self._materiais) == 0:
+            return 0.0
+        
+        # TODO rastrear materiais visualizados
+        # Implementação temporária
+        if self._status == StatusPlano.CONCLUIDO:
+            return 100.0
+        elif self._status == StatusPlano.EM_ANDAMENTO:
+            return 50.0
+        else:
+            return 0.0
+
+
+    # =================================
     # Padrão Observer
     # =================================
 
@@ -434,3 +492,33 @@ class PlanoAcao(Subject):
         for observer in self._observers:
             observer.atualizar(evento)
     
+
+    # =================================
+    # Métodos especiais
+    # =================================
+
+    def __repr__(self) -> str:
+        """Representação oficial"""
+        return (
+            f"PlanoAcao(id='{self.id[:8]}...', "
+            f"aluno='{self.aluno_alvo.matricula}', "
+            f"status='{self.status.value}', "
+            f"materiais='{len(self._materiais)}')"
+        )
+    
+    def __str__(self) -> str:
+        """Representação amigável"""
+        return (
+            f"Plano de Ação para {self.aluno_alvo.nome}: "
+            f"{self.objetivo} ({self.status.value})"
+        )
+    
+    def __eq__(self, other) -> bool:
+        """Igualdade por ID"""
+        if not isinstance(other, PlanoAcao):
+            return False
+        return self.id == other.id
+    
+    def __hash__(self) -> int:
+        """Hash por ID"""
+        return hash(self.id)
