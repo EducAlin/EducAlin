@@ -5,7 +5,7 @@ description = ""
 authors = [
     {name = "Samuel Silveira",email = "samuelsilveira100@gmail.com"},
     {name = "Rayan Oliveira",email = "elderrayanago2004@gmail.com"},
-    {name = "Pedro Yan Alcantara",email = "pedroya0203@gmail.com}
+    {name = "Pedro Yan Alcantara",email = "pedroya0203@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"
