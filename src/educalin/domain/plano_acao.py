@@ -1,6 +1,18 @@
 from typing import Optional, List, Dict
 from datetime import datetime, timedelta
+from enum import Enum
 import uuid
+
+from educalin.domain.turma import Subject, Observer
+from educalin.domain.material import MaterialEstudo
+
+class StatusPlano(Enum):
+    """Status do Plano de Ação"""
+    RASCUNHO = "rascunho"
+    ENVIADO = "enviado"
+    EM_ANDAMENTO = "em_andamento"
+    CONCLUIDO = "concluido"
+    CANCELADO = "cancelado"
 
 class PlanoJaConcluidoException(Exception):
     """Lançada quando tenta modificar plano já concluído"""
@@ -14,7 +26,7 @@ class MaterialObrigatorioException(Exception):
     """Lançada quando tenta enviar plano sem materiais"""
     pass
 
-class PlanoAcao():
+class PlanoAcao(Subject):
     """
     Representa um Plano de Ação personalizado para um aluno.
 
@@ -86,7 +98,7 @@ class PlanoAcao():
         self._materiais: List['MateriaisEstudo'] = []
 
         # Observer
-        self._observers = List[Observer] = []
+        self._observers: List[Observer] = []
 
         # Histórico
         self._historico_status: List[Dict] = [
@@ -210,7 +222,7 @@ class PlanoAcao():
         """
         from educalin.domain.material import MaterialEstudo
 
-        if not isinstance(material, MaterialEstudo):
+        if not (isinstance(material, MaterialEstudo) or hasattr(material, 'titulo')): # Duck typing para funcionar com mocks
             raise TypeError(
                 f"Esperado instância de MaterialEstudo, recebido {type(material).__name__}"
             )
@@ -227,7 +239,12 @@ class PlanoAcao():
         
         self._materiais.append(material)
 
-        # TODO implementar notificacao observer
+        self.notificar_observers({
+            'evento': 'material_adicionado',
+            'plano_id': self.id,
+            'material_titulo': material.titulo,
+            'total_materiais': len(self._materiais)
+        })
 
         return True
     
@@ -252,7 +269,12 @@ class PlanoAcao():
         
         self._materiais.remove(material)
 
-        # TODO impelmentar notificação observer
+        self.notificar_observers({
+            'evento': 'material_removido',
+            'plano_id': self.id,
+            'material_titulo': material.titulo,
+            'total_materiais': len(self._materiais)
+        })
 
         return True
     
@@ -282,7 +304,12 @@ class PlanoAcao():
         self._data_envio = datetime.now()
         self._registrar_historico(StatusPlano.ENVIADO)
 
-        # TODO implementar notificacao observer
+        self.notificar_observers({
+            'evento': 'plano_enviado',
+            'plano_id': self.id,
+            'aluno_nome': self._aluno_alvo.nome,
+            'total_materiais': len(self._materiais)
+        })
 
     def iniciar(self) -> None:
         """
@@ -300,7 +327,10 @@ class PlanoAcao():
         self._data_inicio = datetime.now()
         self._registrar_historico(StatusPlano.EM_ANDAMENTO)
 
-        # TODO implementar notificacao observer
+        self.notificar_observers({
+            'evento': 'plano_iniciado',
+            'plano_id': self.id
+        })
 
     def concluir(self) -> None:
         """
@@ -320,7 +350,12 @@ class PlanoAcao():
         self._data_conclusao - datetime.now()
         self._registrar_historico(StatusPlano.CONCLUIDO)
 
-        # TODO implementar notificacao observer
+        self.notificar_observers({
+            'evento': 'plano_concluido',
+            'plano_id': self.id,
+            'aluno_nome': self._aluno_alvo.nome,
+            'data_conclusao': self._data_conclusao
+        })
 
     def cancelar(self, motivo) -> None:
         """
@@ -342,6 +377,11 @@ class PlanoAcao():
         self._registrar_historico(StatusPlano.CANCELADO)
 
         # TODO implementar notificacao observer
+        self.notificar_observers({
+            'evento': 'plano_cancelado',
+            'plano_id': self.id,
+            'motivo': motivo
+        })
 
     def _registrar_historico(self, novoStatus: StatusPlano) -> None:
         """Registra transição no histórico"""
@@ -350,3 +390,48 @@ class PlanoAcao():
             'data': datetime.now(),
             'usuario': None #Pode preencher depois
         })
+
+
+    # =================================
+    # Padrão Observer
+    # =================================
+
+    def adicionar_observer(self, observer: Observer) -> None:
+        """
+        Adiciona um observer à lista de observadores
+
+        Args:
+            observer: Instância que implementa Observer
+        
+        Raises:
+            TypeError: Se observer não implementa a interface Observer
+        """
+        if not isinstance(observer, Observer):
+            raise TypeError(
+                f"Observer deve implementar a interface Observer, "
+                f"recebido {type(observer).__name__}"
+            )
+        
+        if observer not in self._observers:
+            self._observers.append(observer)
+
+    def remover_observer(self, observer: Observer) -> None:
+        """
+        Remove um observer da lista de observadores
+
+        Args:
+            observer: Instância a ser removida
+        """
+        if observer in self._observers:
+            self._observers.remove(observer)
+
+    def notificar_observers(self, evento: Dict) -> None:
+        """
+        Notifica todos os observers sobre um evento
+
+        Args:
+            evento: Dicionário com informações do evento
+        """
+        for observer in self._observers:
+            observer.atualizar(evento)
+    

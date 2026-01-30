@@ -2,7 +2,14 @@ import pytest
 from unittest.mock import Mock
 from datetime import datetime, timedelta
 
-from educalin.domain.plano_acao import PlanoAcao
+from educalin.domain.plano_acao import (
+    PlanoAcao, 
+    StatusPlano,
+    PlanoJaConcluidoException,
+    TransicaoStatusInvalidaException, # Sem testes pra transição status?
+    MaterialObrigatorioException
+)
+
 
 class TestPlanoAcaoInicializacao:
     """Testes de criação e inicialização do PlanoAcao"""
