@@ -81,7 +81,7 @@ class PlanoAcao(Subject):
         self.__id = str(uuid.uuid4()) # TODO trocar implementação de id para melhor performance
         self._aluno_alvo = aluno_alvo
         self._objetivo = objetivo.strip()
-        self._observacoes = observacoes.strip if observacoes else None
+        self._observacoes = observacoes.strip() if observacoes else None
 
         # Datas
         self._data_cricacao = datetime.now()
@@ -193,7 +193,7 @@ class PlanoAcao(Subject):
         return self._data_conclusao
     
     @property
-    def motivo_conclusao(self) -> Optional[str]:
+    def motivo_cancelamento(self) -> Optional[str]:
         """Retorna motivo de cancelamento (se foi cancelado)"""
         return self._motivo_cancelamento
 
@@ -318,9 +318,9 @@ class PlanoAcao(Subject):
         Raises:
             TransicaoStatusInvalidaException: Se status atual inválido
         """
-        if self._status != StatusPlano.RASCUNHO:
+        if self._status != StatusPlano.ENVIADO:
             raise TransicaoStatusInvalidaException(
-                f"Não é possível enviar plano com status {self._status.value}"
+                f"Só é possível iniciar plano ENVIADO, status atual: {self._status.value}"
             )
         
         self._status = StatusPlano.EM_ANDAMENTO
@@ -347,7 +347,7 @@ class PlanoAcao(Subject):
             )
         
         self._status = StatusPlano.CONCLUIDO
-        self._data_conclusao - datetime.now()
+        self._data_conclusao = datetime.now()
         self._registrar_historico(StatusPlano.CONCLUIDO)
 
         self.notificar_observers({
@@ -376,7 +376,6 @@ class PlanoAcao(Subject):
         self._motivo_cancelamento = motivo
         self._registrar_historico(StatusPlano.CANCELADO)
 
-        # TODO implementar notificacao observer
         self.notificar_observers({
             'evento': 'plano_cancelado',
             'plano_id': self.id,
