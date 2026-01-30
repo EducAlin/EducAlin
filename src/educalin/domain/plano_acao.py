@@ -2,6 +2,18 @@ from typing import Optional, List, Dict
 from datetime import datetime, timedelta
 import uuid
 
+class PlanoJaConcluidoException(Exception):
+    """Lançada quando tenta modificar plano já concluído"""
+    pass
+
+class TransicaoStatusInvalidaException(Exception):
+    """Lançada quando tenta fazer transição de status inválida"""
+    pass
+
+class MaterialObrigatorioException(Exception):
+    """Lançada quando tenta enviar plano sem materiais"""
+    pass
+
 class PlanoAcao():
     """
     Representa um Plano de Ação personalizado para um aluno.
@@ -125,7 +137,7 @@ class PlanoAcao():
     def observacoes(self, valor: str) -> None:
         """Atualiza observações"""
         if not self.pode_ser_editado():
-            raise PlanoJaConcluidoExceptio("Plano não pode ser editado")
+            raise PlanoJaConcluidoException("Plano não pode ser editado")
         self._observacoes = valor.strip() if valor else None
 
     @property
@@ -177,3 +189,164 @@ class PlanoAcao():
     def historico_status(self) -> List[Dict]:
         """Retorna histórico de transições de status"""
         return self._historico_status.copy()
+    
+    # =================================
+    # Métodos de gestão de materiais
+    # =================================
+    
+    def adicionar_material(self, material: 'MaterialEstudo') -> bool:
+        """
+        Adiciona material à composição do plano.
+
+        Args:
+            material: Instância de MaterialEstudo
+
+        Returns:
+            True se adicionado, False se já existia
+
+        Raises:
+            TypeError: Se não for MaterialEstudo
+            PlanoJaConcluidoException: Se plano já está concluído
+        """
+        from educalin.domain.material import MaterialEstudo
+
+        if not isinstance(material, MaterialEstudo):
+            raise TypeError(
+                f"Esperado instância de MaterialEstudo, recebido {type(material).__name__}"
+            )
+        
+        # Valida status do plano
+        if not self.pode_ser_editado():
+            raise PlanoJaConcluidoException(
+                f"Não é possível adicionar material em plano {self._status.value}"
+            )
+        
+        # Verifica duplicação
+        if material in self.materiais:
+            return False
+        
+        self._materiais.append(material)
+
+        # TODO implementar notificacao observer
+
+        return True
+    
+    def remover_material(self, material: 'MaterialEstudo') -> bool:
+        """
+        Remove material da composição.
+
+        Args:
+            material: Material a ser retirado
+        
+        Returns:
+            True se removido, False se não existia
+
+        Raises:
+            PlanoJaConcluidoException: Se plano já está concluído
+        """
+        if not self.pode_ser_editado():
+            raise PlanoJaConcluidoException("Plano não pode ser editado")
+        
+        if material not in self._materiais:
+            return False
+        
+        self._materiais.remove(material)
+
+        # TODO impelmentar notificação observer
+
+        return True
+    
+    # =================================
+    # Métodos de gerenciamento de status
+    # =================================
+
+    def enviar(self) -> None:
+        """
+        Envia o plano para o aluno (transição: RASCUNHO -> ENVIADO)
+
+        Raises:
+            MaterialObrigatorioException: Se não houver materiais
+            TransicaoStatusInvalidaException: Se status atual inválido
+        """
+        if self._status != StatusPlano.RASCUNHO:
+            raise TransicaoStatusInvalidaException(
+                f"Não é possível enviar plano com status {self._status.value}"
+            )
+        
+        if self.total_materiais == 0:
+            raise MaterialObrigatorioException(
+                "PlanoAcao deve ter pelo menos 1 material para ser enviado"
+            )
+        
+        self._status = StatusPlano.ENVIADO
+        self._data_envio = datetime.now()
+        self._registrar_historico(StatusPlano.ENVIADO)
+
+        # TODO implementar notificacao observer
+
+    def iniciar(self) -> None:
+        """
+        Inicia o plano (transição: ENVIADO -> EM_ANDAMENTO)
+
+        Raises:
+            TransicaoStatusInvalidaException: Se status atual inválido
+        """
+        if self._status != StatusPlano.RASCUNHO:
+            raise TransicaoStatusInvalidaException(
+                f"Não é possível enviar plano com status {self._status.value}"
+            )
+        
+        self._status = StatusPlano.EM_ANDAMENTO
+        self._data_inicio = datetime.now()
+        self._registrar_historico(StatusPlano.EM_ANDAMENTO)
+
+        # TODO implementar notificacao observer
+
+    def concluir(self) -> None:
+        """
+        Conclui o plano (transições aceitas: ENVIADO/EM_ANDAMENTO -> CONCLUIDO)
+
+        Raises:
+            TransicaoStatusInvalidaException: Se status atual inválido
+        """
+        status_validos = [StatusPlano.ENVIADO, StatusPlano.EM_ANDAMENTO]
+
+        if self._status not in status_validos:
+            raise TransicaoStatusInvalidaException(
+                f"Não é possível enviar plano com status {self._status.value}"
+            )
+        
+        self._status = StatusPlano.CONCLUIDO
+        self._data_conclusao - datetime.now()
+        self._registrar_historico(StatusPlano.CONCLUIDO)
+
+        # TODO implementar notificacao observer
+
+    def cancelar(self, motivo) -> None:
+        """
+        Cancela o plano
+
+        Args:
+            motivo: Motivo do cancelamento
+
+        Raises:
+            TransicaoStatusInvalidaException: Se já está concluído/cancelado
+        """
+        if self._status in [StatusPlano.CONCLUIDO, StatusPlano.CANCELADO]:
+            raise TransicaoStatusInvalidaException(
+                f"Não é possível cancelar plano com status {self._status.value}"
+            )
+        
+        self._status = StatusPlano.CANCELADO
+        self._motivo_cancelamento = motivo
+        self._registrar_historico(StatusPlano.CANCELADO)
+
+        # TODO implementar notificacao observer
+
+    def _registrar_historico(self, novoStatus: StatusPlano) -> None:
+        """Registra transição no histórico"""
+        self._historico_status.append({
+            'status': novoStatus,
+            'data': datetime.now(),
+            'usuario': None #Pode preencher depois
+        })
