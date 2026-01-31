@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timedelta
-from src.educalin.domain.material import MaterialPDF, MaterialVideo, MaterialLink
+from src.educalin.domain.material import MaterialEstudo, MaterialPDF, MaterialVideo, MaterialLink
 
 @pytest.fixture
 def agora():
@@ -11,7 +11,7 @@ def pdf_valido(agora):
     return MaterialPDF(
         titulo="Introdução ao Python",
         descricao="Material de estudo sobre Python.",
-        autor="",
+        autor="Autor",
         data_upload=agora,
         num_paginas=10
     )  # 10 páginas
@@ -21,7 +21,7 @@ def video_valido(agora):
     return MaterialVideo(
         titulo="Curso de JavaScript",
         descricao="Vídeo aula sobre JavaScript.",
-        autor="",
+        autor="Autor",
         data_upload=agora,
         duracao_segundos=120,
         codec="H.264"
@@ -32,11 +32,29 @@ def link_valido(agora):
     return MaterialLink(
         titulo="Documentação do Django",
         descricao="Link para a documentação oficial do Django.",
-        autor="",
+        autor="Autor",
         data_upload=agora,
         url="https://example.com",
         tipo_conteudo="Documentação"
     )
+
+
+# -----------------------
+# Testes: critérios de aceitação (classe abstrata + polimorfismo)
+# -----------------------
+def test_material_estudo_nao_pode_ser_instanciado(agora):
+    with pytest.raises(TypeError):
+        MaterialEstudo("T", "D", "A", agora)
+
+
+def test_polimorfismo_validar_formato(agora):
+    materiais: list[MaterialEstudo] = [
+        MaterialPDF("T", "D", "A", agora, 1),
+        MaterialVideo("T", "D", "A", agora, 10, "H.264"),
+        MaterialLink("T", "D", "A", agora, "https://example.com", "artigo"),
+    ]
+
+    assert all(material.validar_formato() is True for material in materiais)
 
 # -----------------------
 # Testes: regra comum (data_upload)

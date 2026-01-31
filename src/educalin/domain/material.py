@@ -16,9 +16,9 @@ class MaterialEstudo(ABC):
     _autor: str = field(init=False, repr=False) # autor deve vir da classe Professor (autor: Professor)
 
     def __init__(self, titulo: str, descricao: str, autor: str, data_upload: datetime):
-        self._titulo = titulo
-        self._descricao = descricao
-        self._autor = autor
+        self.titulo = titulo
+        self.descricao = descricao
+        self.autor = autor
         self._validar_data_upload(data_upload) 
         self._data_upload = data_upload
 
@@ -97,7 +97,7 @@ class MaterialEstudo(ABC):
             f"Título: {self.titulo}, "
             f"Descrição: {self.descricao}, "
             f"Autor: {self.autor}, "
-            f"Data de Upload: {self.data_upload.strftime('%Y-%m-%d %H:%M:%S')}"
+            f"Data de Upload: {self.data_upload.strftime('%Y-%m-%d %H:%M:%S')})"
         )
 
 #----------------------------------------------------------------#
@@ -184,8 +184,10 @@ class MaterialVideo(MaterialEstudo):
     # Métodos específicos
     def validar_formato(self) -> bool:
         """
-        Validação do formato de vídeo a apartir do codec.
+        Validação do formato de vídeo a apartir do codec e .
         """
+        if not isinstance(self.duracao_segundos, int) or self.duracao_segundos <= 0:
+            raise ValueError("Vídeo inválido: duração deve ser um inteiro positivo.")    
         if not isinstance(self.codec, str) or not self.codec.strip():
             raise ValueError("O codec deve ser uma string não vazia.")
         return True
