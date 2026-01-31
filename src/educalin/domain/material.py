@@ -126,9 +126,10 @@ class MaterialPDF(MaterialEstudo):
     # Métodos abstratos
     def validar_formato(self) -> bool:
         """
-        Validação do formato PDF.
+        Validação do formato PDF a partir do número de páginas.
         """
-
+        if not isinstance(self.num_paginas, int) or self.num_paginas <= 0:
+            raise ValueError("O número de páginas deve ser um inteiro positivo.")
         return True
     
     def obter_tamanho(self) -> int:
@@ -140,7 +141,7 @@ class MaterialPDF(MaterialEstudo):
     # Método específico
     def extrair_texto(self) -> str:
         """
-        Método específico para extrair texto de um PDF.
+        Método específico para extrair texto de um PDF(Lógica simulada).
         """
         return "Texto extraído do PDF."
     
@@ -182,14 +183,15 @@ class MaterialVideo(MaterialEstudo):
     # Métodos específicos
     def validar_formato(self) -> bool:
         """
-        Validação do formato de vídeo.
+        Validação do formato de vídeo a apartir do codec.
         """
-
+        if not isinstance(self.codec, str) or not self.codec.strip():
+            raise ValueError("O codec deve ser uma string não vazia.")
         return True
     
     def gerar_thumbnail(self) -> str:
         """
-        Método específico para gerar uma miniatura do vídeo.
+        Método específico para gerar uma miniatura do vídeo(Simulado).
         """
         return "Caminho/para/thumbnail.jpg"
     
@@ -232,14 +234,15 @@ class MaterialLink(MaterialEstudo):
     # Métodos específicos
     def validar_formato(self) -> bool:
         """
-        Validação do formato do link.
+        Validação do formato do link a partir da URL.
         """
-
+        if not isinstance(self.url, str) or not self.url.strip():
+            raise ValueError("A URL deve ser uma string não vazia.")
         return True
     
     def verificar_disponibilidade(self) -> bool:
         """
-        Método específico para verificar a disponibilidade do link.
+        Método específico para verificar a disponibilidade do link(Simulado).
         """
         return True
     
