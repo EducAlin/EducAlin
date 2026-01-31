@@ -151,12 +151,13 @@ class MaterialPDF(MaterialEstudo):
 
 @dataclass
 class MaterialVideo(MaterialEstudo):
+    _codec: str = ""
     _duracao_segundos: int = 0
-    _codec: str
 
-    def __init__(self, titulo: str, descricao: str, autor: str, data_upload: datetime, duracao_segundos: int):
+    def __init__(self, titulo: str, descricao: str, autor: str, data_upload: datetime, duracao_segundos: int, codec: str):
         super().__init__(titulo, descricao, autor, data_upload)
         self._duracao_segundos = duracao_segundos
+        self._codec = codec
 
     # Duração em segundos
     @property
@@ -194,6 +195,12 @@ class MaterialVideo(MaterialEstudo):
         Método específico para gerar uma miniatura do vídeo(Simulado).
         """
         return "Caminho/para/thumbnail.jpg"
+    
+    def obter_tamanho(self) -> int:
+        """
+        Para vídeo, o tamanho é representado pela duração em segundos.
+        """
+        return self.duracao_segundos
     
 #----------------------------------------------------------------#
 #                 SUBCLASSE MATERIAL LINK                        #
@@ -246,4 +253,10 @@ class MaterialLink(MaterialEstudo):
         """
         return True
     
-    
+    def obter_tamanho(self) -> int:
+        """
+        Para link, o tamanho é representado pelo comprimento da URL.
+        """
+        return len(self.url)
+
+
