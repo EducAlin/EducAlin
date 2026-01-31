@@ -4,52 +4,27 @@ from datetime import datetime
 
 
 class Meta:
+    """
+    Representa uma meta de aprendizado de um aluno.
+
+    Regras:
+    - valor_alvo > 0
+    - 0 <= progresso_atual <= valor_alvo
+    - A meta é concluída quando progresso_atual >= valor_alvo
+    """
+
     def __init__(
         self,
-        meta_id: int,
-        aluno: str,
         descricao: str,
         valor_alvo: float,
         prazo: datetime,
         progresso_atual: float = 0.0,
     ) -> None:
-        # Validar e atribuir via setters
-        self._id: int | None = None
-        self._valor_alvo: float = 0.0
-        self._progresso_atual: float = 0.0
-
-        self.id = meta_id
-        self.aluno = aluno
         self.descricao = descricao
         self.valor_alvo = valor_alvo
         self.prazo = prazo
         self.progresso_atual = progresso_atual
 
-    # ID (imutável)
-    @property
-    def id(self) -> int:
-        return self._id  # type: ignore[return-value]
-
-    @id.setter
-    def id(self, valor: int) -> None:
-        if self._id is not None:
-            raise ValueError("O ID não pode ser alterado após a criação da meta.")
-        if not isinstance(valor, int) or valor <= 0:
-            raise ValueError("O ID deve ser um inteiro positivo.")
-        self._id = valor
-
-    # Aluno
-    @property
-    def aluno(self) -> str:
-        return self._aluno
-
-    @aluno.setter
-    def aluno(self, valor: str) -> None:
-        if not isinstance(valor, str) or not valor.strip():
-            raise ValueError("O aluno deve ser uma string não vazia.")
-        self._aluno = valor.strip()
-
-    # Descrição
     @property
     def descricao(self) -> str:
         return self._descricao
@@ -60,7 +35,6 @@ class Meta:
             raise ValueError("A descrição deve ser uma string não vazia.")
         self._descricao = valor.strip()
 
-    # Valor alvo (deve ser > 0 e >= progresso_atual)
     @property
     def valor_alvo(self) -> float:
         return self._valor_alvo
@@ -69,15 +43,12 @@ class Meta:
     def valor_alvo(self, valor: float) -> None:
         if not isinstance(valor, (int, float)) or valor <= 0:
             raise ValueError("O valor alvo deve ser um número positivo.")
-        valor_float = float(valor)
+        self._valor_alvo = float(valor)
 
-        # se já existe progresso, alvo não pode ficar menor que progresso
-        if hasattr(self, "_progresso_atual") and self._progresso_atual > valor_float:
+        # Se já existia progresso e agora alvo ficou menor, mantém consistência.
+        if hasattr(self, "_progresso_atual") and self._progresso_atual > self._valor_alvo:
             raise ValueError("O valor alvo não pode ser menor que o progresso atual.")
 
-        self._valor_alvo = valor_float
-
-    # Prazo
     @property
     def prazo(self) -> datetime:
         return self._prazo
@@ -88,7 +59,6 @@ class Meta:
             raise ValueError("O prazo deve ser um objeto datetime.")
         self._prazo = valor
 
-    # Progresso atual (0 <= progresso <= valor_alvo)
     @property
     def progresso_atual(self) -> float:
         return self._progresso_atual
@@ -98,46 +68,52 @@ class Meta:
         if not isinstance(valor, (int, float)):
             raise ValueError("O progresso atual deve ser um número.")
         valor_float = float(valor)
+
         if valor_float < 0:
-            raise ValueError("O progresso atual deve ser um número não negativo.")
+            raise ValueError("O progresso atual deve ser não negativo.")
         if valor_float > self.valor_alvo:
             raise ValueError("O progresso atual não pode exceder o valor alvo.")
+
         self._progresso_atual = valor_float
 
+    def atualizar_progresso(self, novo_valor: float) -> None:
+        """
+        Atualiza o progresso atual para um valor absoluto.
 
-    # Métodos de negócio
-    def atualizar_progresso(self, incremento: float) -> None:
-        if not isinstance(incremento, (int, float)):
-            raise ValueError("O incremento deve ser numérico.")
-        incremento_float = float(incremento)
-        if incremento_float < 0:
-            raise ValueError("O incremento deve ser um número não negativo.")
-
-        self.progresso_atual = self._progresso_atual + incremento_float  # usa setter
+        Args:
+            novo_valor: Novo valor de progresso (0 <= novo_valor <= valor_alvo).
+        """
+        self.progresso_atual = novo_valor  # usa setter (valida)
 
     def verificar_conclusao(self) -> bool:
-        return self._progresso_atual >= self._valor_alvo
+        """
+        Indica se a meta foi concluída.
 
-    @property
-    def faltante(self) -> float:
-        """Quanto falta para atingir o valor alvo."""
-        return max(0.0, self._valor_alvo - self._progresso_atual)
+        Returns:
+            True se progresso_atual >= valor_alvo, caso contrário False.
+        """
+        return self.progresso_atual >= self.valor_alvo
 
     @property
     def percentual_concluido(self) -> float:
-        """0.0 a 1.0"""
-        if self._valor_alvo == 0:
-            return 0.0
-        return min(1.0, self._progresso_atual / self._valor_alvo)
+        """Retorna o percentual concluído como fração entre 0 e 1.
+
+        Notes:
+            - É limitado a 1.0 (100%).
+            - `valor_alvo` é sempre > 0 pelas validações da classe.
+        """
+
+        return min(self.progresso_atual / self.valor_alvo, 1.0)
 
     @property
     def esta_atrasada(self) -> bool:
-        """Atrasada = passou do prazo e ainda não foi concluída."""
-        return datetime.now() > self._prazo and not self.verificar_conclusao()
+        """
+        Indica se a meta está atrasada (prazo vencido e não concluída).
+        """
+        return datetime.now() > self.prazo and not self.verificar_conclusao()
 
     def __str__(self) -> str:
         return (
-            f"Meta(id={self.id}, aluno={self.aluno}, descricao={self.descricao}, "
-            f"valor_alvo={self.valor_alvo}, prazo={self.prazo.isoformat()}, "
-            f"progresso_atual={self.progresso_atual})"
+            f"Meta(descricao={self.descricao}, valor_alvo={self.valor_alvo}, "
+            f"prazo={self.prazo.isoformat()}, progresso_atual={self.progresso_atual})"
         )
