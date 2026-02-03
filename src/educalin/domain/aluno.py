@@ -42,7 +42,7 @@ class Aluno(Usuario, AutenticavelMixin):
         """
         if not isinstance(novo_nome, str) or not novo_nome.strip():
             raise ValueError("O nome não pode ser vazio.")
-        self._nome = novo_nome
+        self._nome = novo_nome.strip()
         
     @property
     def email(self):
