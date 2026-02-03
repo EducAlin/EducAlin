@@ -1,7 +1,7 @@
 import pytest
 from datetime import date
 
-from src.educalin.domain.avaliacao import Avaliacao
+from educalin.domain.avaliacao import Avaliacao
 
 
 def test_criar_avaliacao_com_sucesso():
