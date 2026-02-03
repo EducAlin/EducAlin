@@ -75,4 +75,4 @@ class Professor(Usuario, AutenticavelMixin):
         Args:
             tipo (str): O tipo de relatório a ser gerado (ex: 'turma', 'individual').
         """
-        pass
+        raise NotImplementedError("Funcionalidade a ser implementada")    
