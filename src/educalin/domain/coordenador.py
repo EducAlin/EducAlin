@@ -24,64 +24,9 @@ class Coordenador(Usuario, AutenticavelMixin):
         """
         self.nome = nome
         self.email = email
-        self.senha = self._hash_senha(senha)
+        self.senha = senha
         self.__codigo_coordenacao = codigo_coordenacao or str(uuid.uuid4())
 
-    @property
-    def nome(self):    
-        """Pega o nome do coordenador."""
-        return self._nome
-    
-    @nome.setter
-    def nome(self, novo_nome):
-        """
-        Atualiza o nome do coordenador.
-
-        Args:
-            novo_nome (str): O novo nome.
-
-        Raises:
-            ValueError: Se o nome for vazio ou só tiver espaços.
-        """
-        if not isinstance(novo_nome, str) or not novo_nome.strip():
-            raise ValueError("O nome não pode ser vazio.")
-        self._nome = novo_nome
-        
-    @property
-    def email(self):
-        """Pega o e-mail do coordenador."""
-        return self._email
-    
-    @email.setter
-    def email(self, novo_email):
-        """
-        Atualiza o e-mail do Coordenador.
-
-        Args:
-            novo_email (str): O novo e-mail.
-
-        Raises:
-            ValueError: Se o e-mail não tiver formato válido.
-        """
-        if not EMAIL_PATTERN.match(novo_email.strip()):
-            raise ValueError("Formato de e-mail inválido.")
-        self._email = novo_email.strip()
-
-    @property    
-    def senha(self):
-        """Pega o hash da senha do coordenador."""
-        return self.__senha
-
-    @senha.setter
-    def senha(self, nova_senha):
-        """
-        Atualiza a senha do coordenador, criando um novo hash.
-
-        Args:
-            nova_senha (str): A nova senha em texto plano.
-        """
-        self.__senha = self._hash_senha(nova_senha)
-    
     @property
     def codigo_coordenacao(self):
         """Pega o código de coordenação (imutável)."""
