@@ -84,7 +84,7 @@ class Professor(Usuario, AutenticavelMixin):
     @property
     def turmas(self):
         """Pega a lista de turmas que o professor gerencia."""
-        return self._turmas
+        return self._turmas.copy()
     
     @property
     def registro_funcional(self):
