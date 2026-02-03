@@ -127,17 +127,52 @@ class Aluno(Usuario, AutenticavelMixin):
         soma_das_notas = sum(nota.valor for nota in self.__desempenho)
         return soma_das_notas / len(self.__desempenho)
 
+    def obter_desempenho(self) -> dict:
+        """
+        Obtém os dados de desempenho do aluno.
+        
+        Retorna um dicionário contendo as informações do desempenho do aluno,
+        incluindo nome, matrícula, notas e média geral.
+        
+        Returns:
+            dict: Dicionário com as seguintes chaves:
+                - 'nome': Nome do aluno
+                - 'matricula': Matrícula do aluno
+                - 'notas': Lista de dicionários com informações das notas
+                - 'media_geral': Média geral das notas
+                - 'tem_notas': Boolean indicando se há notas registradas
+        """
+        resultado = {
+            'nome': self.nome,
+            'matricula': self.matricula,
+            'tem_notas': len(self.__desempenho) > 0,
+            'notas': [],
+            'media_geral': self.calcular_media()
+        }
+        
+        for nota in self.__desempenho:
+            resultado['notas'].append({
+                'titulo': nota.avaliacao.titulo,
+                'valor': nota.valor,
+                'valor_maximo': nota.avaliacao.valor_maximo
+            })
+        
+        return resultado
+
     def visualizar_desempenho(self):
         """
         Mostra o desempenho do aluno na tela.
         """
-        if not self.__desempenho:
-            print(f"Nenhum desempenho registrado para {self.nome}.")
+        dados = self.obter_desempenho()
+        
+        if not dados['tem_notas']:
+            print(f"Nenhum desempenho registrado para {dados['nome']}.")
             return
-        print(f"Desempenho de {self.nome} ({self.matricula}):")
-        for nota in self.__desempenho:
-            print(f"- {nota.avaliacao.titulo}: {nota.valor:.1f} / {nota.avaliacao.valor_maximo:.1f}")
-        print(f"Média Geral: {self.calcular_media():.2f}")
+        
+        print(f"Desempenho de {dados['nome']} ({dados['matricula']}):")
+        for nota in dados['notas']:
+            print(f"- {nota['titulo']}: {nota['valor']:.1f} / {nota['valor_maximo']:.1f}")
+        print(f"Média Geral: {dados['media_geral']:.2f}")
     
     def acessar_material(self, material_id):
         """

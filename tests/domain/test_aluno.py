@@ -112,3 +112,73 @@ def test_calcular_media_aluno_com_notas():
 
     # Teste com notas válidas
     assert aluno.calcular_media() == (8.0 + 10.0 + 7.0) / 3
+
+def test_obter_desempenho_sem_notas():
+    """
+    Testa o método obter_desempenho quando o aluno não tem notas.
+    """
+    aluno = Aluno("João Silva", "joao@email.com", "senha", "2024001")
+    
+    dados = aluno.obter_desempenho()
+    
+    assert dados['nome'] == "João Silva"
+    assert dados['matricula'] == "2024001"
+    assert dados['tem_notas'] is False
+    assert dados['notas'] == []
+    assert dados['media_geral'] == 0.0
+
+def test_obter_desempenho_com_notas():
+    """
+    Testa o método obter_desempenho quando o aluno tem notas.
+    """
+    aluno = Aluno("Maria Santos", "maria@email.com", "senha", "2024002")
+    
+    # Cria avaliações
+    av1 = Avaliacao(titulo="Prova 1", data=date.today(), valor_maximo=10.0, peso=0.5)
+    av2 = Avaliacao(titulo="Trabalho 1", data=date.today(), valor_maximo=5.0, peso=0.5)
+    
+    # Adiciona notas
+    aluno.adicionar_nota(Nota(aluno=aluno, avaliacao=av1, valor=8.5))
+    aluno.adicionar_nota(Nota(aluno=aluno, avaliacao=av2, valor=4.0))
+    
+    dados = aluno.obter_desempenho()
+    
+    assert dados['nome'] == "Maria Santos"
+    assert dados['matricula'] == "2024002"
+    assert dados['tem_notas'] is True
+    assert len(dados['notas']) == 2
+    assert dados['notas'][0] == {'titulo': 'Prova 1', 'valor': 8.5, 'valor_maximo': 10.0}
+    assert dados['notas'][1] == {'titulo': 'Trabalho 1', 'valor': 4.0, 'valor_maximo': 5.0}
+    assert dados['media_geral'] == (8.5 + 4.0) / 2
+
+def test_visualizar_desempenho_usa_obter_desempenho(capsys):
+    """
+    Testa se visualizar_desempenho utiliza obter_desempenho para formatar os dados.
+    """
+    aluno = Aluno("Pedro Costa", "pedro@email.com", "senha", "2024003")
+    
+    # Cria avaliação e nota
+    av1 = Avaliacao(titulo="Prova Final", data=date.today(), valor_maximo=10.0, peso=1.0)
+    aluno.adicionar_nota(Nota(aluno=aluno, avaliacao=av1, valor=9.0))
+    
+    # Chama visualizar_desempenho
+    aluno.visualizar_desempenho()
+    
+    # Captura a saída
+    captured = capsys.readouterr()
+    
+    # Verifica se a saída contém as informações corretas
+    assert "Desempenho de Pedro Costa (2024003):" in captured.out
+    assert "- Prova Final: 9.0 / 10.0" in captured.out
+    assert "Média Geral: 9.00" in captured.out
+
+def test_visualizar_desempenho_sem_notas(capsys):
+    """
+    Testa visualizar_desempenho quando não há notas.
+    """
+    aluno = Aluno("Ana Clara", "ana@email.com", "senha", "2024004")
+    
+    aluno.visualizar_desempenho()
+    
+    captured = capsys.readouterr()
+    assert "Nenhum desempenho registrado para Ana Clara." in captured.out
