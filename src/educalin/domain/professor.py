@@ -19,9 +19,9 @@ class Professor(Usuario, AutenticavelMixin):
             senha (str): A senha, que será armazenada com hash.
             registro_funcional (str): O registro único do professor.
         """
-        self._nome = nome
-        self._email = email
-        self.__senha = self._hash_senha(senha)
+        self.nome = nome
+        self.email = email
+        self.senha = self._hash_senha(senha)
         self._turmas = []
         self._registro_funcional = registro_funcional
 
