@@ -49,6 +49,10 @@ class Aluno(Usuario, AutenticavelMixin):
         """Pega o e-mail do aluno."""
         return self._email.strip()
     
+import re
+
+EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+
     @email.setter
     def email(self, novo_email):
         """
@@ -58,11 +62,11 @@ class Aluno(Usuario, AutenticavelMixin):
             novo_email (str): O novo e-mail.
 
         Raises:
-            ValueError: Se o e-mail não tiver um "@".
+            ValueError: Se o e-mail não tiver formato válido.
         """
-        if "@" not in novo_email:
+        if not EMAIL_PATTERN.match(novo_email.strip()):
             raise ValueError("Formato de e-mail inválido.")
-        self._email = novo_email
+        self._email = novo_email.strip()
 
     @property    
     def senha(self):
