@@ -1,5 +1,8 @@
+import re
 from .usuario import Usuario
 from ..utils.mixins import AutenticavelMixin
+
+EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
 class Coordenador(Usuario, AutenticavelMixin):
     """
@@ -18,9 +21,9 @@ class Coordenador(Usuario, AutenticavelMixin):
             senha (str): A senha, que será armazenada com hash.
             codigo_coordenacao (str): O código único do coordenador.
         """
-        self._nome = nome
-        self._email = email
-        self.__senha = self._hash_senha(senha)
+        self.nome = nome
+        self.email = email
+        self.senha = self._hash_senha(senha)
         self.__codigo_coordenacao = codigo_coordenacao
 
     @property
@@ -51,17 +54,17 @@ class Coordenador(Usuario, AutenticavelMixin):
     @email.setter
     def email(self, novo_email):
         """
-        Atualiza o e-mail do coordenador.
+        Atualiza o e-mail do Coordenador.
 
         Args:
             novo_email (str): O novo e-mail.
 
         Raises:
-            ValueError: Se o e-mail não tiver um "@".
+            ValueError: Se o e-mail não tiver formato válido.
         """
-        if "@" not in novo_email:
+        if not EMAIL_PATTERN.match(novo_email.strip()):
             raise ValueError("Formato de e-mail inválido.")
-        self._email = novo_email
+        self._email = novo_email.strip()
 
     @property    
     def senha(self):
