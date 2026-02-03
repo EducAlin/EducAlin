@@ -1,6 +1,9 @@
+import re
 from typing import List
 from .usuario import Usuario
 from ..utils.mixins import AutenticavelMixin
+
+EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
  
 
 class Aluno(Usuario, AutenticavelMixin):
@@ -20,7 +23,9 @@ class Aluno(Usuario, AutenticavelMixin):
             senha (str): A senha, que vai ser guardada com segurança (hash).
             matricula (str): O número de matrícula único do aluno.
         """
-        super()._init__(nome, email, senha)
+        self._nome = nome
+        self._email = email
+        self.__senha = self._hash_senha(senha)
         self._matricula = matricula
         self.__desempenho: List['Nota'] = []
 
@@ -49,10 +54,6 @@ class Aluno(Usuario, AutenticavelMixin):
         """Pega o e-mail do aluno."""
         return self._email.strip()
     
-import re
-
-EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
-
     @email.setter
     def email(self, novo_email):
         """
