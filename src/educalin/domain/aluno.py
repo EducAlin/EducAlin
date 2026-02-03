@@ -47,7 +47,7 @@ class Aluno(Usuario, AutenticavelMixin):
     @property
     def email(self):
         """Pega o e-mail do aluno."""
-        return self._email
+        return self._email.strip()
     
     @email.setter
     def email(self, novo_email):
