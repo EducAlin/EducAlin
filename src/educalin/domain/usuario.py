@@ -1,22 +1,73 @@
-from typing import Optional
+import re
+from abc import ABC
 
-class Usuario:
-    """Classe base - stub temporário"""
-    def __init__(self, nome: str):
-        self.nome = nome
+EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
-class Aluno(Usuario):
-    """Stub temporário da classe Aluno"""
-    def __init__(self, matricula: str, nome: str):
-        super().__init__(nome)
-        self.matricula = matricula
+class Usuario(ABC):
+    """
+    Uma classe base abstrata que define o que todo usuário do sistema deve ter.
+
+    Funciona como um contrato: qualquer classe que herdar de `Usuario`
+    (como Aluno, Professor, etc.) herda as propriedades `nome`, `email` e `senha`
+    com validações centralizadas.
+    """
     
-    def calcular_media(self) -> float:
-        """Será implementado pela equipe responsável"""
-        return 0.0
+    @property
+    def nome(self):
+        """Pega o nome do usuário."""
+        return self._nome
+    
+    @nome.setter
+    def nome(self, novo_nome):
+        """
+        Atualiza o nome do usuário.
 
-class Professor(Usuario):
-    """Stub temporário da classe Professor"""
-    def __init__(self, nome: str, registro: Optional[str] = None):
-        super().__init__(nome)
-        self.registro = registro
+        Args:
+            novo_nome (str): O novo nome.
+
+        Raises:
+            ValueError: Se o nome for vazio ou só tiver espaços.
+        """
+        if not isinstance(novo_nome, str) or not novo_nome.strip():
+            raise ValueError("O nome não pode ser vazio.")
+        self._nome = novo_nome.strip()
+    
+    @property
+    def email(self):
+        """Pega o e-mail do usuário."""
+        return self._email
+    
+    @email.setter
+    def email(self, novo_email):
+        """
+        Atualiza o e-mail do Usuário.
+
+        Args:
+            novo_email (str): O novo e-mail.
+
+        Raises:
+            ValueError: Se o e-mail não tiver formato válido.
+        """
+        if not EMAIL_PATTERN.match(novo_email.strip()):
+            raise ValueError("Formato de e-mail inválido.")
+        self._email = novo_email.strip()
+
+    @property
+    def senha(self):
+        """Pega o hash da senha do usuário."""
+        return self._Usuario__senha
+
+    @senha.setter
+    def senha(self, nova_senha):
+        """
+        Atualiza a senha do usuário, criando um novo hash.
+
+        Args:
+            nova_senha (str): A nova senha em texto plano.
+        """
+        from ..utils.mixins import AutenticavelMixin
+        # Usa o método de hash do mixin se disponível
+        if hasattr(self, '_hash_senha'):
+            self._Usuario__senha = self._hash_senha(nova_senha)
+        else:
+            self._Usuario__senha = nova_senha

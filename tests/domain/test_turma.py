@@ -1,7 +1,9 @@
 import pytest
 from unittest.mock import Mock, MagicMock
-from datetime import datetime
+from datetime import datetime, date
 from educalin.domain.turma import Turma, Observer, AlunoDuplicadoException, AlunoNaoEncontradoException
+from educalin.domain.avaliacao import Avaliacao
+from educalin.domain.aluno import Aluno
 
 class TestTurmaInicializacao:
     """Testes de criação e inicialização da Turma"""
@@ -24,6 +26,7 @@ class TestTurmaInicializacao:
         assert turma.semestre == "2025.2"
         assert turma.alunos == []
         assert turma.total_alunos == 0
+        assert turma.avaliacoes == []
         assert isinstance(turma.data_criacao, datetime)
 
     def test_turma_com_professor(self):
@@ -71,7 +74,7 @@ class TestTurmaGestaoAlunos:
     @pytest.fixture
     def aluno_mock(self):
         """Fixture com mock de aluno"""
-        aluno = Mock()
+        aluno = Mock(spec=Aluno)
         aluno.matricula = "12345"
         aluno.nome = "Fulano de Tal da Silva"
         return aluno
@@ -137,19 +140,19 @@ class TestTurmaDesempenho:
         """Fixture com turma contendo alunos mock"""
         turma = Turma("ES-01", "POO", "2025.2")
 
-        aluno1 = Mock()
+        aluno1 = Mock(spec=Aluno)
         aluno1.matricula = "001"
         aluno1.calcular_media = Mock(return_value=8.5)
         
-        aluno2 = Mock()
+        aluno2 = Mock(spec=Aluno)
         aluno2.matricula = "002"
         aluno2.calcular_media = Mock(return_value=5.0)
         
-        aluno3 = Mock()
+        aluno3 = Mock(spec=Aluno)
         aluno3.matricula = "003"
         aluno3.calcular_media = Mock(return_value=7.0)
 
-        turma.adicionar_aluno(aluno1)
+        turma.adicionar_aluno(aluno1) # type: ignore
         turma.adicionar_aluno(aluno2)
         turma.adicionar_aluno(aluno3)
 
@@ -236,7 +239,7 @@ class TestTurmaObserverPattern:
         """Deve notificar observers quando aluno é adicionado"""
         turma.adicionar_observer(observer_mock)
 
-        aluno_mock = Mock()
+        aluno_mock = Mock(spec=Aluno)
         aluno_mock.matricula = "12345"
         aluno_mock.nome = "Fulano de Tal"
 
@@ -248,6 +251,44 @@ class TestTurmaObserverPattern:
         assert evento['evento'] == 'aluno_adicionado'
         assert evento['aluno_matricula'] == "12345"
 
+
+
+class TestTurmaGestaoAvaliacoes:
+    """Testes para o gerenciamento de Avaliações na Turma"""
+
+    @pytest.fixture
+    def turma(self):
+        """Fixture com turma padrão"""
+        return Turma("ES-01", "POO", "2025.2")
+
+    @pytest.fixture
+    def avaliacao_exemplo(self):
+        """Fixture com uma avaliação de exemplo"""
+        return Avaliacao(
+            titulo="Prova 1",
+            data=date(2026, 4, 15),
+            valor_maximo=10.0,
+            peso=0.5
+        )
+
+    def test_adicionar_avaliacao_com_sucesso(self, turma, avaliacao_exemplo):
+        """Deve ser possível adicionar uma avaliação a uma turma"""
+        turma.adicionar_avaliacao(avaliacao_exemplo)
+        
+        assert len(turma.avaliacoes) == 1
+        assert avaliacao_exemplo in turma.avaliacoes
+
+    def test_adicionar_objeto_nao_avaliacao_deve_falhar(self, turma):
+        """Deve lançar um TypeError se o objeto não for uma Avaliacao"""
+        with pytest.raises(TypeError, match="O objeto adicionado deve ser uma instância de Avaliacao."):
+            turma.adicionar_avaliacao("isso não é uma avaliação")
+
+    def test_propriedade_avaliacoes_retorna_copia(self, turma, avaliacao_exemplo):
+        """A propriedade 'avaliacoes' deve retornar uma cópia da lista interna"""
+        turma.adicionar_avaliacao(avaliacao_exemplo)
+        lista_avaliacoes = turma.avaliacoes
+        lista_avaliacoes.clear()
+        assert len(turma.avaliacoes) == 1
 
 
 class TestTurmaMetodosEspeciais:
