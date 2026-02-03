@@ -8,6 +8,21 @@ class Nota:
     servindo como uma classe de associação.
     """
     def __init__(self, aluno: Aluno, avaliacao: Avaliacao, valor: float):
+        """
+        Cria uma nova instância de Nota.
+
+        Args:
+            aluno (Aluno): O aluno que recebeu a nota.
+            avaliacao (Avaliacao): A avaliação à qual a nota se refere.
+            valor (float): O valor numérico da nota obtida.
+
+        Raises:
+            TypeError: Se aluno não for instância de Aluno.
+            TypeError: Se avaliacao não for instância de Avaliacao.
+            TypeError: Se valor não for um número (int ou float).
+            ValueError: Se valor for negativo.
+            ValueError: Se valor for maior que o valor máximo da avaliação.
+        """
         if not isinstance(aluno, Aluno):
             raise TypeError("O aluno deve ser uma instância da classe Aluno.")
 
