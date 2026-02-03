@@ -1,6 +1,6 @@
 import pytest
-from src.educalin.domain.coordenador import Coordenador
-from src.educalin.domain.turma import Turma
+from educalin.domain.coordenador import Coordenador
+from educalin.domain.turma import Turma
 
 def test_criar_coordenador_com_sucesso():
     """
