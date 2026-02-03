@@ -1,5 +1,5 @@
 import pytest
-from src.educalin.domain.usuario import Usuario
+from educalin.domain.usuario import Usuario
 
 def test_nao_deve_instanciar_usuario_diretamente():
     """
