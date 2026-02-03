@@ -122,7 +122,7 @@ class Professor(Usuario, AutenticavelMixin):
             avaliacao (object): A avaliação à qual a nota se refere.
             nota (float): O valor da nota.
         """
-        pass
+        raise NotImplementedError("Funcionalidade a ser implementada")
     
     def gerar_relatorio(self, tipo):
         """
