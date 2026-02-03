@@ -1,3 +1,4 @@
+import uuid
 import re
 from .usuario import Usuario
 from ..utils.mixins import AutenticavelMixin
@@ -11,7 +12,7 @@ class Coordenador(Usuario, AutenticavelMixin):
     O coordenador pode fazer tudo que um usuário faz e também tem
     permissões especiais, como comparar turmas e gerar relatórios gerais.
     """
-    def __init__(self, nome: str, email: str, senha: str, codigo_coordenacao: str):
+    def __init__(self, nome: str, email: str, senha: str, codigo_coordenacao: str = None):
         """
         Cria uma nova instância de Coordenador.
 
@@ -19,15 +20,15 @@ class Coordenador(Usuario, AutenticavelMixin):
             nome (str): O nome completo do coordenador.
             email (str): O e-mail de login.
             senha (str): A senha, que será armazenada com hash.
-            codigo_coordenacao (str): O código único do coordenador.
+            codigo_coordenacao (str, optional): O código único do coordenador. Se não fornecido, será gerado automaticamente.
         """
         self.nome = nome
         self.email = email
         self.senha = self._hash_senha(senha)
-        self.__codigo_coordenacao = codigo_coordenacao
+        self.__codigo_coordenacao = codigo_coordenacao or str(uuid.uuid4())
 
     @property
-    def nome(self):
+    def nome(self):    
         """Pega o nome do coordenador."""
         return self._nome
     
@@ -83,18 +84,8 @@ class Coordenador(Usuario, AutenticavelMixin):
     
     @property
     def codigo_coordenacao(self):
-        """Pega o código de coordenação."""
+        """Pega o código de coordenação (imutável)."""
         return self.__codigo_coordenacao
-
-    @codigo_coordenacao.setter
-    def codigo_coordenacao(self, novo_codigo_coordenacao):
-        """
-        Atualiza o código de coordenação.
-
-        Args:
-            novo_codigo_coordenacao (str): O novo código.
-        """
-        self.__codigo_coordenacao = novo_codigo_coordenacao
 
     @staticmethod
     def comparar_turmas(turma1, turma2):
