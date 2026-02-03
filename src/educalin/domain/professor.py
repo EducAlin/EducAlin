@@ -111,7 +111,7 @@ class Professor(Usuario, AutenticavelMixin):
         Args:
             aluno (Aluno): O aluno que vai receber o plano de ação.
         """
-        pass
+        raise NotImplementedError("Funcionalidade a ser implementada")
 
     def registrar_notas(self, aluno: Aluno, avaliacao, nota):
         """
