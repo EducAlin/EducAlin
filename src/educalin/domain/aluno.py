@@ -23,66 +23,11 @@ class Aluno(Usuario, AutenticavelMixin):
             senha (str): A senha, que vai ser guardada com segurança (hash).
             matricula (str): O número de matrícula único do aluno.
         """
-        self._nome = nome
-        self._email = email
-        self.__senha = self._hash_senha(senha)
+        self.nome = nome
+        self.email = email
+        self.senha = senha
         self._matricula = matricula
         self.__desempenho: List['Nota'] = []
-
-    @property
-    def nome(self):
-        """Pega o nome do aluno."""
-        return self._nome
-    
-    @nome.setter
-    def nome(self, novo_nome):
-        """
-        Atualiza o nome do aluno.
-
-        Args:
-            novo_nome (str): O novo nome do aluno.
-
-        Raises:
-            ValueError: Se o nome for vazio ou só tiver espaços.
-        """
-        if not isinstance(novo_nome, str) or not novo_nome.strip():
-            raise ValueError("O nome não pode ser vazio.")
-        self._nome = novo_nome.strip()
-        
-    @property
-    def email(self):
-        """Pega o e-mail do aluno."""
-        return self._email.strip()
-    
-    @email.setter
-    def email(self, novo_email):
-        """
-        Atualiza o e-mail do aluno.
-
-        Args:
-            novo_email (str): O novo e-mail.
-
-        Raises:
-            ValueError: Se o e-mail não tiver formato válido.
-        """
-        if not EMAIL_PATTERN.match(novo_email.strip()):
-            raise ValueError("Formato de e-mail inválido.")
-        self._email = novo_email.strip()
-
-    @property    
-    def senha(self):
-        """Pega o hash da senha do aluno."""
-        return self.__senha
-
-    @senha.setter
-    def senha(self, nova_senha):
-        """
-        Atualiza a senha do aluno, criando um novo hash.
-
-        Args:
-            nova_senha (str): A nova senha em texto plano.
-        """
-        self.__senha = self._hash_senha(nova_senha)
 
     @property
     def matricula(self):
