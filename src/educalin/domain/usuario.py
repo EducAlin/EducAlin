@@ -11,6 +11,17 @@ class Usuario(ABC):
     (como Aluno, Professor, etc.) herda as propriedades `nome`, `email` e `senha`
     com validações centralizadas.
     """
+    @abstractmethod
+    def __init__(self, nome: str, email: str, senha: str):
+        """
+        Construtor abstrato que deve ser implementado pelas subclasses.
+        
+        Args:
+            nome (str): O nome do usuário.
+            email (str): O e-mail do usuário.
+            senha (str): A senha do usuário.
+        """
+        pass
     
     @property
     def nome(self):
