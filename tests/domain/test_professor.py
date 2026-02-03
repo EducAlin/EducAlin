@@ -1,6 +1,6 @@
 import pytest
-from src.educalin.domain.professor import Professor
-from src.educalin.domain.turma import Turma
+from educalin.domain.professor import Professor
+from educalin.domain.turma import Turma
  
 @pytest.fixture
 def professor_exemplo():
