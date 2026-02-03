@@ -1,9 +1,9 @@
 import pytest
 from datetime import date
 from unittest.mock import Mock
-from src.educalin.domain.aluno import Aluno
-from src.educalin.domain.nota import Nota
-from src.educalin.domain.avaliacao import Avaliacao
+from educalin.domain.aluno import Aluno
+from educalin.domain.nota import Nota
+from educalin.domain.avaliacao import Avaliacao
 
 def test_criar_aluno_com_sucesso():
     """
