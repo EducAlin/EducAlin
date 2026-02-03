@@ -20,9 +20,7 @@ class Aluno(Usuario, AutenticavelMixin):
             senha (str): A senha, que vai ser guardada com segurança (hash).
             matricula (str): O número de matrícula único do aluno.
         """
-        self._nome = nome
-        self._email = email
-        self.__senha = self._hash_senha(senha)
+        super()._init__(nome, email, senha)
         self._matricula = matricula
         self.__desempenho: List['Nota'] = []
 
