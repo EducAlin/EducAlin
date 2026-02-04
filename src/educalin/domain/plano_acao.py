@@ -74,7 +74,7 @@ class PlanoAcao(Subject):
             raise ValueError("Aluno alvo é obrigatório")
         if not objetivo:
             raise ValueError("Objetivo não pode ser vazio")
-        if not prazo_dias:
+        if prazo_dias <= 0:
             raise ValueError("Prazo deve ser maior que zero")
         
         # Atributos principais
@@ -84,8 +84,8 @@ class PlanoAcao(Subject):
         self._observacoes = observacoes.strip() if observacoes else None
 
         # Datas
-        self._data_cricacao = datetime.now()
-        self._data_limite = self._data_cricacao + timedelta(days=prazo_dias)
+        self._data_criacao = datetime.now()
+        self._data_limite = self._data_criacao + timedelta(days=prazo_dias)
         self._data_envio: Optional[datetime] = None
         self._data_inicio: Optional[datetime] = None
         self._data_conclusao: Optional[datetime] = None
@@ -104,7 +104,7 @@ class PlanoAcao(Subject):
         self._historico_status: List[Dict] = [
             {
                 'status': StatusPlano.RASCUNHO,
-                'data': self._data_cricacao,
+                'data': self._data_criacao,
                 'usuario': None
             }
         ]
@@ -170,7 +170,7 @@ class PlanoAcao(Subject):
     @property
     def data_criacao(self) -> datetime:
         """Retorna data de criação"""
-        return self._data_cricacao
+        return self._data_criacao
     
     @property
     def data_limite(self) -> datetime:
@@ -392,7 +392,7 @@ class PlanoAcao(Subject):
 
 
     # =================================
-    # Métodos de gerenciamento de status
+    # Métodos auxiliares de gerenciamento de status
     # =================================
 
     def pode_ser_editado(self) -> bool:

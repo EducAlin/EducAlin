@@ -218,7 +218,7 @@ class TestPlanoAcaoGerenciamentoStatus:
         """Deve permitir concluir plano EM_ANDAMENTO"""
         plano_com_material.enviar()
         plano_com_material.iniciar()
-        resultado = plano_com_material.concluir()
+        plano_com_material.concluir()
 
         assert plano_com_material.status == StatusPlano.CONCLUIDO
         assert plano_com_material.data_conclusao is not None
@@ -226,10 +226,10 @@ class TestPlanoAcaoGerenciamentoStatus:
     def test_concluir_plano_enviado_direto(self, plano_com_material):
         """Deve permitir concluir plano ENVIADO (sem passar por EM_ANDAMENTO)"""
         plano_com_material.enviar()
-        resultado = plano_com_material.concluir()
+        plano_com_material.concluir()
 
         assert plano_com_material.status == StatusPlano.CONCLUIDO
-        assert plano_com_material.data_conclusao is not None # checar se será isso mesmo
+        assert plano_com_material.data_conclusao is not None
 
     def test_cancelar_plano_nao_concluido(self, plano_com_material):
         """Deve permitir cancelar plano que não está concluido"""
