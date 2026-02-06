@@ -1,12 +1,12 @@
 import re
 from typing import List
 from .usuario import Usuario
-from ..utils.mixins import AutenticavelMixin
+from ..utils.mixins import AutenticavelMixin, NotificavelMixin
 
 EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
  
 
-class Aluno(Usuario, AutenticavelMixin):
+class Aluno(Usuario, AutenticavelMixin, NotificavelMixin):
     """
     Representa um aluno no sistema.
 
@@ -23,9 +23,10 @@ class Aluno(Usuario, AutenticavelMixin):
             senha (str): A senha, que vai ser guardada com segurança (hash).
             matricula (str): O número de matrícula único do aluno.
         """
-        self.nome = nome
-        self.email = email
-        self.senha = senha
+        # Chama super().__init__ para inicializar Usuario e mixins via MRO
+        super().__init__(nome, email, senha)
+        
+        # Inicializa atributos específicos do Aluno
         self._matricula = matricula
         self.__desempenho: List['Nota'] = []
 

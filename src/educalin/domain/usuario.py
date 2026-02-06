@@ -1,5 +1,5 @@
 import re
-from abc import ABC
+from abc import ABC, abstractmethod
 
 EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
@@ -11,17 +11,32 @@ class Usuario(ABC):
     (como Aluno, Professor, etc.) herda as propriedades `nome`, `email` e `senha`
     com validações centralizadas.
     """
+    
     @abstractmethod
     def __init__(self, nome: str, email: str, senha: str):
         """
-        Construtor abstrato que deve ser implementado pelas subclasses.
+        Inicializa os atributos comuns a todos os usuários.
+        
+        Coopera com mixins através do super().__init__() para permitir
+        herança múltipla adequada seguindo o MRO (Method Resolution Order).
         
         Args:
             nome (str): O nome do usuário.
             email (str): O e-mail do usuário.
-            senha (str): A senha do usuário.
+            senha (str): A senha do usuário em texto plano (será hasheada).
         """
-        pass
+        # Propaga a inicialização para mixins via MRO
+        super().__init__()
+        
+        # Inicializa atributos privados
+        self._nome = None
+        self._email = None
+        self.__senha = None
+        
+        # Usa os setters para aplicar validações
+        self.nome = nome
+        self.email = email
+        self.senha = senha
     
     @property
     def nome(self):
@@ -66,7 +81,7 @@ class Usuario(ABC):
     @property
     def senha(self):
         """Pega o hash da senha do usuário."""
-        return self._Usuario__senha
+        return self.__senha
 
     @senha.setter
     def senha(self, nova_senha):
@@ -75,10 +90,14 @@ class Usuario(ABC):
 
         Args:
             nova_senha (str): A nova senha em texto plano.
+        
+        Raises:
+            NotImplementedError: Se a classe não herdar de AutenticavelMixin.
         """
-        from ..utils.mixins import AutenticavelMixin
-        # Usa o método de hash do mixin se disponível
-        if hasattr(self, '_hash_senha'):
-            self._Usuario__senha = self._hash_senha(nova_senha)
-        else:
-            self._Usuario__senha = nova_senha
+        # Verifica se a classe usa AutenticavelMixin
+        if not hasattr(self, '_hash_senha'):
+            raise NotImplementedError(
+                f"{self.__class__.__name__} deve herdar de AutenticavelMixin "
+                "para ter suporte a hash seguro de senhas."
+            )
+        self.__senha = self._hash_senha(nova_senha)

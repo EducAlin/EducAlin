@@ -1,11 +1,11 @@
 import uuid
 import re
 from .usuario import Usuario
-from ..utils.mixins import AutenticavelMixin
+from ..utils.mixins import AutenticavelMixin, NotificavelMixin
 
 EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
-class Coordenador(Usuario, AutenticavelMixin):
+class Coordenador(Usuario, AutenticavelMixin, NotificavelMixin):
     """
     Representa um coordenador no sistema.
 
@@ -22,9 +22,10 @@ class Coordenador(Usuario, AutenticavelMixin):
             senha (str): A senha, que será armazenada com hash.
             codigo_coordenacao (str, optional): O código único do coordenador. Se não fornecido, será gerado automaticamente.
         """
-        self.nome = nome
-        self.email = email
-        self.senha = senha
+        # Chama super().__init__ para inicializar Usuario e mixins via MRO
+        super().__init__(nome, email, senha)
+        
+        # Inicializa atributos específicos do Coordenador
         self.__codigo_coordenacao = codigo_coordenacao or str(uuid.uuid4())
 
     @property
