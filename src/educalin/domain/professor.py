@@ -1,8 +1,8 @@
 from .usuario import Usuario
 from .aluno import Aluno
-from ..utils.mixins import AutenticavelMixin
+from ..utils.mixins import AutenticavelMixin, NotificavelMixin
 
-class Professor(Usuario, AutenticavelMixin):
+class Professor(Usuario, AutenticavelMixin, NotificavelMixin):
     """
     Representa um professor no sistema.
 
@@ -19,9 +19,10 @@ class Professor(Usuario, AutenticavelMixin):
             senha (str): A senha, que será armazenada com hash.
             registro_funcional (str): O registro único do professor.
         """
-        self.nome = nome
-        self.email = email
-        self.senha = senha
+        # Chama super().__init__ para inicializar Usuario e mixins via MRO
+        super().__init__(nome, email, senha)
+        
+        # Inicializa atributos específicos do Professor
         self._turmas = []
         self._registro_funcional = registro_funcional
 
