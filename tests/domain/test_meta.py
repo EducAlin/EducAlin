@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime, timedelta
 
-from src.educalin.domain.meta import Meta
+from educalin.domain.meta import Meta
 
 
 @pytest.fixture
