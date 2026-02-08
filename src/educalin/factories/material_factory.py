@@ -2,7 +2,7 @@ from datetime import datetime
 
 from abc import ABC, abstractmethod
 from typing import Any
-from domain.material import MaterialEstudo
+from educalin.domain.material import MaterialEstudo
 
 
 class MaterialEstudoFactory(ABC):
