@@ -75,7 +75,7 @@ class MaterialLinkFactory(MaterialEstudoFactory):
     """
 
     def criar_material(self, dados: dict) -> MaterialEstudo:
-        from domain.material import MaterialLink  
+        from educalin.domain.material import MaterialLink  
         """
         Cria e retorna um objeto do tipo MaterialLink.
 
