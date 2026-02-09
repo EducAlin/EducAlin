@@ -7,6 +7,22 @@ from dataclasses import dataclass, field
 #----------------------------------------------------------------#
 #               CLASSE ABSTRATA MATERIAL DE ESTUDO               #
 #----------------------------------------------------------------#
+"""
+Classe abstrata que representa um material de estudo genérico.
+
+Atributos:
+- titulo: O título do material de estudo.
+- descricao: Uma descrição do material de estudo.
+- data_upload: A data em que o material foi carregado (IMUTÁVEL).
+- autor: O nome do autor do material de estudo (deve ser uma string não vazia, mas idealmente seria uma referência a um objeto Professor).
+
+Métodos:
+- validar_formato(): Método abstrato para validar o formato específico do material de estudo. Deve
+ser implementado por subclasses concretas.
+- obter_tamanho(): Método abstrato para obter o tamanho do material de estudo. Deve ser
+implementado por subclasses concretas.
+
+"""
 
 @dataclass
 class MaterialEstudo(ABC):
@@ -25,6 +41,7 @@ class MaterialEstudo(ABC):
     # Titulo
     @property
     def titulo(self) -> str:
+        """O título do material de estudo."""
         return self._titulo
     
     @titulo.setter
@@ -38,6 +55,7 @@ class MaterialEstudo(ABC):
     # Descrição
     @property
     def descricao(self) -> str:
+        """Uma descrição do material de estudo."""
         return self._descricao
     
     @descricao.setter
@@ -51,6 +69,7 @@ class MaterialEstudo(ABC):
     # Autor
     @property
     def autor(self) -> str:
+        """O nome do autor do material de estudo (deve ser uma string não vazia, mas idealmente seria uma referência a um objeto Professor)."""
         return self._autor
     
     @autor.setter
@@ -104,6 +123,17 @@ class MaterialEstudo(ABC):
 #                     SUBCLASSE MATERIAL PDF                     #
 #----------------------------------------------------------------#
 
+"""
+Subclasse concreta de MaterialEstudo que representa um material de estudo no formato PDF.
+
+Atributos adicionais:
+- num_paginas: O número de páginas do PDF (deve ser um inteiro positivo).
+
+Métodos adicionais:
+- extrair_texto(): Método específico para extrair texto de um PDF (Lógica simulada).
+
+"""
+
 @dataclass
 class MaterialPDF(MaterialEstudo):
     _num_paginas: int = 0
@@ -115,6 +145,7 @@ class MaterialPDF(MaterialEstudo):
     # Número de páginas
     @property
     def num_paginas(self) -> int:
+        """O número de páginas do PDF (deve ser um inteiro positivo)."""
         return self._num_paginas
     
     @num_paginas.setter
@@ -149,6 +180,17 @@ class MaterialPDF(MaterialEstudo):
 #                  SUBCLASSE MATERIAL VÍDEO                      #
 #----------------------------------------------------------------#
 
+"""
+Subclasse concreta de MaterialEstudo que representa um material de estudo no formato de vídeo.
+Atributos adicionais:
+- duracao_segundos: A duração do vídeo em segundos (deve ser um inteiro positivo).
+- codec: O codec do vídeo (deve ser uma string não vazia).
+
+Métodos adicionais:
+- validar_formato(): Método específico para validar o formato de vídeo a partir do codec e duração.
+- gerar_thumbnail(): Método específico para gerar uma miniatura do vídeo (Lógica simulada).
+"""
+
 @dataclass
 class MaterialVideo(MaterialEstudo):
     _codec: str = ""
@@ -162,6 +204,7 @@ class MaterialVideo(MaterialEstudo):
     # Duração em segundos
     @property
     def duracao_segundos(self) -> int:
+        """A duração do vídeo em segundos (deve ser um inteiro positivo)."""
         return self._duracao_segundos
     
     @duracao_segundos.setter
@@ -173,6 +216,7 @@ class MaterialVideo(MaterialEstudo):
     # codec
     @property
     def codec(self) -> str:
+        """O codec do vídeo (deve ser uma string não vazia)."""
         return self._codec
 
     @codec.setter
@@ -208,6 +252,17 @@ class MaterialVideo(MaterialEstudo):
 #                 SUBCLASSE MATERIAL LINK                        #
 #----------------------------------------------------------------#
 
+"""
+Subclasse concreta de MaterialEstudo que representa um material de estudo no formato de link.
+
+Atributos adicionais:
+- url: A URL do material de estudo (deve ser uma string não vazia).
+- tipo_conteudo: O tipo de conteúdo do link (deve ser uma string não vazia, ex: "artigo", "vídeo", "curso online").
+
+Métodos adicionais:
+- validar_formato(): Método específico para validar o formato do link a partir da URL.
+"""
+
 @dataclass
 class MaterialLink(MaterialEstudo):
     _url: str
@@ -221,6 +276,9 @@ class MaterialLink(MaterialEstudo):
     # URL
     @property
     def url(self) -> str:
+        """
+        A URL do material de estudo (deve ser uma string não vazia).
+        """
         return self._url
     
     @url.setter
@@ -232,6 +290,9 @@ class MaterialLink(MaterialEstudo):
     # Tipo de conteúdo
     @property
     def tipo_conteudo(self) -> str:
+        """
+        O tipo de conteúdo do link (deve ser uma string não vazia, ex: "artigo", "vídeo", "curso online").
+        """
         return self._tipo_conteudo
     
     @tipo_conteudo.setter

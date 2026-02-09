@@ -6,6 +6,12 @@ from datetime import datetime
 class Meta:
     """
     Representa uma meta de aprendizado de um aluno.
+    Atributos:
+    - descricao: Uma descrição da meta (string não vazia).
+    - valor_alvo: O valor numérico que representa o objetivo a ser alcançado (float positivo).
+    - prazo: A data e hora limite para alcançar a meta (datetime).
+    - progresso_atual: O valor numérico que representa o progresso atual em direção à meta (float, 0 <= progresso_atual <= valor_alvo).
+
 
     Regras:
     - valor_alvo > 0
@@ -27,6 +33,7 @@ class Meta:
 
     @property
     def descricao(self) -> str:
+        """A descrição da meta (deve ser uma string não vazia)."""
         return self._descricao
 
     @descricao.setter
@@ -37,6 +44,7 @@ class Meta:
 
     @property
     def valor_alvo(self) -> float:
+        """O valor alvo da meta (deve ser um número positivo)."""
         return self._valor_alvo
 
     @valor_alvo.setter
@@ -51,6 +59,7 @@ class Meta:
 
     @property
     def prazo(self) -> datetime:
+        """O prazo da meta (deve ser um objeto datetime)."""
         return self._prazo
 
     @prazo.setter
@@ -61,6 +70,7 @@ class Meta:
 
     @property
     def progresso_atual(self) -> float:
+        """O progresso atual da meta (deve ser um número entre 0 e valor_alvo)."""
         return self._progresso_atual
 
     @progresso_atual.setter
