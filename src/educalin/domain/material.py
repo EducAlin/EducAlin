@@ -28,8 +28,10 @@ class MaterialEstudo(ABC):
     _titulo: str = field(init=False, repr=False)
     _descricao: str = field(init=False, repr=False)
     _data_upload: datetime 
-    _autor: str = field(init=False, repr=False) # autor deve vir da classe Professor (autor: Professor)
-
+    _autor: str = field(init=False, repr=False)
+    """
+    autor deve vir da classe Professor (autor: Professor)
+    """
     def __init__(self, titulo: str, descricao: str, autor: str, data_upload: datetime):
         self.titulo = titulo
         self.descricao = descricao
@@ -45,8 +47,8 @@ class MaterialEstudo(ABC):
     
     @titulo.setter
     def titulo(self, valor: str) -> None:
-        if not isinstance(valor, str) or not valor.strip():
-            raise ValueError("O título deve ser uma string não vazia.")
+        if not isinstance(valor, str):
+            raise ValueError("O título deve ser uma string.")
         if not valor.strip():
             raise ValueError("O título não pode ser vazio.")
         self._titulo = valor.strip()
@@ -73,8 +75,8 @@ class MaterialEstudo(ABC):
     
     @autor.setter
     def autor(self, valor: str) -> None:
-        if not isinstance(valor, str) or not valor.strip():
-            raise ValueError("O autor deve ser uma string não vazia.")
+        if not isinstance(valor, str):
+            raise ValueError("O autor deve ser uma string.")
         if not valor.strip():
             raise ValueError("O autor não pode ser vazio.")
         self._autor = valor.strip()
@@ -157,9 +159,7 @@ class MaterialPDF(MaterialEstudo):
         """
         Validação do formato PDF a partir do número de páginas.
         """
-        if not isinstance(self.num_paginas, int) or self.num_paginas <= 0:
-            raise ValueError("O número de páginas deve ser um inteiro positivo.")
-        return True
+        return (isinstance(self.num_paginas, int) and self.num_paginas > 0 and self.titulo.strip() != "")
     
     def obter_tamanho(self) -> int:
         """
@@ -225,7 +225,7 @@ class MaterialVideo(MaterialEstudo):
     # Métodos específicos
     def validar_formato(self) -> bool:
         """
-        Validação do formato de vídeo a apartir do codec e .
+        Validação do formato de vídeo a partir do codec e duração.
         """
         if not isinstance(self.duracao_segundos, int) or self.duracao_segundos <= 0:
             raise ValueError("Vídeo inválido: duração deve ser um inteiro positivo.")    
