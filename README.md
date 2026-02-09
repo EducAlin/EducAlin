@@ -33,7 +33,8 @@ A complexidade do sistema justifica POO através de:
 - Composição dinâmica (Planos de Ação agregam materiais, Turmas agregam alunos)
 
 ## Estrutura de pastas
-```
+
+```text
 educalin/
 │
 ├── src/
@@ -103,6 +104,7 @@ educalin/
 ├── pyproject.toml
 └── README.md
 ```
+
 ## Justificativa da complexidade do sistema
 
 1. Análisde de Dados Individualizada:
