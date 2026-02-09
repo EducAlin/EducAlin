@@ -24,7 +24,6 @@ implementado por subclasses concretas.
 
 """
 
-@dataclass
 class MaterialEstudo(ABC):
     _titulo: str = field(init=False, repr=False)
     _descricao: str = field(init=False, repr=False)
@@ -134,7 +133,6 @@ Métodos adicionais:
 
 """
 
-@dataclass
 class MaterialPDF(MaterialEstudo):
     _num_paginas: int = 0
 
@@ -191,7 +189,6 @@ Métodos adicionais:
 - gerar_thumbnail(): Método específico para gerar uma miniatura do vídeo (Lógica simulada).
 """
 
-@dataclass
 class MaterialVideo(MaterialEstudo):
     _codec: str = ""
     _duracao_segundos: int = 0
@@ -263,7 +260,6 @@ Métodos adicionais:
 - validar_formato(): Método específico para validar o formato do link a partir da URL.
 """
 
-@dataclass
 class MaterialLink(MaterialEstudo):
     _url: str
     _tipo_conteudo: str
