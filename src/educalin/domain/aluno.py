@@ -1,5 +1,6 @@
 import re
 from typing import List
+from educalin.domain.nota import Nota
 from .usuario import Usuario
 from ..utils.mixins import AutenticavelMixin, NotificavelMixin
 

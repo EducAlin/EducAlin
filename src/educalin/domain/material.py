@@ -159,7 +159,13 @@ class MaterialPDF(MaterialEstudo):
         """
         Validação do formato PDF a partir do número de páginas.
         """
-        return (isinstance(self.num_paginas, int) and self.num_paginas > 0 and self.titulo.strip() != "")
+        if not isinstance(self.num_paginas, int) or self.num_paginas <= 0:
+            raise ValueError("Número inválido de páginas para PDF.")
+        
+        if not self.titulo.strip():
+            raise ValueError("Título não pode ser vazio.")
+        
+        return True
     
     def obter_tamanho(self) -> int:
         """

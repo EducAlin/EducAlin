@@ -1,13 +1,19 @@
 from datetime import datetime
-from .aluno import Aluno
-from .avaliacao import Avaliacao
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from educalin.domain.aluno import Aluno
+    from educalin.domain.avaliacao import Avaliacao
+
+import educalin.domain.aluno
+import educalin.domain.avaliacao
 
 class Nota:
     """
     Representa a nota de um aluno em uma avaliação específica,
     servindo como uma classe de associação.
     """
-    def __init__(self, aluno: Aluno, avaliacao: Avaliacao, valor: float):
+    def __init__(self, aluno: 'Aluno', avaliacao: 'Avaliacao', valor: float):
         """
         Cria uma nova instância de Nota.
 
@@ -23,10 +29,10 @@ class Nota:
             ValueError: Se valor for negativo.
             ValueError: Se valor for maior que o valor máximo da avaliação.
         """
-        if not isinstance(aluno, Aluno):
+        if not isinstance(aluno, educalin.domain.aluno.Aluno):
             raise TypeError("O aluno deve ser uma instância da classe Aluno.")
 
-        if not isinstance(avaliacao, Avaliacao):
+        if not isinstance(avaliacao, educalin.domain.avaliacao.Avaliacao):
             raise TypeError("A avaliação deve ser uma instância da classe Avaliacao.")
 
         if not isinstance(valor, (int, float)):

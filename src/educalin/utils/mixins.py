@@ -121,7 +121,8 @@ class NotificavelMixin:
             'tipo': tipo,
             'data': datetime.now(),
             'lida': False,
-            'dados': dados_adicionais or {}
+            'dados': dados_adicionais or {},
+            '_index': len(self._notificacoes)
         }
 
         self._notificacoes.append(notificacao)
@@ -154,7 +155,7 @@ class NotificavelMixin:
             notificacoes = self._notificacoes.copy()
 
         # Ordenar por data
-        notificacoes.sort(key=lambda n: n['data'], reverse=True)
+        notificacoes.sort(key=lambda n: (n['data'], n['_index']), reverse=True)
 
         # Limite
         if limite:

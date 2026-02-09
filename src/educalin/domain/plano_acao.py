@@ -1,10 +1,11 @@
 from typing import Optional, List, Dict
 from datetime import datetime, timedelta
+from educalin.domain.aluno import Aluno
+from educalin.domain.material import MaterialEstudo
 from enum import Enum
 import uuid
 
 from educalin.domain.turma import Subject, Observer
-from educalin.domain.material import MaterialEstudo
 
 class StatusPlano(Enum):
     """Status do Plano de Ação"""
@@ -39,7 +40,7 @@ class PlanoAcao(Subject):
         _objetivo (str): Objetivo/descrição do plano
         _data_criacao (datetime): Data de criação
         _data_limite (datetime): Prazo para conclusão
-        _materiais (List[MateriaisEstudo]): Materiais do plano (composição)
+        _materiais (List[MaterialEstudo]): Materiais do plano (composição)
         _status (StatusPlano): Status atual do plano
         _observacoes (str): Observações adicionais
         _observers (List[Observer]): Lista de observadores
@@ -95,7 +96,7 @@ class PlanoAcao(Subject):
         self._motivo_cancelamento: Optional[str] = None
 
         # Composição
-        self._materiais: List['MateriaisEstudo'] = []
+        self._materiais: List['MaterialEstudo'] = []
 
         # Observer
         self._observers: List[Observer] = []

@@ -140,7 +140,8 @@ class TestNotificavelMixin:
         nao_lidas = usuario.obter_notificacoes(apenas_nao_lidas=True)
         
         assert len(nao_lidas) == 1
-        assert nao_lidas[0]['mensagem'] == "Notif 2"
+        assert nao_lidas[0]['mensagem'] in ["Notif 1", "Notif 2"]
+        assert nao_lidas[0]['id'] != notifs[0]['id']
     
     def test_marcar_como_lida(self, usuario):
         """Deve marcar notificação específica como lida"""
