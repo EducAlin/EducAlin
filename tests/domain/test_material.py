@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timedelta
-from src.educalin.domain.material import MaterialEstudo, MaterialPDF, MaterialVideo, MaterialLink
+from educalin.domain.material import MaterialEstudo, MaterialPDF, MaterialVideo, MaterialLink
 
 @pytest.fixture
 def agora():
