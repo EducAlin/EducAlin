@@ -2,10 +2,7 @@ import re
 from typing import List
 from educalin.domain.nota import Nota
 from .usuario import Usuario
-from ..utils.mixins import AutenticavelMixin, NotificavelMixin
-
-EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
- 
+from ..utils.mixins import AutenticavelMixin, NotificavelMixin 
 
 class Aluno(Usuario, AutenticavelMixin, NotificavelMixin):
     """
