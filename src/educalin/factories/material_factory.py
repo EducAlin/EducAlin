@@ -2,7 +2,7 @@ from datetime import datetime
 
 from abc import ABC, abstractmethod
 from typing import Any
-from educalin.domain.material import MaterialEstudo
+from educalin.domain.material import MaterialEstudo, MaterialLink, MaterialPDF, MaterialVideo
 
 
 class MaterialEstudoFactory(ABC):
@@ -32,8 +32,7 @@ class MaterialPDFFactory(MaterialEstudoFactory):
     Factory concreta para criação de materiais de estudo no formato PDF.
     """
 
-    def criar_material(self, dados: dict) -> MaterialEstudo:
-        from domain.material import MaterialPDF  
+    def criar_material(self, dados: dict) -> MaterialEstudo: 
         """
         Cria e retorna um objeto do tipo MaterialPDF.
 
@@ -45,7 +44,13 @@ class MaterialPDFFactory(MaterialEstudoFactory):
                 - 'autor': str
                 - 'num_paginas': int
         """
-        pass
+        return MaterialPDF(
+            titulo=dados['titulo'],
+            descricao=dados['descricao'],
+            data_criacao=dados['data_criacao'],
+            autor=dados['autor'],
+            num_paginas=dados['num_paginas']
+            )
 
 class MaterialVideoFactory(MaterialEstudoFactory):
     """
@@ -67,7 +72,14 @@ class MaterialVideoFactory(MaterialEstudoFactory):
                 - 'codec': str
         :return: instância de MaterialVideo
         """
-        pass
+        return MaterialVideo(
+            titulo=dados['titulo'],
+            descricao=dados['descricao'],
+            data_criacao=dados['data_criacao'],
+            autor=dados['autor'],
+            duracao_segundos=dados['duracao_segundos'],
+            codec=dados['codec']
+        )
 
 class MaterialLinkFactory(MaterialEstudoFactory):
     """
@@ -89,4 +101,11 @@ class MaterialLinkFactory(MaterialEstudoFactory):
                 - 'tipo_conteudo': str
         :return: instância de MaterialLink
         """
-        pass
+        return MaterialLink(
+            titulo=dados['titulo'],
+            descricao=dados['descricao'],
+            data_criacao=dados['data_criacao'],
+            autor=dados['autor'],
+            url=dados['url'],
+            tipo_conteudo=dados['tipo_conteudo']
+        )
