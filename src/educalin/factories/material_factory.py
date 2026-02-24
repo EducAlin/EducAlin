@@ -50,7 +50,7 @@ class MaterialPDFFactory(MaterialEstudoFactory):
         :raises KeyError: Se chaves obrigatórias faltarem
         """
         # Validação de chaves obrigatorias
-        chaves_obrigatorias = {'titulo','descricao','data_upload','autor','num_paginas'}
+        chaves_obrigatorias = {'titulo', 'descricao', 'data_upload', 'autor', 'num_paginas'}
         if not chaves_obrigatorias.issubset(dados.keys()):
             faltantes = chaves_obrigatorias - set(dados.keys())
             raise KeyError(f"Chaves obrigatórias faltando: {faltantes}")
