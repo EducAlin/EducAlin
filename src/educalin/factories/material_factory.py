@@ -20,7 +20,7 @@ class MaterialEstudoFactory(ABC):
             Chaves esperadas no dicionário:
                 - 'titulo': str
                 - 'descricao': str
-                - 'data_criacao': datetime
+                - 'data_upload': datetime
                 - 'autor': str
                 - Outros campos específicos dependendo do tipo de material
         :return: instância de MaterialEstudo
@@ -42,7 +42,7 @@ class MaterialPDFFactory(MaterialEstudoFactory):
             Chaves esperadas no dicionário:
                 - 'titulo': str
                 - 'descricao': str
-                - 'data_criacao': datetime
+                - 'data_upload': datetime
                 - 'autor': str
                 - 'num_paginas': int
         :raises ValueError: Se num_paginas for inválido
@@ -66,7 +66,7 @@ class MaterialPDFFactory(MaterialEstudoFactory):
         return MaterialPDF(
             titulo=dados['titulo'],
             descricao=dados['descricao'],
-            data_criacao=dados['data_criacao'],
+            data_upload=dados['data_upload'],
             autor=dados['autor'],
             num_paginas=dados['num_paginas']
             )
@@ -87,7 +87,7 @@ class MaterialVideoFactory(MaterialEstudoFactory):
             Chaves esperadas no dicionário:
                 - 'titulo': str
                 - 'descricao': str
-                - 'data_criacao': datetime
+                - 'data_upload': datetime
                 - 'autor': str
                 - 'duracao_segundos': int
                 - 'codec': str
@@ -120,7 +120,7 @@ class MaterialVideoFactory(MaterialEstudoFactory):
         return MaterialVideo(
             titulo=dados['titulo'],
             descricao=dados['descricao'],
-            data_criacao=dados['data_criacao'],
+            data_upload=dados['data_upload'],
             autor=dados['autor'],
             duracao_segundos=dados['duracao_segundos'],
             codec=dados['codec']
@@ -142,7 +142,7 @@ class MaterialLinkFactory(MaterialEstudoFactory):
             Chaves esperadas no dicionário:
                 - 'titulo': str
                 - 'descricao': str
-                - 'data_criacao': datetime
+                - 'data_upload': datetime
                 - 'autor': str
                 - 'url': str
                 - 'tipo_conteudo': str
