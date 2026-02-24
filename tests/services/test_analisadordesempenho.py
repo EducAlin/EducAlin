@@ -249,3 +249,190 @@ class TestAnalisadorDesempenho:
             assert isinstance(resultado, dict)
             assert isinstance(dificuldades, list)
             assert 'aluno_nome' in resultado
+    
+    # Testes do método definir_estrategia
+    
+    def test_definir_estrategia_valida(self, estrategia_frequencia):
+        """Testa definir estratégia com tipo válido."""
+        analisador = AnalisadorDesempenho()
+        analisador.definir_estrategia(estrategia_frequencia)
+        assert analisador.estrategia == estrategia_frequencia
+    
+    def test_definir_estrategia_aceita_qualquer_estrategia(self):
+        """Testa que aceita qualquer implementação de EstrategiaAnalise."""
+        analisador = AnalisadorDesempenho()
+        
+        estrategias = [
+            AnaliseFrequencia(min_avaliacoes=2),
+            AnaliseNotasBaixas(limite_nota=50.0),
+            AnaliseRegressao(min_avaliacoes=4),
+        ]
+        
+        for estrategia in estrategias:
+            analisador.definir_estrategia(estrategia)
+            assert analisador.estrategia == estrategia
+    
+    def test_definir_estrategia_tipo_invalido(self):
+        """Testa que rejeita tipo inválido."""
+        analisador = AnalisadorDesempenho()
+        with pytest.raises(TypeError, match="A estratégia deve ser uma instância de EstrategiaAnalise"):
+            analisador.definir_estrategia("não é estratégia")
+    
+    def test_definir_estrategia_trocar_em_runtime(self, estrategia_frequencia, estrategia_notas_baixas):
+        """Testa trocar estratégia em tempo de execução usando definir_estrategia."""
+        analisador = AnalisadorDesempenho(estrategia_frequencia)
+        assert analisador.estrategia == estrategia_frequencia
+        
+        # Troca a estratégia em runtime
+        analisador.definir_estrategia(estrategia_notas_baixas)
+        assert analisador.estrategia == estrategia_notas_baixas
+    
+    # Testes do método executar_analise
+    
+    def test_executar_analise_com_aluno(self, aluno, estrategia_regressao):
+        """Testa executar_analise que extrai histórico do aluno automaticamente."""
+        from educalin.domain.avaliacao import Avaliacao
+        from educalin.domain.nota import Nota
+        from datetime import date
+        
+        # Adiciona notas ao aluno
+        aval1 = Avaliacao("Prova 1", date(2026, 1, 10), 10.0, 0.4)
+        aval2 = Avaliacao("Prova 2", date(2026, 1, 20), 10.0, 0.3)
+        aval3 = Avaliacao("Prova 3", date(2026, 2, 1), 10.0, 0.3)
+        
+        nota1 = Nota(aluno, aval1, 9.0)
+        nota2 = Nota(aluno, aval2, 7.0)
+        nota3 = Nota(aluno, aval3, 5.0)
+        
+        aluno.adicionar_nota(nota1)
+        aluno.adicionar_nota(nota2)
+        aluno.adicionar_nota(nota3)
+        
+        analisador = AnalisadorDesempenho(estrategia_regressao)
+        resultado = analisador.executar_analise(aluno)
+        
+        # Verifica que a análise foi realizada
+        assert 'aluno_nome' in resultado
+        assert resultado['aluno_nome'] == "João Silva"
+        assert 'topicos_com_regressao' in resultado
+    
+    def test_executar_analise_sem_estrategia(self, aluno):
+        """Testa erro ao executar análise sem estratégia definida."""
+        analisador = AnalisadorDesempenho()
+        with pytest.raises(ValueError, match="Nenhuma estratégia foi definida"):
+            analisador.executar_analise(aluno)
+    
+    def test_executar_analise_aluno_sem_notas(self, aluno, estrategia_frequencia):
+        """Testa erro ao analisar aluno sem notas."""
+        analisador = AnalisadorDesempenho(estrategia_frequencia)
+        with pytest.raises(ValueError, match="não possui notas registradas"):
+            analisador.executar_analise(aluno)
+    
+    def test_executar_analise_delega_para_estrategia(self, aluno, estrategia_notas_baixas):
+        """Testa que executar_analise delega corretamente para a estratégia."""
+        from educalin.domain.avaliacao import Avaliacao
+        from educalin.domain.nota import Nota
+        from datetime import date
+        
+        # Adiciona notas baixas
+        aval1 = Avaliacao("Física", date(2026, 1, 10), 10.0, 0.5)
+        aval2 = Avaliacao("Física", date(2026, 1, 20), 10.0, 0.5)
+        
+        nota1 = Nota(aluno, aval1, 5.0)
+        nota2 = Nota(aluno, aval2, 4.0)
+        
+        aluno.adicionar_nota(nota1)
+        aluno.adicionar_nota(nota2)
+        
+        analisador = AnalisadorDesempenho(estrategia_notas_baixas)
+        resultado = analisador.executar_analise(aluno)
+        
+        # Verifica que delegou para estratégia de notas baixas
+        assert 'notas_baixas' in resultado
+        assert resultado['notas_baixas'] > 0
+    
+    # Testes do método gerar_sugestoes
+    
+    def test_gerar_sugestoes_com_dificuldades(self, aluno, estrategia_regressao):
+        """Testa geração de sugestões quando há dificuldades."""
+        from educalin.domain.avaliacao import Avaliacao
+        from educalin.domain.nota import Nota
+        from datetime import date
+        
+        # Adiciona notas com regressão em Matemática
+        aval1 = Avaliacao("Matemática", date(2026, 1, 10), 10.0, 0.4)
+        aval2 = Avaliacao("Matemática", date(2026, 1, 20), 10.0, 0.3)
+        aval3 = Avaliacao("Matemática", date(2026, 2, 1), 10.0, 0.3)
+        
+        nota1 = Nota(aluno, aval1, 9.0)
+        nota2 = Nota(aluno, aval2, 7.0)
+        nota3 = Nota(aluno, aval3, 5.0)
+        
+        aluno.adicionar_nota(nota1)
+        aluno.adicionar_nota(nota2)
+        aluno.adicionar_nota(nota3)
+        
+        analisador = AnalisadorDesempenho(estrategia_regressao)
+        analisador.executar_analise(aluno)
+        
+        sugestoes = analisador.gerar_sugestoes()
+        
+        assert isinstance(sugestoes, list)
+        assert len(sugestoes) > 0
+        # Deve conter sugestões relacionadas à Matemática
+        assert any("Matemática" in s for s in sugestoes)
+    
+    def test_gerar_sugestoes_sem_dificuldades(self, aluno, estrategia_frequencia):
+        """Testa geração de sugestões quando não há dificuldades."""
+        from educalin.domain.avaliacao import Avaliacao
+        from educalin.domain.nota import Nota
+        from datetime import date
+        
+        # Adiciona notas boas
+        aval1 = Avaliacao("Química", date(2026, 1, 10), 10.0, 0.4)
+        aval2 = Avaliacao("Química", date(2026, 1, 20), 10.0, 0.3)
+        aval3 = Avaliacao("Química", date(2026, 2, 1), 10.0, 0.3)
+        
+        nota1 = Nota(aluno, aval1, 9.0)
+        nota2 = Nota(aluno, aval2, 9.0)
+        nota3 = Nota(aluno, aval3, 9.0)
+        
+        aluno.adicionar_nota(nota1)
+        aluno.adicionar_nota(nota2)
+        aluno.adicionar_nota(nota3)
+        
+        analisador = AnalisadorDesempenho(estrategia_frequencia)
+        analisador.executar_analise(aluno)
+        
+        sugestoes = analisador.gerar_sugestoes()
+        
+        assert isinstance(sugestoes, list)
+        assert len(sugestoes) > 0
+        assert "bom desempenho" in sugestoes[0].lower()
+    
+    def test_gerar_sugestoes_sem_estrategia(self):
+        """Testa erro ao gerar sugestões sem estratégia definida."""
+        analisador = AnalisadorDesempenho()
+        with pytest.raises(ValueError, match="Nenhuma estratégia foi definida"):
+            analisador.gerar_sugestoes()
+    
+    def test_gerar_sugestoes_formato_correto(self, aluno, estrategia_notas_baixas):
+        """Testa que as sugestões têm formato correto."""
+        from educalin.domain.avaliacao import Avaliacao
+        from educalin.domain.nota import Nota
+        from datetime import date
+        
+        # Adiciona notas baixas em Física
+        aval = Avaliacao("Física", date(2026, 1, 10), 10.0, 1.0)
+        nota = Nota(aluno, aval, 4.0)
+        aluno.adicionar_nota(nota)
+        
+        analisador = AnalisadorDesempenho(estrategia_notas_baixas)
+        analisador.executar_analise(aluno)
+        
+        sugestoes = analisador.gerar_sugestoes()
+        
+        # Cada sugestão deve ser uma string
+        for sugestao in sugestoes:
+            assert isinstance(sugestao, str)
+            assert len(sugestao) > 0
