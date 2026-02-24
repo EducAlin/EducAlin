@@ -175,7 +175,7 @@ class MaterialLinkFactory(MaterialEstudoFactory):
         return MaterialLink(
             titulo=dados['titulo'],
             descricao=dados['descricao'],
-            data_criacao=dados['data_criacao'],
+            data_upload=dados['data_upload'],
             autor=dados['autor'],
             url=dados['url'],
             tipo_conteudo=dados['tipo_conteudo']
