@@ -70,7 +70,7 @@ def test_pdf_factory_chave_obrigatoria_faltando(dados_pdf, chave_faltante):
         MaterialPDFFactory().criar_material(dados_pdf)
 
 
-@pytest.mark.parametrize("num_paginas", ["10", 10.0, None])
+@pytest.mark.parametrize("num_paginas", ["10", 10.0, None, True, False])
 def test_pdf_factory_tipo_invalido_num_paginas(dados_pdf, num_paginas):
     dados_pdf['num_paginas'] = num_paginas
     with pytest.raises(TypeError, match="num_paginas deve ser int"):
@@ -104,7 +104,7 @@ def test_video_factory_chave_obrigatoria_faltando(dados_video, chave_faltante):
         MaterialVideoFactory().criar_material(dados_video)
 
 
-@pytest.mark.parametrize("duracao", ["120", 120.0, None])
+@pytest.mark.parametrize("duracao", ["120", 120.0, None, True, False])
 def test_video_factory_tipo_invalido_duracao(dados_video, duracao):
     dados_video['duracao_segundos'] = duracao
     with pytest.raises(TypeError, match="duracao_segundos deve ser int"):
@@ -235,12 +235,12 @@ def test_manager_mensagem_erro_extensoes_ordenadas(dados_pdf):
     assert lista == sorted(lista)
 
 
-def test_manager_registrar_extensao(dados_pdf):
+def test_manager_registrar_extensao(monkeypatch, dados_pdf):
+    extensoes_copia = dict(MaterialEstudoFactoryManager.EXTENSOES_SUPORTADAS)
+    monkeypatch.setattr(MaterialEstudoFactoryManager, 'EXTENSOES_SUPORTADAS', extensoes_copia)
     MaterialEstudoFactoryManager.registrar_extensao('mypdf', MaterialPDFFactory())
     material = MaterialEstudoFactoryManager.criar_por_extensao('mypdf', dados_pdf)
     assert isinstance(material, MaterialPDF)
-    # cleanup
-    del MaterialEstudoFactoryManager.EXTENSOES_SUPORTADAS['mypdf']
 
 
 def test_manager_extensoes_suportadas_retorna_lista():
