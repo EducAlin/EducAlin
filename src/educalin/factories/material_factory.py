@@ -195,7 +195,7 @@ class MaterialEstudoFactoryManager:
         'mkv': MaterialVideoFactory(),
         'mov': MaterialVideoFactory(),
         'webm': MaterialVideoFactory(),
-        'mp3': MaterialVideoFactory(),  # Áudio também usa VideoFactory por simplicidade
+        'mp3': MaterialVideoFactory(),  # Arquivos MP3 são tratados como mídia pela MaterialVideoFactory; use o codec de áudio apropriado (por exemplo, 'mp3') no campo 'codec'.
     }
     
     @classmethod
