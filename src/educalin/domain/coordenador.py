@@ -3,8 +3,6 @@ import re
 from .usuario import Usuario
 from ..utils.mixins import AutenticavelMixin, NotificavelMixin
 
-EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
-
 class Coordenador(Usuario, AutenticavelMixin, NotificavelMixin):
     """
     Representa um coordenador no sistema.
