@@ -97,7 +97,7 @@ class MaterialVideoFactory(MaterialEstudoFactory):
         :return: instância de MaterialVideo
         """
 
-                # Validação de chaves obrigatórias
+        # Validação de chaves obrigatórias
         chaves_obrigatorias = {'titulo', 'descricao', 'data_upload', 'autor', 'duracao_segundos', 'codec'}
         if not chaves_obrigatorias.issubset(dados.keys()):
             faltantes = chaves_obrigatorias - set(dados.keys())
