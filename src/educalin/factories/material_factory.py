@@ -1,7 +1,6 @@
-from datetime import datetime
-
 from abc import ABC, abstractmethod
-from typing import Any
+from datetime import datetime
+from urllib.parse import urlparse
 from educalin.domain.material import MaterialEstudo, MaterialLink, MaterialPDF, MaterialVideo
 
 
@@ -9,6 +8,9 @@ class MaterialEstudoFactory(ABC):
     """
     Factory abstrata para criação de materiais de estudo.
     Cada subclasse decide qual tipo concreto de MaterialEstudo será criado.
+
+    Subclasses devem ser implementadas como objetos sem estado (stateless),
+    pois as instâncias são reutilizadas pelo MaterialEstudoFactoryManager.
     """
 
     @abstractmethod
@@ -26,6 +28,19 @@ class MaterialEstudoFactory(ABC):
         :return: instância de MaterialEstudo
         """
         pass
+
+    @staticmethod
+    def _validar_chaves_obrigatorias(dados: dict, chaves_obrigatorias: set) -> None:
+        """
+        Valida se todas as chaves obrigatórias estão presentes no dicionário.
+
+        :param dados: dicionário com os dados do material
+        :param chaves_obrigatorias: conjunto de chaves que devem estar presentes
+        :raises KeyError: Se alguma chave obrigatória estiver faltando
+        """
+        if not chaves_obrigatorias.issubset(dados.keys()):
+            faltantes = chaves_obrigatorias - set(dados.keys())
+            raise KeyError(f"Chaves obrigatórias faltando: {faltantes}")
 
 class MaterialPDFFactory(MaterialEstudoFactory):
     """
@@ -49,11 +64,8 @@ class MaterialPDFFactory(MaterialEstudoFactory):
         :raises TypeError: Se tipos estiverem incorretos
         :raises KeyError: Se chaves obrigatórias faltarem
         """
-        # Validação de chaves obrigatorias
-        chaves_obrigatorias = {'titulo', 'descricao', 'data_upload', 'autor', 'num_paginas'}
-        if not chaves_obrigatorias.issubset(dados.keys()):
-            faltantes = chaves_obrigatorias - set(dados.keys())
-            raise KeyError(f"Chaves obrigatórias faltando: {faltantes}")
+        # Validação de chaves obrigatórias
+        self._validar_chaves_obrigatorias(dados, {'titulo', 'descricao', 'data_upload', 'autor', 'num_paginas'})
         
         # Validação de tipos
         if not isinstance(dados['num_paginas'], int):
@@ -77,7 +89,6 @@ class MaterialVideoFactory(MaterialEstudoFactory):
     """
 
     def criar_material(self, dados: dict) -> MaterialEstudo:
-        from domain.material import MaterialVideo  
         """
         Cria e retorna um objeto do tipo MaterialVideo.
 
@@ -98,10 +109,7 @@ class MaterialVideoFactory(MaterialEstudoFactory):
         """
 
         # Validação de chaves obrigatórias
-        chaves_obrigatorias = {'titulo', 'descricao', 'data_upload', 'autor', 'duracao_segundos', 'codec'}
-        if not chaves_obrigatorias.issubset(dados.keys()):
-            faltantes = chaves_obrigatorias - set(dados.keys())
-            raise KeyError(f"Chaves obrigatórias faltando: {faltantes}")
+        self._validar_chaves_obrigatorias(dados, {'titulo', 'descricao', 'data_upload', 'autor', 'duracao_segundos', 'codec'})
         
         # Validação de tipos
         if not isinstance(dados['duracao_segundos'], int):
@@ -132,7 +140,6 @@ class MaterialLinkFactory(MaterialEstudoFactory):
     """
 
     def criar_material(self, dados: dict) -> MaterialEstudo:
-        from educalin.domain.material import MaterialLink  
         """
         Cria e retorna um objeto do tipo MaterialLink.
 
@@ -153,10 +160,7 @@ class MaterialLinkFactory(MaterialEstudoFactory):
         """
 
         # Validação de chaves obrigatórias
-        chaves_obrigatorias = {'titulo', 'descricao', 'data_upload', 'autor', 'url', 'tipo_conteudo'}
-        if not chaves_obrigatorias.issubset(dados.keys()):
-            faltantes = chaves_obrigatorias - set(dados.keys())
-            raise KeyError(f"Chaves obrigatórias faltando: {faltantes}")
+        self._validar_chaves_obrigatorias(dados, {'titulo', 'descricao', 'data_upload', 'autor', 'url', 'tipo_conteudo'})
         
         # Validação de tipos
         if not isinstance(dados['url'], str):
@@ -168,6 +172,10 @@ class MaterialLinkFactory(MaterialEstudoFactory):
         # Validação de valores
         if not dados['url'].strip():
             raise ValueError("url não pode ser vazia")
+
+        parsed = urlparse(dados['url'])
+        if not parsed.scheme or not parsed.netloc:
+            raise ValueError(f"url '{dados['url']}' não é uma URL válida (deve conter esquema e domínio)")
         
         if not dados['tipo_conteudo'].strip():
             raise ValueError("tipo_conteudo não pode ser vazio")
@@ -211,7 +219,7 @@ class MaterialEstudoFactoryManager:
         extensao_normalizada = extensao.lower().lstrip('.')
         
         if extensao_normalizada not in cls.EXTENSOES_SUPORTADAS:
-            tipos_validos = ', '.join(cls.EXTENSOES_SUPORTADAS.keys())
+            tipos_validos = ', '.join(sorted(cls.EXTENSOES_SUPORTADAS.keys()))
             raise ValueError(
                 f"Extensão '{extensao_normalizada}' não suportada. "
                 f"Tipos válidos: {tipos_validos}"
