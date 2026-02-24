@@ -49,7 +49,7 @@ class MaterialPDFFactory(MaterialEstudoFactory):
         :raises TypeError: Se tipos estiverem incorretos
         :raises KeyError: Se chaves obrigatórias faltarem
         """
-        # Validacao de chaves obrigatorias
+        # Validação de chaves obrigatorias
         chaves_obrigatorias = {'titulo','descricao','data_upload','autor','num_paginas'}
         if not chaves_obrigatorias.issubset(dados.keys()):
             faltantes = chaves_obrigatorias - set(dados.keys())
