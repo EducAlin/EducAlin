@@ -68,7 +68,7 @@ class MaterialPDFFactory(MaterialEstudoFactory):
         self._validar_chaves_obrigatorias(dados, {'titulo', 'descricao', 'data_upload', 'autor', 'num_paginas'})
         
         # Validação de tipos
-        if not isinstance(dados['num_paginas'], int):
+        if isinstance(dados['num_paginas'], bool) or not isinstance(dados['num_paginas'], int):
             raise TypeError(f"num_paginas deve ser int, recebido {type(dados['num_paginas']).__name__}")
         
         # Validação de valor
@@ -112,7 +112,7 @@ class MaterialVideoFactory(MaterialEstudoFactory):
         self._validar_chaves_obrigatorias(dados, {'titulo', 'descricao', 'data_upload', 'autor', 'duracao_segundos', 'codec'})
         
         # Validação de tipos
-        if not isinstance(dados['duracao_segundos'], int):
+        if isinstance(dados['duracao_segundos'], bool) or not isinstance(dados['duracao_segundos'], int):
             raise TypeError(f"duracao_segundos deve ser int, recebido {type(dados['duracao_segundos']).__name__}")
         
         if not isinstance(dados['codec'], str):
