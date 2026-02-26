@@ -71,7 +71,7 @@ class TestGeradorRelatorioTemplateMethod:
         """Template method deve chamar métodos na ordem correta"""
         relatorio.coletar_dados = Mock(return_value={'dados': 'teste'})
         relatorio.processar_dados = Mock(return_value={'dados': 'processados'})
-        relatorio.formatar_saida = Mock(return_value={"Relatório formatado"})
+        relatorio.formatar_saida = Mock(return_value="Relatório formatado")
 
         resultado = relatorio.gerar()
 
@@ -108,18 +108,16 @@ class TestGeradorRelatorioTemplateMethod:
 
     def test_gerar_nao_pode_ser_sobrescrito(self):
         """Template method não deve ser sobrescrito por subclasses"""
-
-        class RelatorioTentaSobrescrever(GeradorRelatorio):
-            def coletar_dados(self):
-                return {}
-            
-            def formatar_saida(self, dados):
-                return ""
-            
-            def gerar(self):
-                return "sobrescrito"
-            
-        relatorio = RelatorioTentaSobrescrever()
+        with pytest.raises(TypeError):
+            class RelatorioTentaSobrescrever(GeradorRelatorio):
+                def coletar_dados(self):
+                    return {}
+                
+                def formatar_saida(self, dados):
+                    return ""
+                
+                def gerar(self):
+                    return "sobrescrito"
 
 
 class TestGeradorRelatorioProcessarDados:

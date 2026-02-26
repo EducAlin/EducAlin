@@ -1,5 +1,6 @@
 # tests/services/test_gerador_relatorio_integracao.py
 
+import importlib.util
 import pytest
 from educalin.services.relatorio import GeradorRelatorio, FormatoRelatorio
 
@@ -35,7 +36,7 @@ class TestExportacaoReal:
         assert b"Linha 2" in resultado
     
     @pytest.mark.skipif(
-        not pytest.importorskip("fpdf", minversion="2.0"),
+        importlib.util.find_spec("fpdf") is None,
         reason="FPDF2 não instalado"
     )
     def test_exportar_pdf_real(self, relatorio):
@@ -44,13 +45,13 @@ class TestExportacaoReal:
         
         resultado = relatorio.exportar(conteudo, FormatoRelatorio.PDF)
         
-        assert isinstance(resultado, bytearray)
+        assert isinstance(resultado, bytes)
         assert len(resultado) > 0
         # PDFs começam com %PDF
         assert resultado.startswith(b'%PDF')
     
     @pytest.mark.skipif(
-        not pytest.importorskip("pandas", minversion="1.0"),
+        importlib.util.find_spec("pandas") is None,
         reason="Pandas não instalado"
     )
     def test_exportar_excel_real(self, relatorio):
