@@ -317,3 +317,202 @@ class GeradorRelatorio(ABC):
             f"{self.__class__.__name__}("
             f"gerado={self._data_geracao is not None})"
         )
+
+
+class RelatorioTurma(GeradorRelatorio):
+    """
+    Gerador de relatório consolidado de uma turma.
+
+    Coleta dados de todos os alunos da turma e gera relatório com:
+    - Estatísticas gerais (média, taxa de aprovação)
+    - Lista completa de alunos
+    - Alunos com dificuldade (média < 6.0)
+    - Ranking dos melhores alunos
+    - Tópicos problemáticos (se disponível)
+
+    Attributes:
+        _turma (Turma): Turma para qual gerar o relatório
+
+    Examples:
+        >>> relatorio = RelatorioTurma(turma)
+        >>> conteudo = relatorio.gerar()
+        >>> pdf = relatorio.exportar(conteudo, FormatoRelatorio.PDF)
+    """
+
+    def __init__(self, turma: 'Turma'):
+        """
+        Inicializa o gerador de relatório de turma.
+
+        Args:
+            turma: Instância de Turma
+
+        Raises:
+            TypeError: Se turma não for instância de Turma
+        """
+        super().__init__()
+
+        if not hasattr(turma, 'codigo') or not hasattr(turma, 'alunos'):
+            raise TypeError("Turma deve ter atributos 'codigo' e 'alunos'")
+        
+        self._turma = turma
+
+    # Implementação dos métodos abstratos
+
+    def coletar_dados(self) -> Dict[str, Any]:
+        """
+        Coleta todos os dados necessários da turma.
+
+        Coleta:
+        - Informações básicas da turma
+        - Estatísticas gerais (via obter_desempenho_geral())
+        - Lista de todos os alunos com suas médias
+        - Lista de alunos com dificuldade (média < 6.0)
+
+        Returns:
+            Dicionário com dados completos da turma
+        """
+        dados = {
+            'codigo_turma': self._turma.codigo,
+            'disciplina': self._turma.disciplina,
+            'semestre': self._turma.semestre,
+        }
+
+        # Estatísticas gerais
+        desempenho = self._turma.obter_desempenho_geral()
+        dados.update(desempenho)
+
+        alunos_data = []
+        alunos_dificuldade = []
+
+        for aluno in self._turma.alunos:
+            aluno_info = {
+                'nome': aluno.nome,
+                'matricula': aluno.matricula,
+                'media': aluno.calcular_media() if hasattr(aluno, 'calcular_media') else 0.0
+            }
+
+            alunos_data.append(aluno_info)
+
+            if aluno_info['media'] < 6.0:
+                alunos_dificuldade.append(aluno_info)
+
+        dados['alunos'] = alunos_data
+        dados['alunos_dificuldade'] = alunos_dificuldade
+
+        return dados
+    
+    def formatar_saida(self, dados_processados: Dict[str, Any]) -> str:
+        """
+        Formata os dados em relatório legivel.
+
+        Args:
+            dados_processados: Dados coletados e processados
+
+        Returns:
+            Relatório formatado como string
+        """
+        linhas = []
+
+        # Cabeçalho
+        linhas.append("="*70)
+        linhas.append("RELATÓRIO DE DESEMPENHO DA TURMA".center(70))
+        linhas.append("="*70)
+        linhas.append("")
+
+        # Informações da turma
+        linhas.append(f"Turma:      {dados_processados['codigo_turma']}")
+        linhas.append(f"Disciplina: {dados_processados['disciplina']}")
+        linhas.append(f"Semestre:   {dados_processados['semestre']}")
+
+        # Estatísticas gerais
+        linhas.append("-"*70)
+        linhas.append("ESTATÍSTICAS GERAIS")
+        linhas.append("-"*70)
+        linhas.append(f"Total de Alunos:        {dados_processados['total_alunos']}")
+        linhas.append(f"Média Geral da Turma:   {dados_processados['media_geral']:.2f}")
+        linhas.append(f"Taxa de Aprovação:      {dados_processados['taxa_aprovacao']:.1f}%")
+        linhas.append(f"Alunos com Dificuldade: {dados_processados['alunos_com_dificuldade']}")
+        linhas.append("")
+
+        # Ranking Top 5
+        if 'ranking_top5' in dados_processados and dados_processados['ranking_top5']:
+            linhas.append("-"*70)
+            linhas.append("TOP 5 MELHORES ALUNOS")
+            linhas.append("-"*70)
+
+            for i, aluno in enumerate(dados_processados['ranking_top5'], 1):
+                linhas.append(
+                    f"{i}º - {aluno['nome']:<30} "
+                    f"Matrícula: {aluno['matricula']:<10} "
+                    f"Média: {aluno['media']:.2f}"
+                )
+            linhas.append("")
+
+        # Alunos com dificuldade
+        if dados_processados['alunos_dificuldade']:
+            linhas.append("-"*70)
+            linhas.append("ALUNOS QUE PRECISAM DE ATENÇÃO (Média < 6.0)")
+            linhas.append("-"*70)
+
+            for aluno in dados_processados['alunos_dificuldade']:
+                linhas.append(
+                    f"!  {aluno['nome']:<30} "
+                    f"Matrícula: {aluno['matricula']:<10} "
+                    f"Média: {aluno['media']:.2f}"
+                )
+            linhas.append("")
+        else:
+            linhas.append("-"*70)
+            linhas.append("[OK] Nenhum aluno com dificuldade identificado!")
+            linhas.append("")
+
+        # Lista completa de alunos
+        if dados_processados['alunos']:
+            linhas.append("-"*70)
+            linhas.append("LISTA COMPLETA DE ALUNOS")
+            linhas.append("-"*70)
+
+            for aluno in dados_processados['alunos']:
+                status = "OK" if aluno['media'] >=6.0 else "!"
+                linhas.append(
+                    f"{status}  {aluno['nome']:<30} "
+                    f"Matrícula: {aluno['matricula']:<10} "
+                    f"Média: {aluno['media']:.2f}"
+                )
+            linhas.append("")
+
+        # Rodapé
+        linhas.append("="*70)
+        linhas.append(f"Relatório gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+        linhas.append("="*70)
+
+        return "\n".join(linhas)
+    
+    
+    # Hook method
+
+    def processar_dados(self, dados_brutos: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Processa dados brutos para adicionar ranking.
+
+        Sobrescreve o hook method padrão para adicionar ranking
+        dos 5 melhores alunos ordenados por média.
+
+        Args:
+            dados_brutos: Dados coletados
+
+        Returns:
+            Dados processados com ranking adicionado
+        """
+        if 'alunos' in dados_brutos and dados_brutos['alunos']:
+            alunos_ordenados = sorted(
+                dados_brutos['alunos'],
+                key=lambda a: a['media'],
+                reverse=True
+            )
+
+            dados_brutos['ranking_top5'] = alunos_ordenados[:5]
+        else:
+            dados_brutos['ranking_top5'] = []
+
+        return dados_brutos
