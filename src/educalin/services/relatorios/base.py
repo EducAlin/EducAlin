@@ -33,7 +33,7 @@ class GeradorRelatorio(ABC):
     1. Coletar dados (abstrato - cada subclasse implementa)
     2. Processar dados (hook - pode ser sobrescrito)
     3. Formatar saída (abstrato - cada subclasse implementa)
-    4. Exportar (conreto - suporta múltiplos formatos)
+    4. Exportar (concreto - suporta múltiplos formatos)
 
     Attributes:
         _dados_brutos: Dados coletados (para auditoria)
@@ -48,6 +48,15 @@ class GeradorRelatorio(ABC):
         >>> relatorio = RelatorioTurma()
         >>> resultado = relatorio.gerar()
     """
+
+    def __init_subclass__(cls, **kwargs):
+        """Impede que subclasses sobrescrevam o Template Method gerar()."""
+        super().__init_subclass__(**kwargs)
+        if 'gerar' in cls.__dict__:
+            raise TypeError(
+                f"'{cls.__name__}' não pode sobrescrever o método 'gerar()' "
+                "pois é o Template Method da classe base."
+            )
 
     def __init__(self):
         """Inicializa o gerador de relatório"""
@@ -150,7 +159,7 @@ class GeradorRelatorio(ABC):
 
 
     # =================================
-    # Hook Methos
+    # Hook Methods
     # =================================
 
     def processar_dados(self, dados_brutos: Dict[str, Any]) -> Dict[str, Any]:
@@ -185,7 +194,6 @@ class GeradorRelatorio(ABC):
         self,
         conteudo: str,
         formato: FormatoRelatorio = FormatoRelatorio.TEXTO,
-        nome_arquivo: Optional[str] = None
     ) -> bytes:
         """
         Exporta o relatório em diferentes formatos.
@@ -193,7 +201,6 @@ class GeradorRelatorio(ABC):
         Args:
             conteudo: Conteúdo do relatório (saída de gerar())
             formato: Formato de exportação
-            nome_arquivo: Nome do arquivo (opcional)
 
         Returns:
             Bytes do arquivo exportado
@@ -210,10 +217,10 @@ class GeradorRelatorio(ABC):
             return self._exportar_texto(conteudo)
         
         elif formato == FormatoRelatorio.PDF:
-            return self._exportar_pdf(conteudo, nome_arquivo)
+            return self._exportar_pdf(conteudo)
         
         elif formato == FormatoRelatorio.EXCEL:
-            return self._exportar_excel(conteudo, nome_arquivo)
+            return self._exportar_excel(conteudo)
         
         elif formato == FormatoRelatorio.JSON:
             return self._exportar_json(conteudo)
@@ -225,10 +232,11 @@ class GeradorRelatorio(ABC):
         """Exporta como texto simples"""
         return conteudo.encode('utf-8')
     
-    def _exportar_pdf(self, conteudo: str, nome_arquivo: Optional[str]) -> bytearray:
+    def _exportar_pdf(self, conteudo: str) -> bytes:
         """Exporta como PDF usando FPDF"""
         try:
             from fpdf import FPDF
+            from fpdf.enums import XPos, YPos
         except ImportError:
             raise ImportError(
                 "FPDF não instalado. Verifique a instalação de dependências"
@@ -244,15 +252,15 @@ class GeradorRelatorio(ABC):
             if linha.strip():
                 try:
                     pdf.multi_cell(0, text=linha, align='L')
-                except Exception as e:
-                    pdf.cell(0, 10, text=linha[:100], ln=True)
+                except Exception:
+                    pdf.cell(0, 10, text=linha[:100], new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
             else:
                 pdf.ln(5)
 
-        return pdf.output()
+        return bytes(pdf.output())
     
-    def _exportar_excel(self, conteudo: str, nome_arquivo: Optional[str]) -> bytes:
+    def _exportar_excel(self, conteudo: str) -> bytes:
         """Exporta como Excel usando pandas"""
         try:
             import pandas as pd
