@@ -89,6 +89,10 @@ class RelatorioTurma(GeradorRelatorio):
         dados['alunos'] = alunos_data
         dados['alunos_dificuldade'] = alunos_dificuldade
 
+        # TODO: Adicionar coleta de tópicos problemáticos
+        # BLOCKED: Depende da implementação de 'obter_topicos_criticos' na classe Turma (Domain)
+        # dados['topicos_problematicos'] = self._turma.obter_topicos_criticos()
+
         return dados
     
     def formatar_saida(self, dados_processados: Dict[str, Any]) -> str:
