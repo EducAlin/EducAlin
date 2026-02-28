@@ -1,7 +1,7 @@
 # tests/services/test_gerador_relatorio_integracao.py
 
 import pytest
-from educalin.services.relatorio import GeradorRelatorio, FormatoRelatorio
+from educalin.services.relatorios.base import GeradorRelatorio, FormatoRelatorio
 
 # ✅ Marca registrada no pytest.ini
 pytestmark = pytest.mark.integration

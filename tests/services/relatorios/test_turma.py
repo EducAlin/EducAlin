@@ -2,12 +2,13 @@ import pytest
 from unittest.mock import Mock, MagicMock
 from datetime import datetime
 
-from educalin.services.relatorio import (
+from educalin.services.relatorios import (
     RelatorioTurma,
     GeradorRelatorio,
     FormatoRelatorio,
     RelatorioVazioException
 )
+
 
 class TestRelatorioTurmaHeranca:
     """Testes de herança e estrutura"""
