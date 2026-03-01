@@ -7,6 +7,7 @@ e sua integração com a classe Turma (Subject).
 
 import pytest
 from datetime import datetime
+from unittest.mock import Mock, patch, MagicMock, call
 from educalin.services.notificador import NotificadorEmail, NotificadorPush
 from educalin.domain.turma import Turma, Observer
 from educalin.domain.professor import Professor
@@ -385,3 +386,314 @@ class TestObserverPatternIntegracao:
         
         captured = capsys.readouterr()
         assert "EMAIL ENVIADO" not in captured.out
+
+
+# =================================
+# Testes com Mocks
+# =================================
+
+class TestNotificadorEmailComMocks:
+    """Testes do NotificadorEmail usando mocks para validar comportamento sem enviar emails reais"""
+
+    def test_email_notificador_chama_enviar_email(self):
+        """Deve chamar _enviar_email quando evento é recebido"""
+        notificador = NotificadorEmail("test@example.com")
+        
+        # Mockar o método _enviar_email
+        notificador._enviar_email = Mock()
+        
+        evento = {
+            'tipo': 'nota_registrada',
+            'descricao': 'Nota foi registrada',
+            'timestamp': datetime.now()
+        }
+        
+        notificador.atualizar(evento)
+        
+        # Verificar que _enviar_email foi chamado
+        assert notificador._enviar_email.called
+        assert notificador._enviar_email.call_count == 1
+        
+        # Verificar argumentos passados
+        call_args = notificador._enviar_email.call_args
+        assert '[EducAlin]' in call_args[0][0]  # assunto
+        assert 'nota_registrada' in call_args[0][0]
+
+    def test_email_notificador_registra_no_historico(self):
+        """Deve registrar no histórico quando evento é processado"""
+        notificador = NotificadorEmail("test@example.com")
+        notificador._enviar_email = Mock()
+        
+        evento = {
+            'tipo': 'nota_registrada',
+            'descricao': 'Nota foi registrada',
+            'timestamp': datetime.now(),
+            'turma': 'ES-2025.2',
+            'dados_adicionais': {'aluno': 'João'}
+        }
+        
+        notificador.atualizar(evento)
+        
+        # Verificar histórico
+        historico = notificador.obter_historico()
+        assert len(historico) > 0
+        assert historico[0]['canal'] == 'email'
+        assert historico[0]['tipo_evento'] == 'nota_registrada'
+        assert historico[0]['status'] == 'enviado'
+
+    def test_email_notificador_corpo_bem_formatado(self):
+        """Deve construir corpo do email com informações corretas"""
+        notificador = NotificadorEmail("test@example.com")
+        notificador._enviar_email = Mock()
+        
+        evento = {
+            'tipo': 'nota_registrada',
+            'descricao': 'Nota 9.5 registrada para João',
+            'timestamp': datetime(2025, 3, 1, 10, 30),
+            'turma': 'ES-2025.2',
+            'dados_adicionais': {
+                'aluno': 'João Silva',
+                'nota': 9.5,
+                'avaliacao': 'Prova 1'
+            }
+        }
+        
+        notificador.atualizar(evento)
+        
+        # Obter o corpo que foi passado para _enviar_email
+        corpo = notificador._enviar_email.call_args[0][1]
+        
+        assert 'nota_registrada' in corpo
+        assert 'João Silva' in corpo
+        assert '9.5' in corpo
+        assert 'Prova 1' in corpo
+
+    def test_email_notificador_multiplos_eventos(self):
+        """Deve processar múltiplos eventos mantendo histórico"""
+        notificador = NotificadorEmail("test@example.com")
+        notificador._enviar_email = Mock()
+        
+        evento1 = {'tipo': 'evento1', 'descricao': 'Evento 1'}
+        evento2 = {'tipo': 'evento2', 'descricao': 'Evento 2'}
+        evento3 = {'tipo': 'evento3', 'descricao': 'Evento 3'}
+        
+        notificador.atualizar(evento1)
+        notificador.atualizar(evento2)
+        notificador.atualizar(evento3)
+        
+        # Verificar que _enviar_email foi chamado 3 vezes
+        assert notificador._enviar_email.call_count == 3
+        
+        # Verificar histórico
+        historico = notificador.obter_historico()
+        assert len(historico) == 3
+        assert historico[0]['tipo_evento'] == 'evento1'
+        assert historico[1]['tipo_evento'] == 'evento2'
+        assert historico[2]['tipo_evento'] == 'evento3'
+
+
+class TestNotificadorPushComMocks:
+    """Testes do NotificadorPush usando mocks para validar comportamento sem enviar push real"""
+
+    def test_push_notificador_chama_enviar_push(self):
+        """Deve chamar _enviar_push para cada dispositivo"""
+        notificador = NotificadorPush("usuario_123", ["device_1", "device_2"])
+        
+        # Mockar o método _enviar_push
+        notificador._enviar_push = Mock()
+        
+        evento = {
+            'tipo': 'nota_registrada',
+            'descricao': 'Nota foi registrada',
+            'timestamp': datetime.now()
+        }
+        
+        notificador.atualizar(evento)
+        
+        # Verificar que _enviar_push foi chamado para cada dispositivo
+        assert notificador._enviar_push.called
+        assert notificador._enviar_push.call_count == 2
+        
+        # Verificar que foi chamado com os IDs corretos
+        calls = notificador._enviar_push.call_args_list
+        assert calls[0][0][0] == "device_1"
+        assert calls[1][0][0] == "device_2"
+
+    def test_push_notificador_payload_estruturado(self):
+        """Deve construir payload corretamente"""
+        notificador = NotificadorPush("usuario_123", ["device_1"])
+        notificador._enviar_push = Mock()
+        
+        evento = {
+            'tipo': 'nota_registrada',
+            'descricao': 'Nota 8.5 registrada',
+            'timestamp': datetime.now(),
+            'turma': 'ES-2025.2',
+            'dados_adicionais': {'aluno': 'Maria', 'nota': 8.5}
+        }
+        
+        notificador.atualizar(evento)
+        
+        # Obter o payload que foi passado
+        payload = notificador._enviar_push.call_args[0][1]
+        
+        assert payload['titulo'] == 'EducAlin - nota_registrada'
+        assert payload['mensagem'] == 'Nota 8.5 registrada'
+        assert payload['tipo'] == 'nota_registrada'
+        assert payload['turma'] == 'ES-2025.2'
+        assert 'aluno' in payload['dados']
+        assert 'nota' in payload['dados']
+
+    def test_push_notificador_sem_dispositivos(self):
+        """Não deve enviar push se não há dispositivos registrados"""
+        notificador = NotificadorPush("usuario_123")  # Sem dispositivos
+        notificador._enviar_push = Mock()
+        
+        evento = {'tipo': 'evento', 'descricao': 'Teste'}
+        
+        notificador.atualizar(evento)
+        
+        # Verificar que _enviar_push NÃO foi chamado
+        assert not notificador._enviar_push.called
+
+    def test_push_notificador_registra_historico(self):
+        """Deve registrar cada envio no histórico"""
+        notificador = NotificadorPush("usuario_123", ["device_1", "device_2", "device_3"])
+        notificador._enviar_push = Mock()
+        
+        evento = {
+            'tipo': 'plano_enviado',
+            'descricao': 'Plano foi enviado',
+            'timestamp': datetime.now()
+        }
+        
+        notificador.atualizar(evento)
+        
+        # Verificar histórico
+        historico = notificador.obter_historico()
+        assert len(historico) == 3
+        assert all(h['canal'] == 'push' for h in historico)
+        assert all(h['tipo_evento'] == 'plano_enviado' for h in historico)
+        assert historico[0]['dispositivo_id'] == 'device_1'
+        assert historico[1]['dispositivo_id'] == 'device_2'
+        assert historico[2]['dispositivo_id'] == 'device_3'
+
+
+class TestObserverPatternComMocks:
+    """Testes do padrão Observer com mocks para validar integração"""
+
+    def test_turma_notifica_email_com_mock(self):
+        """Turma deve notificar NotificadorEmail corretamente"""
+        professor = Professor("Prof", "prof@example.com", "senha", "prof001")
+        turma = Turma("ES-2025.2", "ES", "2025.2", professor)
+        
+        # Criar notificador mock
+        notificador_mock = Mock(spec=Observer)
+        turma.adicionar_observer(notificador_mock)
+        
+        evento = {
+            'tipo': 'aluno_adicionado',
+            'descricao': 'Aluno foi adicionado',
+            'turma': 'ES-2025.2'
+        }
+        
+        turma.notificar_observers(evento)
+        
+        # Verificar que o observer foi notificado
+        assert notificador_mock.atualizar.called
+        assert notificador_mock.atualizar.call_count == 1
+        
+        # Verificar que o evento foi passado corretamente
+        call_args = notificador_mock.atualizar.call_args[0][0]
+        assert call_args['tipo'] == 'aluno_adicionado'
+        assert call_args['turma'] == 'ES-2025.2'
+
+    def test_subject_notifica_todos_observers(self):
+        """Subject deve notificar todos os observers registrados"""
+        professor = Professor("Prof", "prof@example.com", "senha", "prof001")
+        turma = Turma("ES-2025.2", "ES", "2025.2", professor)
+        
+        # Adicionar 3 observers mocks
+        observer_mocks = [Mock(spec=Observer) for _ in range(3)]
+        for obs in observer_mocks:
+            turma.adicionar_observer(obs)
+        
+        evento = {'tipo': 'teste', 'descricao': 'Teste notificação'}
+        
+        turma.notificar_observers(evento)
+        
+        # Verificar que todos foram notificados
+        for obs in observer_mocks:
+            assert obs.atualizar.called
+            assert obs.atualizar.call_count == 1
+
+    def test_observer_removido_nao_e_notificado(self):
+        """Observer removido não deve receber notificações"""
+        professor = Professor("Prof", "prof@example.com", "senha", "prof001")
+        turma = Turma("ES-2025.2", "ES", "2025.2", professor)
+        
+        observer_mock = Mock(spec=Observer)
+        turma.adicionar_observer(observer_mock)
+        
+        # Primeiro evento - deve ser notificado
+        evento1 = {'tipo': 'evento1', 'descricao': 'Teste'}
+        turma.notificar_observers(evento1)
+        assert observer_mock.atualizar.call_count == 1
+        
+        # Remover observer
+        turma.remover_observer(observer_mock)
+        
+        # Segundo evento - NÃO deve ser notificado
+        evento2 = {'tipo': 'evento2', 'descricao': 'Teste'}
+        turma.notificar_observers(evento2)
+        
+        # Ainda deve estar 1 (não aumentou)
+        assert observer_mock.atualizar.call_count == 1
+
+    def test_notificador_email_real_com_eventos(self):
+        """Testar NotificadorEmail real recebendo eventos de Turma"""
+        professor = Professor("Prof", "prof@example.com", "senha", "prof001")
+        turma = Turma("ES-2025.2", "ES", "2025.2", professor)
+        
+        # Criar notificador real com mock interno
+        notificador = NotificadorEmail("admin@example.com")
+        notificador._enviar_email = Mock()
+        
+        turma.adicionar_observer(notificador)
+        
+        evento = {
+            'tipo': 'professor_atribuido',
+            'turma': 'ES-2025.2',
+            'professor': 'João Silva'
+        }
+        
+        turma.notificar_observers(evento)
+        
+        # Verificar que email foi preparado
+        assert notificador._enviar_email.called
+        call_args = notificador._enviar_email.call_args[0]
+        assert 'professor_atribuido' in call_args[0]  # Assunto
+
+    def test_notificador_push_real_com_eventos(self):
+        """Testar NotificadorPush real recebendo eventos de Turma"""
+        professor = Professor("Prof", "prof@example.com", "senha", "prof001")
+        turma = Turma("ES-2025.2", "ES", "2025.2", professor)
+        
+        # Criar notificador real com mock interno
+        notificador = NotificadorPush("usuario_123", ["device_1"])
+        notificador._enviar_push = Mock()
+        
+        turma.adicionar_observer(notificador)
+        
+        evento = {
+            'tipo': 'avaliacao_criada',
+            'turma': 'ES-2025.2',
+            'descricao': 'Avaliação criada'
+        }
+        
+        turma.notificar_observers(evento)
+        
+        # Verificar que push foi preparado
+        assert notificador._enviar_push.called
+        payload = notificador._enviar_push.call_args[0][1]
+        assert 'avaliacao_criada' in payload['titulo']
