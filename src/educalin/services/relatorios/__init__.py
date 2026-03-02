@@ -12,10 +12,12 @@ from .base import (
 )
 
 from .turma import RelatorioTurma
+from .individual import RelatorioIndividual
 
 __all__ = [
     'GeradorRelatorio',
     'FormatoRelatorio',
     'RelatorioVazioException',
     'RelatorioTurma',
+    'RelatorioIndividual',
 ]
