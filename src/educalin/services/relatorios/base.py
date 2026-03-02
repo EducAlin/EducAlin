@@ -1,5 +1,5 @@
 """
-Módulo de geração de relatórios usando Template Method Pattern.
+Módulo base para geração de relatórios usando Template Method Pattern.
 
 Este módulo fornece a estrutura base para geração de relatórios
 através do padrão Template Method, garantindo que todas as subclasses

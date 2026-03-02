@@ -4,7 +4,7 @@ from abc import ABC
 from unittest.mock import Mock, patch, MagicMock
 from io import BytesIO
 
-from educalin.services.relatorio import (
+from educalin.services.relatorios.base import (
     GeradorRelatorio,
     FormatoRelatorio,
     RelatorioVazioException
