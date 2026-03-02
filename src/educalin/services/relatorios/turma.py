@@ -41,9 +41,24 @@ class RelatorioTurma(GeradorRelatorio):
         """
         super().__init__()
 
-        if not hasattr(turma, 'codigo') or not hasattr(turma, 'alunos'):
-            raise TypeError("Turma deve ter atributos 'codigo' e 'alunos'")
-        
+        # Validação defensiva: a classe depende destes atributos/métodos
+        required_attrs = ("codigo", "alunos", "disciplina", "semestre")
+        required_methods = ("obter_desempenho_geral",)
+
+        missing_attrs = [attr for attr in required_attrs if not hasattr(turma, attr)]
+        missing_methods = [m for m in required_methods if not hasattr(turma, m)]
+
+        if missing_attrs or missing_methods:
+            parts = []
+            if missing_attrs:
+                parts.append(f"atributos faltando: {', '.join(missing_attrs)}")
+            if missing_methods:
+                parts.append(f"métodos faltando: {', '.join(missing_methods)}")
+            raise TypeError(
+                f"Turma inválida: objeto não tem a interface esperada. "
+                + "; ".join(parts)
+            )
+
         self._turma = turma
 
     # Implementação dos métodos abstratos
@@ -153,10 +168,12 @@ class RelatorioTurma(GeradorRelatorio):
             linhas.append("-"*70)
 
             for aluno in alunos_dificuldade:
+                media = aluno.get('media')
+                media_str = f"{media:.2f}" if isinstance(media, (int, float)) else "N/A"
                 linhas.append(
                     f"!  {aluno.get('nome', 'N/A'):<30} "
                     f"Matrícula: {aluno.get('matricula', 'N/A'):<10} "
-                    f"Média: {aluno.get('media', 'N/A'):.2f}"
+                    f"Média: {media_str}"
                 )
             linhas.append("")
         else:
@@ -172,18 +189,19 @@ class RelatorioTurma(GeradorRelatorio):
             linhas.append("-"*70)
 
             for aluno in alunos:
-                media = aluno.get('media', 0.0)
-                status = "OK" if media >=6.0 else "!"
+                media = aluno.get('media')
+                media_str = f"{media:.2f}" if isinstance(media, (int, float)) else "N/A"
+                status = "OK" if isinstance(media, (int, float)) and media >= 6.0 else "!"
                 linhas.append(
-                    f"{status}  {aluno.get('aluno', 'N/A'):<30} "
+                    f"{status}  {aluno.get('nome', 'N/A'):<30} "
                     f"Matrícula: {aluno.get('matricula', 'N/A'):<10} "
-                    f"Média: {media:.2f}"
+                    f"Média: {media_str}"
                 )
             linhas.append("")
 
         # Rodapé
         linhas.append("="*70)
-        linhas.append(f"Relatório gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+        linhas.append(f"Relatório gerado em: {(self._data_geracao or datetime.now()).strftime('%d/%m/%Y %H:%M')}")
         linhas.append("="*70)
 
         return "\n".join(linhas)

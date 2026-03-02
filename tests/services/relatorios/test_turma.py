@@ -1,12 +1,10 @@
 import pytest
-from unittest.mock import Mock, MagicMock
-from datetime import datetime
+from unittest.mock import Mock
 
 from educalin.services.relatorios import (
     RelatorioTurma,
     GeradorRelatorio,
     FormatoRelatorio,
-    RelatorioVazioException
 )
 
 
@@ -236,6 +234,27 @@ class TestRelatorioTurmaFormatarSaida:
         assert "ranking" in resultado.lower() or "melhores" in resultado.lower()
         assert "Fulano 1" in resultado
 
+    def test_formatar_saida_inclui_lista_completa_de_alunos(self, dados_processados):
+        """Deve incluir seção LISTA COMPLETA DE ALUNOS com nomes após o cabeçalho"""
+        turma_mock = Mock()
+        relatorio = RelatorioTurma(turma_mock)
+
+        resultado = relatorio.formatar_saida(dados_processados)
+
+        # Verifica presença do cabeçalho da seção
+        assert "LISTA COMPLETA DE ALUNOS" in resultado.upper()
+
+        # Garante que os nomes aparecem nas linhas subsequentes ao cabeçalho
+        linhas = resultado.splitlines()
+        indice_cabecalho = next(
+            i for i, linha in enumerate(linhas)
+            if "LISTA COMPLETA DE ALUNOS" in linha.upper()
+        )
+        linhas_apos_cabecalho = "\n".join(linhas[indice_cabecalho + 1:indice_cabecalho + 11])
+
+        assert "Fulano 1" in linhas_apos_cabecalho
+        assert "Fulano 2" in linhas_apos_cabecalho
+
     def test_formatar_saida_formatacao_legivel(self, dados_processados):
         turma_mock = Mock()
         relatorio = RelatorioTurma(turma_mock)
@@ -318,7 +337,7 @@ class TestRelatorioTurmaIntegracao:
         return turma
     
     def test_gerador_relatorio_completo(self, turma_completa):
-        """Teste end-to-end: ferar() usa template method completo"""
+        """Teste end-to-end: gerar() usa template method completo"""
         relatorio = RelatorioTurma(turma_completa)
 
         resultado = relatorio.gerar()
@@ -332,8 +351,8 @@ class TestRelatorioTurmaIntegracao:
         assert "Fulano 1" in resultado
         assert "Fulano 3" in resultado
 
-    def test_gerar_e_exportar_pdf(self, turma_completa):
-        """Deve poder gerar e exportar para PDF"""
+    def test_gerar_e_exportar_texto(self, turma_completa):
+        """Deve poder gerar e exportar como texto"""
         relatorio = RelatorioTurma(turma_completa)
 
         conteudo = relatorio.gerar()
