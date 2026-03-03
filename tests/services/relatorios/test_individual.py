@@ -1,6 +1,6 @@
 import pytest
-from unittest.mock import Mock
-from datetime import datetime, timedelta
+from unittest.mock import Mock, PropertyMock
+from datetime import datetime
 
 from educalin.services.relatorios import (
     RelatorioIndividual,
@@ -63,13 +63,18 @@ class TestRelatorioIndividualHeranca:
         with pytest.raises(TypeError, match="codigo"):
             RelatorioIndividual(aluno_mock, turma_invalida)
 
+    def test_limiar_aprovacao_e_constante_de_classe(self):
+        """LIMIAR_APROVACAO deve ser constante de classe com valor 7.0"""
+        assert hasattr(RelatorioIndividual, 'LIMIAR_APROVACAO')
+        assert RelatorioIndividual.LIMIAR_APROVACAO == 7.0
+
 
 class TestRelatorioIndividualColetarDados:
     """Testes do método coletar_dados()"""
 
     @pytest.fixture
     def aluno_com_historico(self):
-        """Fixture com aluno mock contendo histórico de notas"""
+        """Fixture com aluno mock contendo histórico de notas via propriedade desempenho"""
         aluno = Mock()
         aluno.nome = "Fulano de Tal"
         aluno.matricula = "12345"
@@ -80,7 +85,6 @@ class TestRelatorioIndividualColetarDados:
         nota1.avaliacao = Mock()
         nota1.avaliacao.titulo = "Prova 1"
         nota1.avaliacao.topico = "Álgebra"
-        nota1.avaliacao.data = datetime(2026, 1, 30)
         nota1.data_registro = datetime(2026, 1, 30)
 
         nota2 = Mock()
@@ -88,7 +92,6 @@ class TestRelatorioIndividualColetarDados:
         nota2.avaliacao = Mock()
         nota2.avaliacao.titulo = "Prova 2"
         nota2.avaliacao.topico = "Geometria"
-        nota2.avaliacao.data = datetime(2026, 2, 18)
         nota2.data_registro = datetime(2026, 2, 18)
 
         nota3 = Mock()
@@ -96,10 +99,10 @@ class TestRelatorioIndividualColetarDados:
         nota3.avaliacao = Mock()
         nota3.avaliacao.titulo = "Prova 3"
         nota3.avaliacao.topico = "Álgebra"
-        nota3.avaliacao.data = datetime(2026, 2, 20)
         nota3.data_registro = datetime(2026, 2, 20)
 
-        aluno.obter_historico_notas = Mock(return_value=[nota1, nota2, nota3])
+        # Usa a propriedade `desempenho` da classe Aluno (API correta do domínio)
+        type(aluno).desempenho = PropertyMock(return_value=[nota1, nota2, nota3])
 
         return aluno
     
@@ -136,6 +139,7 @@ class TestRelatorioIndividualColetarDados:
         assert dados['media_geral'] == 7.5
 
     def test_coletar_dados_inclui_info_turma(self, aluno_com_historico, turma_mock):
+        """Deve incluir informações da turma"""
         relatorio = RelatorioIndividual(aluno_com_historico, turma_mock)
 
         dados = relatorio.coletar_dados()
@@ -147,7 +151,7 @@ class TestRelatorioIndividualColetarDados:
         assert dados['disciplina'] == "Matemática"
 
     def test_coletar_dados_inclui_historico_notas(self, aluno_com_historico, turma_mock):
-        """Deve incluir histórico completo de notas"""
+        """Deve incluir histórico completo de notas com campos valor, avaliacao, topico e data"""
         relatorio = RelatorioIndividual(aluno_com_historico, turma_mock)
 
         dados = relatorio.coletar_dados()
@@ -162,8 +166,18 @@ class TestRelatorioIndividualColetarDados:
         assert 'topico' in nota
         assert 'data' in nota
 
+    def test_coletar_dados_usa_data_registro_da_nota(self, aluno_com_historico, turma_mock):
+        """O campo 'data' do histórico deve vir de nota.data_registro"""
+        relatorio = RelatorioIndividual(aluno_com_historico, turma_mock)
+
+        dados = relatorio.coletar_dados()
+
+        historico = dados['historico_notas']
+        # Primeira nota (mais antiga) deve ter data_registro de 2026-01-30
+        assert historico[0]['data'] == datetime(2026, 1, 30)
+
     def test_coletar_dados_ordena_notas_cronologicamente(self, aluno_com_historico, turma_mock):
-        """Notas devem estar ordenadas por data (mais antigas primeiro)"""
+        """Notas devem estar ordenadas por data_registro (mais antigas primeiro)"""
         relatorio = RelatorioIndividual(aluno_com_historico, turma_mock)
 
         dados = relatorio.coletar_dados()
@@ -187,7 +201,7 @@ class TestRelatorioIndividualColetarDados:
         assert len(dados['pontos_fortes']) > 0
 
     def test_coletar_dados_identifica_pontos_atencao(self, turma_mock):
-        """Deve identificar tópicos que precisa de atenção (< 7.0) após processar_dados()"""
+        """Deve identificar tópicos que precisam de atenção (< 7.0) após processar_dados()"""
         aluno = Mock()
         aluno.nome = "Fulano"
         aluno.matricula = "9999"
@@ -198,9 +212,9 @@ class TestRelatorioIndividualColetarDados:
         nota_baixa.avaliacao = Mock()
         nota_baixa.avaliacao.titulo = "Prova 1"
         nota_baixa.avaliacao.topico = "Cálculo"
-        nota_baixa.avaliacao.data = datetime(2026, 1, 10)
+        nota_baixa.data_registro = datetime(2026, 1, 10)
 
-        aluno.obter_historico_notas = Mock(return_value=[nota_baixa])
+        type(aluno).desempenho = PropertyMock(return_value=[nota_baixa])
 
         relatorio = RelatorioIndividual(aluno, turma_mock)
 
@@ -216,7 +230,8 @@ class TestRelatorioIndividualColetarDados:
         aluno.nome = "Fulano"
         aluno.matricula = "1111"
         aluno.calcular_media = Mock(return_value=0.0)
-        aluno.obter_historico_notas = Mock(return_value=[])
+
+        type(aluno).desempenho = PropertyMock(return_value=[])
 
         relatorio = RelatorioIndividual(aluno, turma_mock)
 
@@ -225,13 +240,35 @@ class TestRelatorioIndividualColetarDados:
         assert dados['historico_notas'] == []
         assert dados['media_geral'] == 0.0
 
+    def test_processar_dados_nao_muta_dados_originais(self, aluno_com_historico, turma_mock):
+        """processar_dados() não deve modificar o dicionário de entrada"""
+        relatorio = RelatorioIndividual(aluno_com_historico, turma_mock)
+
+        dados_brutos = relatorio.coletar_dados()
+        chaves_originais = set(dados_brutos.keys())
+
+        relatorio.processar_dados(dados_brutos)
+
+        # Chaves originais devem permanecer intactas
+        assert set(dados_brutos.keys()) == chaves_originais
+        # Chaves adicionadas pelo processamento não devem estar no original
+        assert 'tendencia' not in dados_brutos
+        assert 'pontos_fortes' not in dados_brutos
+        assert 'pontos_atencao' not in dados_brutos
+        assert 'grafico_ascii' not in dados_brutos
+
     
 class TestRelatorioIndividualFormatarSaida:
     """Testes do método formatar_saida()"""
 
     @pytest.fixture
+    def relatorio(self):
+        """Fixture com instância de RelatorioIndividual usando mocks genéricos"""
+        return RelatorioIndividual(Mock(), Mock())
+
+    @pytest.fixture
     def dados_processados(self):
-        """Fixture com dados processados"""
+        """Fixture com dados processados contendo gráfico ASCII real"""
         return {
             'nome_aluno': 'Fulano de Tal',
             'matricula': '12345',
@@ -253,27 +290,27 @@ class TestRelatorioIndividualFormatarSaida:
             'pontos_atencao': [
                 {'topico': 'Geometria', 'media': 6.5, 'avaliacoes': 1}
             ],
-            'tendencia': 'crescente',                 # tipos são 'crescente', 'estavel', 'decrescente'
-            'grafico_ascii': 'Gráfico de evolução...' # TODO implementação para retorno de algo para gráfico real em interface?
+            'tendencia': 'crescente',
+            'grafico_ascii': (
+                "10 |██ ██ ██ ██ ██ \n"
+                "   |            ██ \n"
+                " 5 |██ ██ ██ ██ ██ \n"
+                "   |            \n"
+                " 1 |██ ██ ██ ██ ██ \n"
+                "   +───────────────\n"
+                "    A1 A2 A3 A4 A5 "
+            ),
         }
     
-    def test_formatar_saida_retorna_string(self, dados_processados):
+    def test_formatar_saida_retorna_string(self, relatorio, dados_processados):
         """formatar_saida() deve retornar string"""
-        aluno_mock = Mock()
-        turma_mock = Mock()
-        relatorio = RelatorioIndividual(aluno_mock, turma_mock)
-
         resultado = relatorio.formatar_saida(dados_processados)
 
         assert isinstance(resultado, str)
         assert len(resultado) > 0
 
-    def test_formatar_saida_inclui_cabecalho(self, dados_processados):
+    def test_formatar_saida_inclui_cabecalho(self, relatorio, dados_processados):
         """Deve incluir cabeçalho com informações do aluno"""
-        aluno_mock = Mock()
-        turma_mock = Mock()
-        relatorio = RelatorioIndividual(aluno_mock, turma_mock)
-
         resultado = relatorio.formatar_saida(dados_processados)
 
         assert "Fulano de Tal" in resultado
@@ -281,71 +318,80 @@ class TestRelatorioIndividualFormatarSaida:
         assert "ES002" in resultado
         assert "Matemática" in resultado
 
-    def test_formatar_saida_inclui_estatistica(self, dados_processados):
+    def test_formatar_saida_inclui_estatistica(self, relatorio, dados_processados):
         """Deve incluir estatísticas do aluno"""
-        aluno_mock = Mock()
-        turma_mock = Mock()
-        relatorio = RelatorioIndividual(aluno_mock, turma_mock)
-
         resultado = relatorio.formatar_saida(dados_processados)
 
         assert "7.40" in resultado
         assert "5" in resultado or "cinco" in resultado.lower()
 
-    def test_formatar_saida_inclui_historico(self, dados_processados):
+    def test_formatar_saida_inclui_historico(self, relatorio, dados_processados):
         """Deve incluir lista do histórico de notas"""
-        aluno_mock = Mock()
-        turma_mock = Mock()
-        relatorio = RelatorioIndividual(aluno_mock, turma_mock)
-
         resultado = relatorio.formatar_saida(dados_processados)
 
         assert "Prova 1" in resultado
         assert "Álgebra" in resultado
         assert "6.0" in resultado
 
-    def test_formatar_saida_inclui_grafico(self, dados_processados):
-        """Deve incluir gráfico de evolução"""
-        aluno_mock = Mock()
-        turma_mock = Mock()
-        relatorio = RelatorioIndividual(aluno_mock, turma_mock)
-
+    def test_formatar_saida_inclui_grafico(self, relatorio, dados_processados):
+        """Deve incluir seção de evolução de notas com gráfico ASCII"""
         resultado = relatorio.formatar_saida(dados_processados)
 
-        assert "evolução" in resultado.lower() or "gráfico" in resultado.lower()
+        assert "EVOLUÇÃO DAS NOTAS" in resultado
         assert any(char in resultado for char in ['│', '─', '█', '*', '#', '|', '-'])
 
-    def test_formatar_saida_inclui_analise_tendencia(self, dados_processados):
+    def test_formatar_saida_inclui_analise_tendencia(self, relatorio, dados_processados):
         """Deve incluir análise de tendência"""
-        aluno_mock = Mock()
-        turma_mock = Mock()
-        relatorio = RelatorioIndividual(aluno_mock, turma_mock)
-
         resultado = relatorio.formatar_saida(dados_processados)
 
         assert any(palavra in resultado.lower()
                    for palavra in ['crescente', 'melhor', 'progress', 'evolu', 'ascend'])
         
-    def test_formatar_saida_inclui_pontos_fortes(self, dados_processados):
+    def test_formatar_saida_inclui_pontos_fortes(self, relatorio, dados_processados):
         """Deve listar pontos fortes do aluno"""
-        aluno_mock = Mock()
-        turma_mock = Mock()
-        relatorio = RelatorioIndividual(aluno_mock, turma_mock)
-
         resultado = relatorio.formatar_saida(dados_processados)
 
         assert "pontos fortes" in resultado.lower() or "destaque" in resultado.lower()
         assert "Álgebra" in resultado
 
-    def test_formatar_saida_inclui_pontos_fracos(self, dados_processados):
+    def test_formatar_saida_inclui_pontos_fracos(self, relatorio, dados_processados):
         """Deve listar pontos que precisam de atenção"""
-        aluno_mock = Mock()
-        turma_mock = Mock()
-        relatorio = RelatorioIndividual(aluno_mock, turma_mock)
-
         resultado = relatorio.formatar_saida(dados_processados)
 
         assert "atenção" in resultado.lower() or "melhorar" in resultado.lower()
+
+    def test_formatar_saida_status_ok_para_nota_aprovada(self, relatorio):
+        """Notas >= 7.0 devem ter status [OK] no histórico"""
+        dados = {
+            'historico_notas': [
+                {'valor': 8.5, 'avaliacao': 'Prova 1', 'topico': 'Álgebra', 'data': datetime(2026, 1, 10)},
+            ],
+        }
+        resultado = relatorio.formatar_saida(dados)
+
+        assert "[OK]" in resultado
+
+    def test_formatar_saida_status_atencao_para_nota_reprovada(self, relatorio):
+        """Notas < 7.0 devem ter status [!] no histórico"""
+        dados = {
+            'historico_notas': [
+                {'valor': 4.0, 'avaliacao': 'Prova 1', 'topico': 'Cálculo', 'data': datetime(2026, 1, 10)},
+            ],
+        }
+        resultado = relatorio.formatar_saida(dados)
+
+        assert "[!]" in resultado
+
+    def test_formatar_saida_valor_none_nao_lanca_excecao(self, relatorio):
+        """Guard contra None em nota['valor'] não deve lançar TypeError"""
+        dados = {
+            'historico_notas': [
+                {'valor': None, 'avaliacao': 'Prova 1', 'topico': 'Álgebra', 'data': datetime(2026, 1, 10)},
+            ],
+        }
+        # Não deve lançar TypeError ao comparar None >= 7.0
+        resultado = relatorio.formatar_saida(dados)
+        assert isinstance(resultado, str)
 
     
 class TestRelatorioIndividualProcessarDados:
@@ -408,6 +454,47 @@ class TestRelatorioIndividualProcessarDados:
 
         assert dados_processados['tendencia'] == 'estavel'
 
+    def test_processar_dados_tendencia_historico_unico_e_estavel(self, aluno_mock, turma_mock):
+        """Histórico com apenas 1 nota deve resultar em tendência estável"""
+        relatorio = RelatorioIndividual(aluno_mock, turma_mock)
+
+        dados_brutos = {
+            'historico_notas': [
+                {'valor': 9.0, 'data': datetime(2026, 1, 10)},
+            ]
+        }
+
+        dados_processados = relatorio.processar_dados(dados_brutos)
+
+        assert dados_processados['tendencia'] == 'estavel'
+
+    def test_processar_dados_tendencia_historico_vazio_e_estavel(self, aluno_mock, turma_mock):
+        """Histórico vazio deve resultar em tendência estável"""
+        relatorio = RelatorioIndividual(aluno_mock, turma_mock)
+
+        dados_brutos = {'historico_notas': []}
+
+        dados_processados = relatorio.processar_dados(dados_brutos)
+
+        assert dados_processados['tendencia'] == 'estavel'
+
+    def test_processar_dados_tendencia_divisao_simetrica_impar(self, aluno_mock, turma_mock):
+        """Com 3 notas, a comparação deve ser simétrica (1ª nota vs 3ª nota) ignorando o centro"""
+        relatorio = RelatorioIndividual(aluno_mock, turma_mock)
+
+        # 6.0 (inicio) vs 8.0 (fim) — diferença = +2.0 -> crescente
+        dados_brutos = {
+            'historico_notas': [
+                {'valor': 6.0, 'data': datetime(2026, 1, 1)},
+                {'valor': 1.0, 'data': datetime(2026, 1, 15)},  # centro ignorado
+                {'valor': 8.0, 'data': datetime(2026, 2, 1)},
+            ]
+        }
+
+        dados_processados = relatorio.processar_dados(dados_brutos)
+
+        assert dados_processados['tendencia'] == 'crescente'
+
     def test_processar_dados_gera_grafico_ascii(self, aluno_mock, turma_mock):
         """Deve gerar gráfico ASCII de evolução"""
         relatorio = RelatorioIndividual(aluno_mock, turma_mock)
@@ -426,7 +513,34 @@ class TestRelatorioIndividualProcessarDados:
         grafico = dados_processados['grafico_ascii']
         assert isinstance(grafico, str)
         assert len(grafico) > 0
-        assert any(char in grafico for char in ['│', '─', '█', '*', '#'])
+        assert any(char in grafico for char in ['─', '█', '|'])
+
+    def test_processar_dados_grafico_contem_rotulos_sequenciais(self, aluno_mock, turma_mock):
+        """Gráfico ASCII deve usar rótulos sequenciais A1, A2, A3"""
+        relatorio = RelatorioIndividual(aluno_mock, turma_mock)
+
+        dados_brutos = {
+            'historico_notas': [
+                {'valor': 7.0, 'avaliacao': 'Prova 1', 'data': datetime(2026, 1, 1)},
+                {'valor': 8.0, 'avaliacao': 'Prova 2', 'data': datetime(2026, 2, 1)},
+            ]
+        }
+
+        dados_processados = relatorio.processar_dados(dados_brutos)
+        grafico = dados_processados['grafico_ascii']
+
+        assert 'A1' in grafico
+        assert 'A2' in grafico
+
+    def test_processar_dados_grafico_vazio_sem_historico(self, aluno_mock, turma_mock):
+        """Gráfico com histórico vazio deve retornar mensagem de fallback"""
+        relatorio = RelatorioIndividual(aluno_mock, turma_mock)
+
+        dados_brutos = {'historico_notas': []}
+
+        dados_processados = relatorio.processar_dados(dados_brutos)
+
+        assert "(sem avaliações registradas)" in dados_processados['grafico_ascii']
 
 
 class TestRelatorioIndividualIntegracao:
@@ -434,7 +548,7 @@ class TestRelatorioIndividualIntegracao:
 
     @pytest.fixture
     def aluno_completo(self):
-        """Aluno com histórico completo para teste end-to-end"""
+        """Aluno com histórico completo para teste end-to-end via propriedade desempenho"""
         aluno = Mock()
         aluno.nome = "Glip Glarp"
         aluno.matricula = "54321"
@@ -447,16 +561,16 @@ class TestRelatorioIndividualIntegracao:
             nota.avaliacao = Mock()
             nota.avaliacao.titulo = f"Prova {i+1}"
             nota.avaliacao.topico = "Álgebra" if i % 2 == 0 else "Geometria"
-            nota.avaliacao.data = datetime(2025, 1 + i, 15)
             nota.data_registro = datetime(2025, 1 + i, 15)
             notas.append(nota)
 
-        aluno.obter_historico_notas = Mock(return_value=notas)
+        type(aluno).desempenho = PropertyMock(return_value=notas)
 
         return aluno
     
     @pytest.fixture
     def turma_completa(self):
+        """Turma mock para testes de integração"""
         turma = Mock()
         turma.codigo = "ES002"
         turma.disciplina = "Matemática"
@@ -473,7 +587,47 @@ class TestRelatorioIndividualIntegracao:
         assert len(resultado) > 0
         assert "Glip Glarp" in resultado
         assert "54321" in resultado
-        assert "8.2" in resultado
+        assert "8.20" in resultado
+
+    def test_gerar_relatorio_inclui_historico_e_tendencia(self, aluno_completo, turma_completa):
+        """Relatório gerado deve conter histórico de notas e tendência"""
+        relatorio = RelatorioIndividual(aluno_completo, turma_completa)
+
+        resultado = relatorio.gerar()
+
+        assert "HISTÓRICO COMPLETO DE AVALIAÇÕES" in resultado
+        assert "Tendência:" in resultado
+        assert any(t in resultado for t in ['CRESCENTE', 'ESTÁVEL', 'DECRESCENTE'])
+
+    def test_gerar_relatorio_inclui_pontos_fortes_ou_atencao(self, aluno_completo, turma_completa):
+        """Relatório gerado deve incluir seção de pontos fortes ou de atenção"""
+        relatorio = RelatorioIndividual(aluno_completo, turma_completa)
+
+        resultado = relatorio.gerar()
+
+        tem_pontos_fortes = "PONTOS FORTES" in resultado
+        tem_pontos_atencao = "PONTOS QUE NECESSITAM DE ATENÇÃO" in resultado
+
+        assert tem_pontos_fortes or tem_pontos_atencao
+
+    def test_gerar_relatorio_inclui_grafico_ascii(self, aluno_completo, turma_completa):
+        """Relatório gerado deve incluir seção de evolução com gráfico ASCII"""
+        relatorio = RelatorioIndividual(aluno_completo, turma_completa)
+
+        resultado = relatorio.gerar()
+
+        assert "EVOLUÇÃO DAS NOTAS" in resultado
+        assert "█" in resultado
+
+    def test_gerar_relatorio_turma_presente(self, aluno_completo, turma_completa):
+        """Informações da turma devem aparecer no relatório gerado"""
+        relatorio = RelatorioIndividual(aluno_completo, turma_completa)
+
+        resultado = relatorio.gerar()
+
+        assert "ES002" in resultado
+        assert "Matemática" in resultado
+        assert "2025.1" in resultado
 
     def test_gerar_e_exportar_texto(self, aluno_completo, turma_completa):
         """Deve poder gerar e exportar como texto"""
@@ -483,3 +637,33 @@ class TestRelatorioIndividualIntegracao:
         resultado = relatorio.exportar(conteudo, FormatoRelatorio.TEXTO)
 
         assert isinstance(resultado, bytes)
+        assert "Glip Glarp".encode() in resultado
+
+    def test_gerar_e_exportar_texto_conteudo_utf8(self, aluno_completo, turma_completa):
+        """Exportação como texto deve conter conteúdo UTF-8 válido incluindo caracteres especiais"""
+        relatorio = RelatorioIndividual(aluno_completo, turma_completa)
+
+        conteudo = relatorio.gerar()
+        resultado = relatorio.exportar(conteudo, FormatoRelatorio.TEXTO)
+
+        # Deve ser decodificável como UTF-8 sem erros
+        texto_decodificado = resultado.decode('utf-8')
+        assert "Glip Glarp" in texto_decodificado
+        assert "RELATÓRIO INDIVIDUAL" in texto_decodificado
+        # Caractere especial do gráfico ASCII deve sobreviver ao encode/decode
+        assert "█" in texto_decodificado
+
+    def test_gerar_e_exportar_json(self, aluno_completo, turma_completa):
+        """Deve poder gerar e exportar como JSON com metadados, serializando datetime corretamente"""
+        import json
+        relatorio = RelatorioIndividual(aluno_completo, turma_completa)
+
+        conteudo = relatorio.gerar()
+        resultado = relatorio.exportar(conteudo, FormatoRelatorio.JSON)
+
+        assert isinstance(resultado, bytes)
+        dados_json = json.loads(resultado.decode('utf-8'))
+        assert 'relatorio' in dados_json
+        assert 'data_geracao' in dados_json
+        # data_geracao deve ser string ISO 8601, não objeto datetime
+        assert isinstance(dados_json['data_geracao'], str)

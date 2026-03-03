@@ -281,14 +281,24 @@ class GeradorRelatorio(ABC):
         return output.read()
     
     def _exportar_json(self, conteudo: str) -> bytes:
-        """Exporta dados como JSON"""
+        """Exporta dados como JSON.
+
+        Utiliza um encoder customizado para serializar tipos não suportados
+        nativamente pelo JSON (ex.: datetime vira ISO 8601).
+        """
+        def _json_default(obj: Any) -> str:
+            """Serializa tipos não suportados pelo JSON padrão."""
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            raise TypeError(f"Objeto do tipo {type(obj).__name__} não é serializável em JSON")
+
         dados_json = {
             'relatorio': conteudo,
             'data_geracao': self._data_geracao.isoformat() if self._data_geracao else None,
             'dados_brutos': self._dados_brutos
         }
 
-        return json.dumps(dados_json, ensure_ascii=False, indent=2).encode('utf-8')
+        return json.dumps(dados_json, ensure_ascii=False, indent=2, default=_json_default).encode('utf-8')
     
     # =================================
     # Métodos auxiliares
