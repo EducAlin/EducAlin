@@ -1,12 +1,14 @@
-import pytest
+"""
+Testes para RelatorioComparativo
+"""
+
+import copy
 from unittest.mock import Mock
-from datetime import datetime
+import pytest
 
 from educalin.services.relatorios import (
     RelatorioComparativo,
     GeradorRelatorio,
-    FormatoRelatorio,
-    RelatorioVazioException
 )
 
 # Fixtures
@@ -85,14 +87,14 @@ class TestRelatorioComparativoInicializacao:
 
     def test_inicializacao_com_lista_valida(self, duas_turmas):
         """Deve inicializar corretamente com lista de turmas válidas"""
-        relatorio = RelatorioComparativo(duas_turmas)
-        assert relatorio._turmas == duas_turmas
+        relatorio_local = RelatorioComparativo(duas_turmas)
+        assert relatorio_local._turmas == duas_turmas
 
     def test_inicializacao_com_turma_unica(self, turma_mock_factory):
         """Deve aceitar lista com apenas uma turma"""
         turma = turma_mock_factory('ES001', 'Matemática', '2025.1', [7.0, 8.0])
-        relatorio = RelatorioComparativo([turma])
-        assert len(relatorio._turmas) == 1 
+        relatorio_local = RelatorioComparativo([turma])
+        assert len(relatorio_local._turmas) == 1 
 
     def test_lista_vazia_lanca_erro(self):
         """Deve lançar ValueError se a lista de turmas estiver vazia"""
@@ -122,9 +124,9 @@ class TestRelatorioComparativoInicializacao:
 
     def test_turmas_armazenadas_como_copia(self, duas_turmas):
         """Deve armazenar cópia da lista para evitar mutação externa"""
-        relatorio = RelatorioComparativo(duas_turmas)
+        relatorio_local = RelatorioComparativo(duas_turmas)
         duas_turmas.append(Mock())
-        assert len(relatorio._turmas) == 2
+        assert len(relatorio_local._turmas) == 2
 
 
 class TestRelatorioComparativoColetarDados:
@@ -152,7 +154,8 @@ class TestRelatorioComparativoColetarDados:
     def test_dados_por_turma_contem_campos_obrigatorios(self, relatorio):
         """Cada entrada de turma deve ter os campos esperados"""
         dados = relatorio.coletar_dados()
-        campos = {'codigo', 'disciplina', 'semestre', 'media_geral', 'total_alunos', 'alunos_com_dificuldade', 'taxa_aprovacao'}
+        campos = {'codigo', 'disciplina', 'semestre', 'media_geral',
+                  'total_alunos', 'alunos_com_dificuldade', 'taxa_aprovacao'}
 
         for turma_dados in dados['turmas']:
             assert campos.issubset(turma_dados.keys())
@@ -168,9 +171,9 @@ class TestRelatorioComparativoColetarDados:
         """Média global deve ser a média das médias das turmas"""
         t1 = turma_mock_factory('ES001', 'Matemática', '2025.2', [8.0, 8.0])
         t2 = turma_mock_factory('ES002', 'Matemática', '2025.2', [6.0, 6.0])
-        relatorio = RelatorioComparativo([t1, t2])
+        relatorio_local = RelatorioComparativo([t1, t2])
 
-        dados = relatorio.coletar_dados()
+        dados = relatorio_local.coletar_dados()
 
         assert dados['media_geral_global'] == pytest.approx(7.0, abs=0.01)
 
@@ -184,9 +187,9 @@ class TestRelatorioComparativoColetarDados:
         """Com turmas do mesmo semestre, exibe apenas um semestre sem vírgula"""
         t1 = turma_mock_factory('ES001', 'Mat', '2025.1', [7.0])
         t2 = turma_mock_factory('ES002', 'Mat', '2025.1', [8.0])
-        relatorio = RelatorioComparativo([t1, t2])
+        relatorio_local = RelatorioComparativo([t1, t2])
 
-        dados = relatorio.coletar_dados()
+        dados = relatorio_local.coletar_dados()
 
         assert dados['semestre'] == '2025.1'
 
@@ -194,9 +197,9 @@ class TestRelatorioComparativoColetarDados:
         """Com turmas de semestres distintos, exibe todos separados por vírgula"""
         t1 = turma_mock_factory('ES001', 'Mat', '2025.1', [7.0])
         t2 = turma_mock_factory('ES002', 'Mat', '2025.2', [8.0])
-        relatorio = RelatorioComparativo([t1, t2])
+        relatorio_local = RelatorioComparativo([t1, t2])
 
-        dados = relatorio.coletar_dados()
+        dados = relatorio_local.coletar_dados()
 
         assert '2025.1' in dados['semestre']
         assert '2025.2' in dados['semestre']
@@ -207,9 +210,9 @@ class TestRelatorioComparativoColetarDados:
         t1 = turma_mock_factory('ES001', 'Mat', '2025.1', [5.0, 5.0])
         t2 = turma_mock_factory('ES002', 'Mat', '2025.1', [9.0, 9.0])
 
-        relatorio = RelatorioComparativo([t1, t2])
-        dados = relatorio.coletar_dados()
-        
+        relatorio_local = RelatorioComparativo([t1, t2])
+        dados = relatorio_local.coletar_dados()
+
         medias = [t['media_geral'] for t in dados['turmas']]
         assert medias == sorted(medias, reverse=True)
 
@@ -219,8 +222,9 @@ class TestRelatorioComparativoProcessarDados:
 
     @pytest.fixture
     def dados_brutos(self, relatorio):
+        """Fixture que retorna os dados brutos coletados para teste"""
         return relatorio.coletar_dados()
-    
+
     def test_retorna_dicionario(self, relatorio, dados_brutos):
         """Deve retornar um dicionário"""
         resultado = relatorio.processar_dados(dados_brutos)
@@ -229,7 +233,6 @@ class TestRelatorioComparativoProcessarDados:
 
     def test_nao_muta_dados_originais(self, relatorio, dados_brutos):
         """Não deve modificar o dicionário de entrada"""
-        import copy
         copia = copy.deepcopy(dados_brutos)
         relatorio.processar_dados(dados_brutos)
 
@@ -245,7 +248,7 @@ class TestRelatorioComparativoProcessarDados:
         """O ranking deve estar ordenado por média decrescente"""
         resultado = relatorio.processar_dados(dados_brutos)
         medias = [t['media_geral'] for t in resultado['ranking']]
-        
+
         assert medias == sorted(medias, reverse=True)
 
     def test_ranking_contem_posicao(self, relatorio, dados_brutos):
@@ -273,9 +276,9 @@ class TestRelatorioComparativoProcessarDados:
         # ES001: 0 com dificuldade  |  ES002: 3 com dificuldade
         t1 = turma_mock_factory('ES001', 'Mat', '2025.1', [8.0, 8.0, 8.0])
         t2 = turma_mock_factory('ES002', 'Mat', '2025.1', [4.0, 4.0, 4.0])
-        relatorio = RelatorioComparativo([t1, t2])
+        relatorio_local = RelatorioComparativo([t1, t2])
 
-        resultado = relatorio.processar_dados(relatorio.coletar_dados())
+        resultado = relatorio_local.processar_dados(relatorio_local.coletar_dados())
 
         assert resultado['turma_mais_critica'] == 'ES002'
 
@@ -286,9 +289,9 @@ class TestRelatorioComparativoProcessarDados:
         # ES002: médias [3.0, 3.0, 7.0, 9.0] → média = 5.5  ← menor, deve vencer
         t1 = turma_mock_factory('ES001', 'Mat', '2025.1', [4.0, 4.0, 8.0, 8.0])
         t2 = turma_mock_factory('ES002', 'Mat', '2025.1', [3.0, 3.0, 7.0, 9.0])
-        relatorio = RelatorioComparativo([t1, t2])
+        relatorio_local = RelatorioComparativo([t1, t2])
 
-        resultado = relatorio.processar_dados(relatorio.coletar_dados())
+        resultado = relatorio_local.processar_dados(relatorio_local.coletar_dados())
 
         assert resultado['turma_mais_critica'] == 'ES002'
 
@@ -305,9 +308,10 @@ class TestRelatorioComparativoFormatarSaida:
 
     @pytest.fixture
     def dados_processados(self, relatorio):
+        """Fixture com dados já processados pelo hook"""
         brutos = relatorio.coletar_dados()
         return relatorio.processar_dados(brutos)
-    
+
     def test_retorna_string(self, relatorio, dados_processados):
         """Deve retornar uma string"""
         resultado = relatorio.formatar_saida(dados_processados)
@@ -324,7 +328,7 @@ class TestRelatorioComparativoFormatarSaida:
         """Deve conter o código de cada turma analisada"""
         resultado = relatorio.formatar_saida(dados_processados)
 
-        for turma_dados in dados_processados['turmas']:
+        for turma_dados in dados_processados['ranking']:
             assert turma_dados['codigo'] in resultado
 
     def test_contem_secao_ranking(self, relatorio, dados_processados):
@@ -385,8 +389,8 @@ class TestRelatorioComparativoIntegracao:
             'taxa_aprovacao': 0.0,
         })
 
-        relatorio = RelatorioComparativo([turma_vazia])
-        resultado = relatorio.gerar()
+        relatorio_local = RelatorioComparativo([turma_vazia])
+        resultado = relatorio_local.gerar()
 
         assert isinstance(resultado, str)
 
@@ -406,6 +410,11 @@ class TestRelatorioComparativoMetodosAuxiliares:
     def test_identificar_turma_critica_lista_vazia(self, relatorio):
         """Deve retornar 'N/A' para lista vazia"""
         assert relatorio._identificar_turma_critica([]) == 'N/A'
+
+    def test_identificar_turma_critica_turma_unica(self, relatorio):
+        """Com apenas uma turma, deve retornar o código dessa turma"""
+        turmas = [{'codigo': 'T1', 'alunos_com_dificuldade': 2, 'media_geral': 5.0}]
+        assert relatorio._identificar_turma_critica(turmas) == 'T1'
 
     def test_gerar_grafico_ascii_lista_vazia(self, relatorio):
         """Deve retornar mensagem informativa para lista vazia"""
@@ -432,3 +441,13 @@ class TestRelatorioComparativoMetodosAuxiliares:
         # O código truncado (8 chars) deve estar presente, não o completo
         assert 'CODIGO_M' in resultado
         assert 'CODIGO_MUITO_LONGO' not in resultado
+
+    def test_gerar_grafico_ascii_media_acima_de_10_nao_ultrapassa_largura(self, relatorio):
+        """Média > 10.0 não deve gerar barra maior que MAX_LARGURA (clamping)"""
+        MAX_LARGURA = 40
+        turmas = [{'codigo': 'ES001', 'media_geral': 12.0}]
+        resultado = relatorio._gerar_grafico_ascii(turmas)
+        # A barra nunca deve ter mais de MAX_LARGURA blocos
+        linha = resultado.split('\n')[0]
+        barra = linha.split('|')[1].strip().split()[0]
+        assert len(barra) <= MAX_LARGURA

@@ -53,17 +53,14 @@ class RelatorioComparativo(GeradorRelatorio):
 
         if turmas is None or not isinstance(turmas, list):
             raise TypeError("turmas deve ser uma lista de instâncias de Turma")
-        
         if len(turmas) == 0:
             raise ValueError("É necessário pelo menos uma turma para gerar o relatório")
-        
         for item in turmas:
             for attr in self._ATRIBUTOS_OBRIGATORIOS:
                 if not hasattr(item, attr):
                     raise TypeError(
                         f"todos os itens devem ser Turma (atributo '{attr}' ausente)"
                     )
-            
         self._turmas = list(turmas)
 
     # Métodos abstratos
@@ -78,11 +75,20 @@ class RelatorioComparativo(GeradorRelatorio):
 
         Returns:
             Dicionário com informações das turmas analisadas e métricas
+
+        Raises:
+            RuntimeError: Se obter_desempenho_geral() lançar exceção para alguma turma,
+                encapsula o erro com o código da turma para facilitar o diagnóstico
         """
         turmas_dados = []
 
         for turma in self._turmas:
-            desempenho = turma.obter_desempenho_geral()
+            try:
+                desempenho = turma.obter_desempenho_geral()
+            except Exception as exc:
+                raise RuntimeError(
+                    f"Falha ao obter desempenho da turma '{turma.codigo}'"
+                ) from exc
             turmas_dados.append({
                 'codigo': turma.codigo,
                 'disciplina': turma.disciplina,
@@ -100,6 +106,8 @@ class RelatorioComparativo(GeradorRelatorio):
 
         semestres = sorted({t.semestre for t in self._turmas})
         semestre_label = semestres[0] if len(semestres) == 1 else ", ".join(semestres)
+        # Válido somente para casos onde a diferenciação de semestre é feita ao fim.
+        # Caso a diferenciação passe para algo como "1/2025", "2/2025", ordenação poderá quebrar
 
         return {
             'total_turmas': len(turmas_dados),
@@ -107,7 +115,7 @@ class RelatorioComparativo(GeradorRelatorio):
             'media_geral_global': media_global,
             'turmas': turmas_dados
         }
-    
+
     def formatar_saida(self, dados_processados: Dict[str, Any]) -> str:
         """
         Formata os dados em relatório comparativo legível.
@@ -141,9 +149,9 @@ class RelatorioComparativo(GeradorRelatorio):
         linhas.append("-" * L)
         linhas.append("ESTATÍSTICAS GLOBAIS")
         linhas.append("-" * L)
-        linhas.append(f"Média Global:           {dados_processados.get('media_geral_global', 0.0):.2f}")
-        linhas.append(f"Melhor Turma:           {dados_processados.get('melhor_turma', 'N/A')}")
-        linhas.append(f"Turma Mais Crítica:     {dados_processados.get('turma_mais_critica', 'N/A')}")
+        linhas.append(f"Média Global:       {dados_processados.get('media_geral_global', 0.0):.2f}")
+        linhas.append(f"Melhor Turma:       {dados_processados.get('melhor_turma', 'N/A')}")
+        linhas.append(f"Turma Mais Crítica: {dados_processados.get('turma_mais_critica', 'N/A')}")
 
         # Gráfico comparativo
         if 'grafico_ascii' in dados_processados:
@@ -231,7 +239,7 @@ class RelatorioComparativo(GeradorRelatorio):
         dados['grafico_ascii'] = self._gerar_grafico_ascii(turmas)
 
         return dados
-    
+
     # Métodos auxiliares
 
     def _identificar_turma_critica(self, turmas: List[Dict]) -> str:
@@ -257,13 +265,13 @@ class RelatorioComparativo(GeradorRelatorio):
         """
         if not turmas:
             return 'N/A'
-        
+
         mais_critica = max(
             turmas,
             key=lambda t: (t.get('alunos_com_dificuldade', 0), -t.get('media_geral', 0.0))
         )
         return mais_critica['codigo']
-    
+
     def _gerar_grafico_ascii(self, turmas: List[Dict]) -> str:
         """
         Gera um gráfico de barras horizontais ASCII comparando as médias das turmas.
@@ -291,7 +299,7 @@ class RelatorioComparativo(GeradorRelatorio):
         """
         if not turmas:
             return "  (sem turmas para comparar)"
-        
+
         MAX_LARGURA = 40
         BLOCO = "█"
         linhas = []
@@ -299,7 +307,7 @@ class RelatorioComparativo(GeradorRelatorio):
         for turma in turmas:
             codigo = turma.get('codigo', '??')[:8]
             media = turma.get('media_geral', 0.0)
-            tamanho_barra = round((media / 10.0) * MAX_LARGURA)
+            tamanho_barra = min(round((media / 10.0) * MAX_LARGURA), MAX_LARGURA)
             barra = BLOCO * tamanho_barra
             linhas.append(f"{codigo:<8} | {barra:<{MAX_LARGURA}}  {media:.2f}")
 
