@@ -27,7 +27,7 @@ class RelatorioIndividual(GeradorRelatorio):
         _turma (Turma): Turma do aluno (contexto)
 
     Examples:
-        >>> from educalin.servies.relatorio import RelatorioIndividual
+        >>> from educalin.services.relatorios import RelatorioIndividual
         >>> relatorio = RelatorioIndividual(aluno, turma)
         >>> conteudo = relatorio.gerar()
         >>> print(conteudo)
@@ -97,10 +97,6 @@ class RelatorioIndividual(GeradorRelatorio):
         historico_completo.sort(key=lambda n: n['data'])
         dados['historico_notas'] = historico_completo
         dados['total_avaliacoes'] = len(historico_completo)
-        
-        analise = self._analisar_por_topico(historico_completo)
-        dados['pontos_fortes'] = analise['fortes']
-        dados['pontos_atencao'] = analise['atencao']
 
         return dados
 
@@ -139,7 +135,7 @@ class RelatorioIndividual(GeradorRelatorio):
 
         tendencia = dados_processados.get('tendencia', 'estavel')
         emoji_tendencia = {
-            'crescente': '⬆↗️',
+            'crescente': '↗️',
             'estavel': '➡️',
             'decrescente': '↘️',
         }.get(tendencia, '➡️')
@@ -199,7 +195,8 @@ class RelatorioIndividual(GeradorRelatorio):
             linhas.append("-"*70)
 
             for nota in historico:
-                data_str = nota['data'].strftime('%d/%m/%Y')
+                data = nota.get('data')
+                data_str = data.strftime('%d/%m/%Y') if isinstance(data, datetime) else str(data or 'N/A')
                 status = "[OK]" if nota['valor'] >= 7.0 else "[!]"
 
                 linhas.append(
@@ -234,7 +231,7 @@ class RelatorioIndividual(GeradorRelatorio):
         Returns:
             Dados processados com tendência e gráfico ASCII
         """
-        dados = dados_brutos
+        dados = dict(dados_brutos)
         historico: List[Dict] = dados.get('historico_notas', [])
 
         dados['tendencia'] = self._calcular_tendencia(historico)
@@ -346,11 +343,14 @@ class RelatorioIndividual(GeradorRelatorio):
         LARGURA_BARRA = 3
         linhas_grafico = []
 
+        celula_cheia = "█" * (LARGURA_BARRA - 1) + " "
+        celula_vazia = " " * LARGURA_BARRA
+
         for altura_linha in range(ALTURA, 0, -1):
             celulas = []
             for nota in historico:
                 valor_normalizado = (nota['valor'] / 10.0) * ALTURA
-                celula = "██ " if valor_normalizado >= altura_linha else "   "
+                celula = celula_cheia if valor_normalizado >= altura_linha else celula_vazia
                 celulas.append(celula)
 
             prefixo = (

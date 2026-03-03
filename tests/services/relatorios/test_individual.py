@@ -39,6 +39,30 @@ class TestRelatorioIndividualHeranca:
         assert relatorio._aluno == aluno_mock
         assert relatorio._turma == turma_mock
 
+    def test_init_aluno_sem_nome_lanca_type_error(self):
+        """Deve lançar TypeError se aluno não tiver atributo 'nome'"""
+        aluno_invalido = Mock(spec=[])  # sem nenhum atributo
+        turma_mock = Mock()
+
+        with pytest.raises(TypeError, match="nome"):
+            RelatorioIndividual(aluno_invalido, turma_mock)
+
+    def test_init_aluno_sem_matricula_lanca_type_error(self):
+        """Deve lançar TypeError se aluno não tiver atributo 'matricula'"""
+        aluno_invalido = Mock(spec=['nome'])  # tem nome, falta matricula
+        turma_mock = Mock()
+
+        with pytest.raises(TypeError, match="matricula"):
+            RelatorioIndividual(aluno_invalido, turma_mock)
+
+    def test_init_turma_sem_codigo_lanca_type_error(self):
+        """Deve lançar TypeError se turma não tiver atributo 'codigo'"""
+        aluno_mock = Mock()
+        turma_invalida = Mock(spec=[])  # sem nenhum atributo
+
+        with pytest.raises(TypeError, match="codigo"):
+            RelatorioIndividual(aluno_mock, turma_invalida)
+
 
 class TestRelatorioIndividualColetarDados:
     """Testes do método coletar_dados()"""
@@ -152,17 +176,18 @@ class TestRelatorioIndividualColetarDados:
             assert data_atual <= data_proxima
 
     def test_coletar_dados_identifica_pontos_fortes(self, aluno_com_historico, turma_mock):
-        """Deve identificar tópicos com bom desempenho (>= 7.0)"""
+        """Deve identificar tópicos com bom desempenho (>= 7.0) após processar_dados()"""
         relatorio = RelatorioIndividual(aluno_com_historico, turma_mock)
 
-        dados = relatorio.coletar_dados()
+        dados_brutos = relatorio.coletar_dados()
+        dados = relatorio.processar_dados(dados_brutos)
 
         assert 'pontos_fortes' in dados
         assert isinstance(dados['pontos_fortes'], list)
         assert len(dados['pontos_fortes']) > 0
 
     def test_coletar_dados_identifica_pontos_atencao(self, turma_mock):
-        """Deve identificar tópicos que precisa de atenção (< 7.0)"""
+        """Deve identificar tópicos que precisa de atenção (< 7.0) após processar_dados()"""
         aluno = Mock()
         aluno.nome = "Fulano"
         aluno.matricula = "9999"
@@ -172,14 +197,15 @@ class TestRelatorioIndividualColetarDados:
         nota_baixa.valor = 4.0
         nota_baixa.avaliacao = Mock()
         nota_baixa.avaliacao.titulo = "Prova 1"
-        nota_baixa.avaliacao.descricao = "Cáluclo"
+        nota_baixa.avaliacao.topico = "Cálculo"
         nota_baixa.avaliacao.data = datetime(2026, 1, 10)
 
         aluno.obter_historico_notas = Mock(return_value=[nota_baixa])
 
         relatorio = RelatorioIndividual(aluno, turma_mock)
 
-        dados = relatorio.coletar_dados()
+        dados_brutos = relatorio.coletar_dados()
+        dados = relatorio.processar_dados(dados_brutos)
 
         assert 'pontos_atencao' in dados
         assert len(dados['pontos_atencao']) > 0
@@ -227,7 +253,7 @@ class TestRelatorioIndividualFormatarSaida:
             'pontos_atencao': [
                 {'topico': 'Geometria', 'media': 6.5, 'avaliacoes': 1}
             ],
-            'tendencia': 'crescente',                 # tipos são 'crescente', 'estavel', 'descrescente'
+            'tendencia': 'crescente',                 # tipos são 'crescente', 'estavel', 'decrescente'
             'grafico_ascii': 'Gráfico de evolução...' # TODO implementação para retorno de algo para gráfico real em interface?
         }
     
@@ -263,7 +289,7 @@ class TestRelatorioIndividualFormatarSaida:
 
         resultado = relatorio.formatar_saida(dados_processados)
 
-        assert "7.5" in resultado
+        assert "7.40" in resultado
         assert "5" in resultado or "cinco" in resultado.lower()
 
     def test_formatar_saida_inclui_historico(self, dados_processados):
@@ -449,8 +475,8 @@ class TestRelatorioIndividualIntegracao:
         assert "54321" in resultado
         assert "8.2" in resultado
 
-    def test_gerar_e_exportar_pdf(self, aluno_completo, turma_completa):
-        """Deve poder gerar e exportar para PDF"""
+    def test_gerar_e_exportar_texto(self, aluno_completo, turma_completa):
+        """Deve poder gerar e exportar como texto"""
         relatorio = RelatorioIndividual(aluno_completo, turma_completa)
 
         conteudo = relatorio.gerar()
