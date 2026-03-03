@@ -82,23 +82,20 @@ class TestRelatorioIndividualColetarDados:
 
         nota1 = Mock()
         nota1.valor = 8.0
-        nota1.avaliacao = Mock()
+        nota1.avaliacao = Mock(spec=['titulo'])
         nota1.avaliacao.titulo = "Prova 1"
-        nota1.avaliacao.topico = "Álgebra"
         nota1.data_registro = datetime(2026, 1, 30)
 
         nota2 = Mock()
         nota2.valor = 7.0
-        nota2.avaliacao = Mock()
+        nota2.avaliacao = Mock(spec=['titulo'])
         nota2.avaliacao.titulo = "Prova 2"
-        nota2.avaliacao.topico = "Geometria"
         nota2.data_registro = datetime(2026, 2, 18)
 
         nota3 = Mock()
         nota3.valor = 7.5
-        nota3.avaliacao = Mock()
+        nota3.avaliacao = Mock(spec=['titulo'])
         nota3.avaliacao.titulo = "Prova 3"
-        nota3.avaliacao.topico = "Álgebra"
         nota3.data_registro = datetime(2026, 2, 20)
 
         # Usa a propriedade `desempenho` da classe Aluno (API correta do domínio)
@@ -209,9 +206,8 @@ class TestRelatorioIndividualColetarDados:
 
         nota_baixa = Mock()
         nota_baixa.valor = 4.0
-        nota_baixa.avaliacao = Mock()
+        nota_baixa.avaliacao = Mock(spec=['titulo'])
         nota_baixa.avaliacao.titulo = "Prova 1"
-        nota_baixa.avaliacao.topico = "Cálculo"
         nota_baixa.data_registro = datetime(2026, 1, 10)
 
         type(aluno).desempenho = PropertyMock(return_value=[nota_baixa])
@@ -558,9 +554,8 @@ class TestRelatorioIndividualIntegracao:
         for i in range(4):
             nota = Mock()
             nota.valor = 7.0 + i * 0.5
-            nota.avaliacao = Mock()
+            nota.avaliacao = Mock(spec=['titulo'])
             nota.avaliacao.titulo = f"Prova {i+1}"
-            nota.avaliacao.topico = "Álgebra" if i % 2 == 0 else "Geometria"
             nota.data_registro = datetime(2025, 1 + i, 15)
             notas.append(nota)
 

@@ -53,8 +53,8 @@ class RelatorioIndividual(GeradorRelatorio):
         if not hasattr(aluno, 'nome') or not hasattr(aluno, 'matricula'):
             raise TypeError("Aluno deve ter atributos 'nome' e 'matricula'")
         
-        if not hasattr(turma, 'codigo'):
-            raise TypeError("Turma deve ter atributo 'codigo'")
+        if not all(hasattr(turma, attr) for attr in ('codigo', 'disciplina', 'semestre')):
+            raise TypeError("Turma deve ter atributos 'codigo', 'disciplina' e 'semestre'")
         
         self._aluno = aluno
         self._turma = turma
@@ -95,7 +95,7 @@ class RelatorioIndividual(GeradorRelatorio):
             historico_completo.append({
                 'valor': nota.valor,
                 'avaliacao': nota.avaliacao.titulo,
-                'topico': nota.avaliacao.topico,
+                'topico': getattr(nota.avaliacao, 'topico', getattr(nota.avaliacao, 'titulo', 'N/A')),
                 'data': nota.data_registro,
             })
 
@@ -140,10 +140,10 @@ class RelatorioIndividual(GeradorRelatorio):
 
         tendencia = dados_processados.get('tendencia', 'estavel')
         emoji_tendencia = {
-            'crescente': '↗️',
-            'estavel': '➡️',
-            'decrescente': '↘️',
-        }.get(tendencia, '➡️')
+            'crescente': '^',    # tendência de alta
+            'estavel': '->',     # tendência estável
+            'decrescente': 'v',  # tendência de baixa
+        }.get(tendencia, '->')
 
         nome_tendencia = {
             'crescente': 'CRESCENTE (Melhorando!)',
@@ -215,7 +215,10 @@ class RelatorioIndividual(GeradorRelatorio):
 
         # Rodapé
         linhas.append("="*70)
-        linhas.append(f"Relatório gerado em : {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+        linhas.append(
+            f"Relatório gerado em : "
+            f"{(self._data_geracao or datetime.now()).strftime('%d/%m/%Y %H:%M')}"
+        )
         linhas.append("="*70)
 
         return "\n".join(linhas)
@@ -315,7 +318,7 @@ class RelatorioIndividual(GeradorRelatorio):
             historico: Lista de dicts de notas ordenadas cronologicamente
 
         Returns:
-            'crescente' se diferença entre metades >= +0.5
+            'crescente' se diferença entre metades > +0.5
             'decrescente' se diferença entre metades < -0.5
             'estavel' em qualquer outro caso
         """
