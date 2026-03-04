@@ -3,6 +3,7 @@ Testes para RelatorioComparativo
 """
 
 import copy
+import types
 from unittest.mock import Mock
 import pytest
 
@@ -33,9 +34,9 @@ def turma_mock_factory():
         turma.obter_desempenho_geral = Mock(return_value={
             'media_geral': round(sum(medias) / len(medias), 2) if medias else 0.0,
             'total_alunos': len(medias),
-            'alunos_com_dificuldade': sum(1 for m in medias if m < 7.0),
+            'alunos_com_dificuldade': sum(1 for m in medias if m < 6.0),
             'taxa_aprovacao': round(
-                sum(1 for m in medias if m >= 7.0) / len(medias) * 100, 2
+                sum(1 for m in medias if m >= 6.0) / len(medias) * 100, 2
             ) if medias else 0.0,
         })
         return turma
@@ -113,12 +114,12 @@ class TestRelatorioComparativoInicializacao:
 
     def test_item_sem_obter_desempenho_geral_lanca_erro(self):
         """Deve lançar TypeError se algum item da lista não tiver obter_desempenho_geral"""
-        turma_invalida = Mock()
-        turma_invalida.codigo = 'ES001'
-        turma_invalida.disciplina = 'Mat'
-        turma_invalida.semestre = '2025.1'
+        turma_invalida = types.SimpleNamespace(
+            codigo='ES001',
+            disciplina='Mat',
+            semestre='2025.1',
+        )
         # obter_desempenho_geral deliberadamente ausente
-        del turma_invalida.obter_desempenho_geral
         with pytest.raises(TypeError, match="todos os itens devem ser Turma"):
             RelatorioComparativo([turma_invalida])
 
@@ -284,7 +285,7 @@ class TestRelatorioComparativoProcessarDados:
 
     def test_turma_mais_critica_empate_desempata_pela_menor_media(self, turma_mock_factory):
         """Em caso de empate em alunos_com_dificuldade, vence a turma de menor média"""
-        # Ambas têm 2 alunos com dificuldade (< 7.0);
+        # Ambas têm 2 alunos com dificuldade (< 6.0);
         # ES001: médias [4.0, 4.0, 8.0, 8.0] → média = 6.0
         # ES002: médias [3.0, 3.0, 7.0, 9.0] → média = 5.5  ← menor, deve vencer
         t1 = turma_mock_factory('ES001', 'Mat', '2025.1', [4.0, 4.0, 8.0, 8.0])
