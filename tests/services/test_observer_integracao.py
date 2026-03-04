@@ -73,7 +73,7 @@ class TestTurmaObserverIntegracao:
         
         # Verificar que plano foi criado
         assert plano is not None
-        assert plano._aluno_alvo == aluno
+        assert plano.aluno_alvo == aluno
         
         # Verificar que observer foi notificado
         assert len(observer.eventos_recebidos) > 0
@@ -318,3 +318,17 @@ class TestObserverIntegracaoCompleta:
         assert len(turma.alunos) == 1
         assert plano is not None
         assert meta.verificar_conclusao()
+        
+        # Verificar que notificadores registraram os tipos corretos no histórico
+        historico_email = email_notif.obter_historico()
+        tipos_evento_email = [h['tipo_evento'] for h in historico_email]
+        assert 'nota_registrada' in tipos_evento_email
+        assert 'plano_acao_criado' in tipos_evento_email
+        assert 'meta_atingida' in tipos_evento_email
+        
+        historico_push = push_notif.obter_historico()
+        tipos_evento_push = [h['tipo_evento'] for h in historico_push]
+        assert 'nota_registrada' in tipos_evento_push
+        assert 'plano_acao_criado' in tipos_evento_push
+        # push_notif não é observer de meta (apenas email_notif foi adicionado)
+        assert 'meta_atingida' not in tipos_evento_push

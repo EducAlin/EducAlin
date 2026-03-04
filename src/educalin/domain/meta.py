@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional
 from educalin.domain.turma import Subject, Observer
 
 
@@ -35,7 +35,7 @@ class Meta(Subject):
         
         # Padrão Observer
         self._observers: List[Observer] = []
-        self._meta_atingida_em: datetime = None
+        self._meta_atingida_em: Optional[datetime] = None
 
     @property
     def descricao(self) -> str:
@@ -193,4 +193,7 @@ class Meta(Subject):
             evento: Dicionário com informações do evento
         """
         for observer in self._observers:
-            observer.atualizar(evento)
+            try:
+                observer.atualizar(evento)
+            except Exception as e:
+                print(f"Erro ao notificar observer {type(observer).__name__}: {str(e)}")

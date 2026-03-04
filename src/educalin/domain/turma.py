@@ -346,7 +346,7 @@ class Turma(Subject):
             'timestamp': datetime.now()
         })
 
-    def criar_plano_acao(self, aluno: 'Aluno', objetivo: str, prazo_dias: int, observacoes: str = None) -> 'PlanoAcao':
+    def criar_plano_acao(self, aluno: 'Aluno', objetivo: str, prazo_dias: int, observacoes: Optional[str] = None) -> 'PlanoAcao':
         """
         Cria um novo PlanoAcao para um aluno da turma.
 

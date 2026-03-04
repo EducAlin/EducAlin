@@ -7,7 +7,7 @@ e sua integração com a classe Turma (Subject).
 
 import pytest
 from datetime import datetime
-from unittest.mock import Mock, patch, MagicMock, call
+from unittest.mock import Mock
 from educalin.services.notificador import NotificadorEmail, NotificadorPush
 from educalin.domain.turma import Turma, Observer
 from educalin.domain.professor import Professor
@@ -45,7 +45,24 @@ class TestNotificadorEmail:
         assert notificador._email_destinatario == "usuario@example.com"
 
     def test_atualizar_evento_valido(self, capsys):
-        """Deve processar um evento válido"""
+        """Deve processar um evento válido com chave 'evento' (payload real do domínio)"""
+        notificador = NotificadorEmail("teste@example.com")
+        evento = {
+            'evento': 'nota_registrada',
+            'descricao': 'Nota foi registrada',
+            'timestamp': datetime.now(),
+            'turma': 'ES-2025.2',
+            'dados_adicionais': {'aluno': 'João', 'nota': 9.5}
+        }
+
+        notificador.atualizar(evento)
+
+        captured = capsys.readouterr()
+        assert "EMAIL ENVIADO" in captured.out
+        assert "teste@example.com" in captured.out
+
+    def test_atualizar_evento_valido_chave_tipo(self, capsys):
+        """Deve processar um evento válido com chave 'tipo' (compatibilidade legada)"""
         notificador = NotificadorEmail("teste@example.com")
         evento = {
             'tipo': 'nota_registrada',
@@ -228,8 +245,26 @@ class TestNotificadorPush:
         assert len(notificador.obter_dispositivos_registrados()) == 2
 
     def test_atualizar_evento_valido(self, capsys):
-        """Deve processar e enviar notificação push para dispositivos registrados"""
+        """Deve processar e enviar notificação push com chave 'evento' (payload real do domínio)"""
         notificador = NotificadorPush("usuario_123", ["device_1", "device_2"])
+        evento = {
+            'evento': 'nota_registrada',
+            'descricao': 'Nota foi registrada',
+            'timestamp': datetime.now(),
+            'turma': 'ES-2025.2',
+            'dados_adicionais': {'aluno': 'João', 'nota': 9.5}
+        }
+
+        notificador.atualizar(evento)
+
+        captured = capsys.readouterr()
+        assert "PUSH ENVIADO" in captured.out
+        assert "usuario_123" in captured.out
+        assert captured.out.count("PUSH ENVIADO") == 2  # Uma para cada dispositivo
+
+    def test_atualizar_evento_valido_chave_tipo(self, capsys):
+        """Deve processar evento push com chave 'tipo' (compatibilidade legada)"""
+        notificador = NotificadorPush("usuario_123", ["device_1"])
         evento = {
             'tipo': 'nota_registrada',
             'descricao': 'Nota foi registrada',
@@ -243,7 +278,6 @@ class TestNotificadorPush:
         captured = capsys.readouterr()
         assert "PUSH ENVIADO" in captured.out
         assert "usuario_123" in captured.out
-        assert captured.out.count("PUSH ENVIADO") == 2  # Uma para cada dispositivo
 
     def test_atualizar_sem_dispositivos(self, capsys):
         """Deve informar quando não há dispositivos registrados"""

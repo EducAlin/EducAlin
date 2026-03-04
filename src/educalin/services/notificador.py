@@ -66,7 +66,7 @@ class NotificadorEmail(Observer):
 
         try:
 
-            tipo_evento = evento.get('tipo', 'evento_desconhecido')
+            tipo_evento = evento.get('tipo') or evento.get('evento', 'evento_desconhecido')
             descricao = evento.get('descricao', 'Sem descrição')
             timestamp = evento.get('timestamp', datetime.now())
             turma = evento.get('turma', 'N/A')
@@ -223,7 +223,7 @@ class NotificadorPush(Observer):
             raise ValueError("ID do usuário não pode ser vazio")
 
         self._usuario_id = usuario_id.strip()
-        self._dispositivos: list = dispositivos if dispositivos else []
+        self._dispositivos: list = list(dispositivos) if dispositivos else []
         self._notificacoes_enviadas: list = []
 
     def atualizar(self, evento: Dict) -> None:
@@ -260,7 +260,7 @@ class NotificadorPush(Observer):
                 return
 
             # Extrair informações do evento
-            tipo_evento = evento.get('tipo', 'evento_desconhecido')
+            tipo_evento = evento.get('tipo') or evento.get('evento', 'evento_desconhecido')
             descricao = evento.get('descricao', 'Sem descrição')
             timestamp = evento.get('timestamp', datetime.now())
             turma = evento.get('turma', 'N/A')
