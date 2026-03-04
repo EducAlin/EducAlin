@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import List, Dict, Optional
+from educalin.domain.turma import Subject, Observer
 
 
-class Meta:
+class Meta(Subject):
     """
     Representa uma meta de aprendizado de um aluno.
     Atributos:
@@ -30,6 +32,10 @@ class Meta:
         self.valor_alvo = valor_alvo
         self.prazo = prazo
         self.progresso_atual = progresso_atual
+        
+        # Padrão Observer
+        self._observers: List[Observer] = []
+        self._meta_atingida_em: Optional[datetime] = None
 
     @property
     def descricao(self) -> str:
@@ -90,10 +96,28 @@ class Meta:
         """
         Atualiza o progresso atual para um valor absoluto.
 
+        Notifica observers quando a meta é atingida.
+
         Args:
             novo_valor: Novo valor de progresso (0 <= novo_valor <= valor_alvo).
         """
-        self.progresso_atual = novo_valor  # usa setter (valida)
+        # Verificar se a meta será atingida nesta atualização
+        meta_estava_atingida = self.verificar_conclusao()
+        
+        # Atualizar o progresso (usa setter que valida)
+        self.progresso_atual = novo_valor
+        
+        # Se a meta acaba de ser atingida, notificar observers
+        if not meta_estava_atingida and self.verificar_conclusao():
+            self._meta_atingida_em = datetime.now()
+            self.notificar_observers({
+                'evento': 'meta_atingida',
+                'descricao': self.descricao,
+                'valor_alvo': self.valor_alvo,
+                'progresso_atual': self.progresso_atual,
+                'percentual_concluido': self.percentual_concluido,
+                'timestamp': self._meta_atingida_em
+            })
 
     def verificar_conclusao(self) -> bool:
         """
@@ -127,3 +151,49 @@ class Meta:
             f"Meta(descricao={self.descricao}, valor_alvo={self.valor_alvo}, "
             f"prazo={self.prazo.isoformat()}, progresso_atual={self.progresso_atual})"
         )
+
+    # =================================
+    # Padrão Observer
+    # =================================
+
+    def adicionar_observer(self, observer: Observer) -> None:
+        """
+        Adiciona um observer à lista de observadores.
+
+        Args:
+            observer: Instância que implementa Observer
+
+        Raises:
+            TypeError: Se observer não implementa a interface Observer
+        """
+        if not isinstance(observer, Observer):
+            raise TypeError(
+                f"Observer deve implementar a interface Observer, "
+                f"recebido {type(observer).__name__}"
+            )
+        
+        if observer not in self._observers:
+            self._observers.append(observer)
+
+    def remover_observer(self, observer: Observer) -> None:
+        """
+        Remove um observer da lista de observadores.
+
+        Args:
+            observer: Instância a ser removida
+        """
+        if observer in self._observers:
+            self._observers.remove(observer)
+
+    def notificar_observers(self, evento: Dict) -> None:
+        """
+        Notifica todos os observers sobre um evento.
+
+        Args:
+            evento: Dicionário com informações do evento
+        """
+        for observer in self._observers:
+            try:
+                observer.atualizar(evento)
+            except Exception as e:
+                print(f"Erro ao notificar observer {type(observer).__name__}: {str(e)}")

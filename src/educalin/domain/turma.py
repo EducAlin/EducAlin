@@ -294,6 +294,99 @@ class Turma(Subject):
         if not isinstance(avaliacao, Avaliacao):
             raise TypeError("O objeto adicionado deve ser uma instância de Avaliacao.")
         self._avaliacoes.append(avaliacao)
+        
+        self.notificar_observers({
+            'evento': 'avaliacao_criada',
+            'turma': self.codigo,
+            'avaliacao_titulo': avaliacao.titulo,
+            'avaliacao_valor_maximo': avaliacao.valor_maximo
+        })
+
+    def registrar_nota(self, aluno: 'Aluno', avaliacao: 'Avaliacao', valor: float) -> None:
+        """
+        Registra uma nota para um aluno em uma avaliação específica.
+
+        Cria uma nova Nota, registra no aluno, e notifica os observers.
+
+        Args:
+            aluno: Instância de Aluno que recebeu a nota
+            avaliacao: Instância de Avaliacao da nota
+            valor: Valor numérico da nota
+
+        Raises:
+            ValueError: Se aluno não está na turma
+            TypeError: Se tipos estiverem incorretos
+            ValueError: Se valor for inválido para a avaliação
+
+        Examples:
+            >>> turma.registrar_nota(aluno, avaliacao, 8.5)
+        """
+        from educalin.domain.nota import Nota
+        
+        # Verificar se aluno está na turma
+        if not self._aluno_existe(aluno):
+            raise ValueError(f"Aluno {aluno.matricula} não está nesta turma")
+        
+        # Criar a nota (já faz validações)
+        nota = Nota(aluno, avaliacao, valor)
+        
+        # Adicionar nota ao aluno
+        aluno.adicionar_nota(nota)
+        
+        # Notificar observers
+        self.notificar_observers({
+            'evento': 'nota_registrada',
+            'turma': self.codigo,
+            'aluno_matricula': aluno.matricula,
+            'aluno_nome': aluno.nome,
+            'avaliacao_titulo': avaliacao.titulo,
+            'nota_valor': valor,
+            'nota_maximo': avaliacao.valor_maximo,
+            'media_aluno': aluno.calcular_media(),
+            'timestamp': datetime.now()
+        })
+
+    def criar_plano_acao(self, aluno: 'Aluno', objetivo: str, prazo_dias: int, observacoes: Optional[str] = None) -> 'PlanoAcao':
+        """
+        Cria um novo PlanoAcao para um aluno da turma.
+
+        Args:
+            aluno: Aluno que receberá o plano
+            objetivo: Objetivo do plano
+            prazo_dias: Número de dias para conclusão
+            observacoes: Observações adicionais (opcional)
+
+        Returns:
+            PlanoAcao: O plano recém-criado
+
+        Raises:
+            ValueError: Se aluno não está na turma
+            
+        Examples:
+            >>> plano = turma.criar_plano_acao(aluno, "Melhorar em álgebra", 30)
+        """
+        from educalin.domain.plano_acao import PlanoAcao
+        
+        # Verificar se aluno está na turma
+        if not self._aluno_existe(aluno):
+            raise ValueError(f"Aluno {aluno.matricula} não está nesta turma")
+        
+        # Criar plano de ação
+        plano = PlanoAcao(aluno, objetivo, prazo_dias, observacoes)
+        
+        # Notificar observers sobre criação do plano
+        self.notificar_observers({
+            'evento': 'plano_acao_criado',
+            'turma': self.codigo,
+            'aluno_matricula': aluno.matricula,
+            'aluno_nome': aluno.nome,
+            'objetivo': objetivo,
+            'prazo_dias': prazo_dias,
+            'plano_id': plano.id,
+            'timestamp': datetime.now()
+        })
+        
+        return plano
     
     # =================================
     # Métodos de desempenho
