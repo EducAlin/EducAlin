@@ -13,6 +13,7 @@ from .base import (
 
 from .turma import RelatorioTurma
 from .individual import RelatorioIndividual
+from .comparativo import RelatorioComparativo
 
 __all__ = [
     'GeradorRelatorio',
@@ -20,4 +21,5 @@ __all__ = [
     'RelatorioVazioException',
     'RelatorioTurma',
     'RelatorioIndividual',
+    'RelatorioComparativo',
 ]
