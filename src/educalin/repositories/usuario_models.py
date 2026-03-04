@@ -133,7 +133,7 @@ class UsuarioModel(BaseModel):
         if 'email' in campos:
             self._validate_email(campos['email'])
         
-        # Hash da senha se fornecida
+        # Hash da senha se for fornecida
         if 'senha' in campos:
             campos['senha_hash'] = self._hash_password(campos.pop('senha'))
         
