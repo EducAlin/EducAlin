@@ -185,7 +185,7 @@ class RelatorioComparativo(GeradorRelatorio):
 
         # Rodapé
         linhas.append("=" * L)
-        linhas.append(f"Relatório gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+        linhas.append(f"Relatório gerado em: {(self._data_geracao or datetime.now()).strftime('%d/%m/%Y %H:%M')}")
         linhas.append("=" * L)
 
 
