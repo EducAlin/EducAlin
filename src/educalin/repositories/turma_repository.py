@@ -39,7 +39,7 @@ class TurmaRepository:
         >>> turma_id = repo.criar({'codigo': 'ES006', 'disciplina': 'POO', 'semestre': '2025.2'})
     """
 
-    def __init__(self, conn: sqlite3.Connecion):
+    def __init__(self, conn: sqlite3.Connection):
         """
         Inicializa o repositório com uma conexão SQLite.
 
@@ -131,6 +131,8 @@ class TurmaRepository:
             >>> [t.codigo for t in turmas]
             ['ES003', 'ES006']
         """
+        if not isinstance(professor_id, int) or professor_id <= 0:
+            return []
         return TurmaModel.listar_todas(self._conn, professor_id=professor_id)
 
     def adicionar_aluno(self, turma_id: int, aluno_id: int) -> bool:
@@ -161,8 +163,7 @@ class TurmaRepository:
             >>> repo.adicionar_aluno(turma_id=1, aluno_id=5)
             False
         """
-        self._garantir_turma_existe(turma_id)
-        turma = TurmaModel.buscar_por_id(self._conn, turma_id)
+        turma = self._garantir_turma_existe(turma_id)
         return turma.adicionar_aluno(self._conn, aluno_id)
 
     def remover_aluno(self, turma_id: int, aluno_id: int) -> bool:

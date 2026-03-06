@@ -355,6 +355,16 @@ class TestTurmaRepositoryListarAlunos:
 
         assert 'id' in alunos[0]
         assert 'nome' in alunos[0]
+        assert 'email' in alunos[0]
+        assert 'matricula' in alunos[0]
+        assert 'data_matricula' in alunos[0]
+
+    def test_lista_vazia_apos_remocao_de_todos_alunos(self, repo, turma_id, aluno_id):
+        """Após remover todos os alunos, a lista deve estar vazia"""
+        repo.adicionar_aluno(turma_id, aluno_id)
+        repo.remover_aluno(turma_id, aluno_id)
+
+        assert repo.listar_alunos(turma_id) == []
 
     def test_turma_inexistente_retorna_lista_vazia(self, repo):
         """turma_id inexistente deve retornar lista vazia sem erro"""
