@@ -79,13 +79,13 @@ def criar_token_jwt(usuario_id: int, perfil: str) -> str:
         >>> isinstance(token, str)
         True
     """
-    expiracao = datetime.utcnow() + timedelta(hours=TOKEN_EXPIRATION_HOURS)
+    expiracao = datetime.now(datetime.UTC) + timedelta(hours=TOKEN_EXPIRATION_HOURS)
     
     payload = {
         "usuario_id": usuario_id,
         "perfil": perfil,
         "exp": expiracao,
-        "iat": datetime.utcnow()
+        "iat": datetime.now(datetime.UTC)
     }
     
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
