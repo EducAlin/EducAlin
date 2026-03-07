@@ -1,0 +1,360 @@
+"""
+Testes para os endpoints de turmas.
+
+Usa TestClient do FastAPI com banco SQLite na memória,
+injetado via override de dependência.
+"""
+# pylint: disable=redefined-outer-name
+import sqlite3
+import pytest
+from fastapi.testclient import TestClient
+
+from educalin.api.main import app
+from educalin.api.routes.turmas import get_db
+from educalin.repositories.schemas import create_all_tables
+from educalin.repositories.usuario_models import ProfessorModel, AlunoModel
+from educalin.repositories.turma_models import TurmaModel
+
+
+@pytest.fixture
+def conn():
+    """Conexão em memória com schema completo"""
+    conn = sqlite3.Connection(':memory:', check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    create_all_tables(conn)
+    yield conn
+    conn.close()
+
+@pytest.fixture
+def client(conn):
+    """TestClient com banco em memória injetado"""
+    def override_get_db():
+        yield conn
+
+    app.dependency_overrides[get_db] = override_get_db
+    yield TestClient(app)
+    app.dependency_overrides.clear()
+
+@pytest.fixture
+def professor_id(conn):
+    """Cria e retorna ID de um professor de suporte"""
+    return ProfessorModel.criar(
+        conn,
+        "Dr. Exemplo",
+        "prof@edu.br",
+        "senha123",
+        "PROF001"
+    )
+
+@pytest.fixture
+def outro_professor_id(conn):
+    """Professor adicional para testes de isolamento entre professores"""
+    return ProfessorModel.criar(
+        conn,
+        "Dra. Outra",
+        "profa@edu.br",
+        "senha456",
+        "PROF002"
+    )
+
+@pytest.fixture
+def aluno_id(conn):
+    """Aluno para testes de matrícula e operações em turmas"""
+    return AlunoModel.criar(
+        conn,
+        "Aluno Um",
+        "aluno@edu.br",
+        "senha",
+        "MAT001"
+    )
+
+@pytest.fixture
+def turma_id(conn, professor_id):
+    """Turma para testes de operações de turmas e alunos"""
+    return TurmaModel.criar(
+        conn,
+        "ES006",
+        "POO",
+        "2025.2",
+        professor_id
+    )
+
+
+# GET /turmas
+class TestListarTurmas:
+    """Testa GET /turmas"""
+
+    def test_retorna_200(self, client, professor_id):
+        """Verifica que GET /turmas retorna status 200"""
+        response = client.get(f"/turmas?professor_id={professor_id}")
+
+        assert response.status_code == 200
+
+    def test_retorna_lista(self, client, professor_id):
+        """Verifica que GET /turmas retorna uma lista"""
+        response = client.get(f"/turmas?professor_id={professor_id}")
+
+        assert isinstance(response.json(), list)
+
+    def test_lista_vazia_sem_turmas(self, client, professor_id):
+        """Verifica que lista vazia é retornada quando professor não tem turmas"""
+        response = client.get(f"/turmas?professor_id={professor_id}")
+
+        assert response.json() == []
+
+    def test_retorna_turmas_do_professor(self, client, professor_id, turma_id):
+        """Verifica que GET /turmas retorna turmas do professor"""
+        response = client.get(f"/turmas?professor_id={professor_id}")
+
+        assert len(response.json()) == 1
+
+    def test_isola_turmas_entre_professores(self, client, professor_id, outro_professor_id, turma_id):
+        """Verifica que turmas são isoladas entre diferentes professores"""
+        response = client.get(f"/turmas?professor_id={outro_professor_id}")
+
+        assert response.json() == []
+
+    def test_cada_turma_tem_campos_esperados(self, client, professor_id, turma_id):
+        """Verifica que cada turma contém os campos obrigatórios"""
+        response = client.get(f"/turmas?professor_id={professor_id}")
+        turma = response.json()[0]
+
+        assert 'id' in turma
+        assert 'codigo' in turma
+        assert 'disciplina' in turma
+        assert 'semestre' in turma
+
+    def test_professor_id_ausente_retorna_422(self, client):
+        """Verifica que ausência de professor_id retorna status 422"""
+        response = client.get("/turmas")
+
+        assert response.status_code == 422
+
+
+# POST /turmas
+class TestCriarTurma:
+    """Testa POST /turmas"""
+
+    def test_retorna_201(self, client, professor_id):
+        """Verifica que POST /turmas retorna status 201"""
+        response = client.post("/turmas", json={
+            "codigo": "ES003",
+            "disciplina": "Matemática",
+            "semestre": "2025.1",
+            "professor_id": professor_id,
+        })
+
+        assert response.status_code == 201
+
+    def test_retorna_id_da_turma(self, client, professor_id):
+        """Verifica que resposta contém ID da turma criada"""
+        response = client.post("/turmas", json={
+            "codigo": "ES003",
+            "disciplina": "Matemática",
+            "semestre": "2025.1",
+            "professor_id": professor_id,
+        })
+
+        assert 'id' in response.json()
+        assert isinstance(response.json()['id'], int)
+
+    def test_turma_aparece_na_listagem(self, client, professor_id):
+        """Verifica que turma criada aparece na listagem"""
+        client.post("/turmas", json={
+            "codigo": "ES003",
+            "disciplina": "Matemática",
+            "semestre": "2025.1",
+            "professor_id": professor_id,
+        })
+
+        response = client.get(f"/turmas?professor_id={professor_id}")
+        assert len(response.json()) == 1
+
+    def test_codigo_duplicado_retorna_409(self, client, professor_id):
+        """Verifica que código duplicado retorna status 409"""
+        payload = {
+            "codigo": "DUP001",
+            "disciplina": "X",
+            "semestre": "2025.2",
+            "professor_id": professor_id,
+        }
+
+        client.post("/turmas", json=payload)
+        response = client.post("/turmas", json=payload)
+
+        assert response.status_code == 409
+
+    def test_campos_obrigatorios_ausentes_retorna_422(self, client, professor_id):
+        """Verifica que campos obrigatórios ausentes retornam status 422"""
+        response = client.post("/turmas", json={"codigo": "X"})
+        assert response.status_code == 422
+
+    def test_professor_inexistente_retorna_404(self, client):
+        """Verifica que professor inexistente retorna status 404"""
+        response = client.post("/turmas", json={
+            "codigo": "X001",
+            "disciplina": "X",
+            "semestre": "2025.2",
+            "professor_id": 99999,
+        })
+
+        assert response.status_code == 404
+
+    def test_sem_professor_retorna_201(self, client):
+        """Verifica que turma pode ser criada sem professor responsável"""
+        response = client.post("/turmas", json={
+            "codigo": "SEM-PROF",
+            "disciplina": "X",
+            "semestre": "2025.2",
+        })
+
+        assert response.status_code == 201
+
+
+# GET /turmas/{id}
+class TestDetalhesTurma:
+    """Testa GET /turmas/{id}"""
+
+    def test_retorna_200(self, client, turma_id):
+        """Verifica que GET /turmas/{id} retorna status 200"""
+        response = client.get(f"/turmas/{turma_id}")
+
+        assert response.status_code == 200
+
+    def test_retorna_dados_corretos(self, client, turma_id):
+        """Verifica que GET /turmas/{id} retorna dados corretos da turma"""
+        response = client.get(f"/turmas/{turma_id}")
+
+        data = response.json()
+
+        assert data['id'] == turma_id
+        assert data['codigo'] == "ES006"
+        assert data['disciplina'] == "POO"
+        assert data['semestre'] == "2025.2"
+
+    def test_id_inexistente_retorna_404(self, client):
+        """Verifica que ID inexistente retorna status 404"""
+        response = client.get("/turmas/99999")
+
+        assert response.status_code == 404
+
+    def test_resposta_contem_lista_de_alunos(self, client, turma_id):
+        """Verifica que resposta contém lista de alunos da turma"""
+        response = client.get(f"/turmas/{turma_id}")
+
+        assert 'alunos' in response.json()
+
+
+# POST /turmas/{id}/alunos
+class TestAdicionarAluno:
+    """Testa POST /turmas/{id}/alunos"""
+
+    def test_retorna_200(self, client, turma_id, aluno_id):
+        """Verifica que POST /turmas/{id}/alunos retorna status 200"""
+        response = client.post(
+            f"/turmas/{turma_id}/alunos",
+            json={"aluno_id": aluno_id}
+        )
+
+        assert response.status_code == 200
+
+    def test_aluno_aparece_na_turma(self, client, turma_id, aluno_id):
+        """Verifica que aluno adicionado aparece na turma"""
+        client.post(f"/turmas/{turma_id}/alunos", json={"aluno_id": aluno_id})
+
+        response = client.get(f"/turmas/{turma_id}")
+        ids = [a['id'] for a in response.json()['alunos']]
+
+        assert aluno_id in ids
+
+    def test_aluno_ja_matriculado_retorna_409(self, client, turma_id, aluno_id):
+        """Verifica que aluno já matriculado retorna status 409"""
+        client.post(f"/turmas/{turma_id}/alunos", json={"aluno_id": aluno_id})
+
+        response = client.post(f"/turmas/{turma_id}/alunos", json={"aluno_id": aluno_id})
+
+        assert response.status_code == 409
+
+    def test_turma_inexistente_retorna_404(self, client, aluno_id):
+        """Verifica que turma inexistente retorna status 404"""
+        response = client.post("/turmas/9999/alunos", json={"aluno_id": aluno_id})
+
+        assert response.status_code == 404
+
+    def test_aluno_inexistente_retorna_404(self, client, turma_id):
+        """Verifica que aluno inexistente retorna status 404"""
+        response = client.post(f"/turmas/{turma_id}/alunos", json={"aluno_id": 9999})
+
+        assert response.status_code == 404
+
+
+# DELETE /turmas/{id}/alunos/{aluno_id}
+class TestRemoverAluno:
+    """Testa DELETE /turmas/{id}/alunos{aluno_id}"""
+
+    def test_retorna_200(self, client, turma_id, aluno_id):
+        """Verifica que DELETE /turmas/{id}/alunos/{aluno_id} retorna status 200"""
+        client.post(f"/turmas/{turma_id}/alunos", json={"aluno_id": aluno_id})
+
+        response = client.delete(f"/turmas/{turma_id}/alunos/{aluno_id}")
+
+        assert response.status_code == 200
+
+    def test_aluno_nao_aparece_mais_na_turma(self, client, turma_id, aluno_id):
+        """Verifica que aluno removido não aparece mais na turma"""
+        client.post(f"/turmas/{turma_id}/alunos", json={"aluno_id": aluno_id})
+        client.delete(f"/turmas/{turma_id}/alunos/{aluno_id}")
+
+        response = client.get(f"turmas/{turma_id}")
+        ids = [a['id'] for a in response.json()['alunos']]
+
+        assert aluno_id not in ids
+
+    def test_aluno_nao_matriculado_retorna_404(self, client, turma_id, aluno_id):
+        """Verifica que aluno não matriculado retorna status 404"""
+        response = client.delete(f"/turmas/{turma_id}/alunos/{aluno_id}")
+
+        assert response.status_code == 404
+
+    def test_turma_inexistente_retorna_404(self, client, aluno_id):
+        """Verifica que turma inexistente retorna status 404"""
+        response = client.delete(f"/turmas/9999/alunos/{aluno_id}")
+
+        assert response.status_code == 404
+
+
+# GET /turmas/{id}/desempenho
+class TestDesempenhoTurma:
+    """Testa GET /turmas/{id}/desempenho"""
+
+    def test_retorna_200(self, client, turma_id):
+        """Verifica que GET /turmas/{id}/desempenho retorna status 200"""
+        response = client.get(f"/turmas/{turma_id}/desempenho")
+
+        assert response.status_code == 200
+
+    def test_retorna_campos_obrigatorios(self, client, turma_id):
+        """Verifica que resposta contém campos obrigatórios de desempenho"""
+        response = client.get(f"/turmas/{turma_id}/desempenho")
+
+        data = response.json()
+
+        assert 'total_alunos' in data
+        assert 'media_geral' in data
+        assert 'taxa_aprovacao' in data
+
+    def test_turma_vazia_retorna_zeros(self, client, turma_id):
+        """Verifica que turma vazia retorna zeros nos indicadores"""
+        response = client.get(f"/turmas/{turma_id}/desempenho")
+
+        data = response.json()
+
+        assert data['total_alunos'] == 0
+        assert data['media_geral'] == 0.0
+
+    def test_id_inexistente_retorna_404(self, client):
+        """Verifica que ID inexistente retorna status 404"""
+        response = client.get("/turmas/9999/desempenho")
+
+        assert response.status_code == 404
