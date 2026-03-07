@@ -30,6 +30,8 @@ class UsuarioModel(BaseModel):
         registro_funcional: Optional[str] = None,
         codigo_coordenacao: Optional[str] = None,
         matricula: Optional[str] = None,
+        criado_em: Optional[str] = None,
+        atualizado_em: Optional[str] = None,
     ):
         self.id = id
         self.nome = nome
@@ -39,6 +41,8 @@ class UsuarioModel(BaseModel):
         self.registro_funcional = registro_funcional
         self.codigo_coordenacao = codigo_coordenacao
         self.matricula = matricula
+        self.criado_em = criado_em
+        self.atualizado_em = atualizado_em
     
     @staticmethod
     def _criar_instancia_polimórfica(row: sqlite3.Row) -> 'UsuarioModel':
@@ -48,42 +52,42 @@ class UsuarioModel(BaseModel):
         """
         tipo = row['tipo_usuario']
         
+        # Extrair campos comuns com valores padrão
+        def get_value(row, key, default=None):
+            try:
+                return row[key]
+            except (KeyError, IndexError):
+                return default
+        
+        # Campos comuns a todos os tipos
+        common_args = {
+            'id': row['id'],
+            'nome': row['nome'],
+            'email': row['email'],
+            'senha_hash': row['senha_hash'],
+            'tipo_usuario': row['tipo_usuario'],
+            'criado_em': get_value(row, 'criado_em'),
+            'atualizado_em': get_value(row, 'atualizado_em'),
+        }
+        
         if tipo == 'professor':
             return ProfessorModel(
-                id=row['id'],
-                nome=row['nome'],
-                email=row['email'],
-                senha_hash=row['senha_hash'],
-                tipo_usuario=row['tipo_usuario'],
+                **common_args,
                 registro_funcional=row['registro_funcional'],
             )
         elif tipo == 'coordenador':
             return CoordenadorModel(
-                id=row['id'],
-                nome=row['nome'],
-                email=row['email'],
-                senha_hash=row['senha_hash'],
-                tipo_usuario=row['tipo_usuario'],
+                **common_args,
                 codigo_coordenacao=row['codigo_coordenacao'],
             )
         elif tipo == 'aluno':
             return AlunoModel(
-                id=row['id'],
-                nome=row['nome'],
-                email=row['email'],
-                senha_hash=row['senha_hash'],
-                tipo_usuario=row['tipo_usuario'],
+                **common_args,
                 matricula=row['matricula'],
             )
         else:
             # Fallback para UsuarioModel genérico
-            return UsuarioModel(
-                id=row['id'],
-                nome=row['nome'],
-                email=row['email'],
-                senha_hash=row['senha_hash'],
-                tipo_usuario=row['tipo_usuario'],
-            )
+            return UsuarioModel(**common_args)
     
     @classmethod
     def buscar_por_id(cls, conn: sqlite3.Connection, usuario_id: int) -> Optional['UsuarioModel']:
@@ -175,6 +179,8 @@ class ProfessorModel(UsuarioModel):
         senha_hash: str,
         tipo_usuario: str,
         registro_funcional: str,
+        criado_em: Optional[str] = None,
+        atualizado_em: Optional[str] = None,
     ):
         super().__init__(
             id=id,
@@ -183,6 +189,8 @@ class ProfessorModel(UsuarioModel):
             senha_hash=senha_hash,
             tipo_usuario=tipo_usuario,
             registro_funcional=registro_funcional,
+            criado_em=criado_em,
+            atualizado_em=atualizado_em,
         )
     
     @classmethod
@@ -241,6 +249,8 @@ class CoordenadorModel(UsuarioModel):
         senha_hash: str,
         tipo_usuario: str,
         codigo_coordenacao: str,
+        criado_em: Optional[str] = None,
+        atualizado_em: Optional[str] = None,
     ):
         super().__init__(
             id=id,
@@ -249,6 +259,8 @@ class CoordenadorModel(UsuarioModel):
             senha_hash=senha_hash,
             tipo_usuario=tipo_usuario,
             codigo_coordenacao=codigo_coordenacao,
+            criado_em=criado_em,
+            atualizado_em=atualizado_em,
         )
     
     @classmethod
@@ -307,6 +319,8 @@ class AlunoModel(UsuarioModel):
         senha_hash: str,
         tipo_usuario: str,
         matricula: str,
+        criado_em: Optional[str] = None,
+        atualizado_em: Optional[str] = None,
     ):
         super().__init__(
             id=id,
@@ -315,6 +329,8 @@ class AlunoModel(UsuarioModel):
             senha_hash=senha_hash,
             tipo_usuario=tipo_usuario,
             matricula=matricula,
+            criado_em=criado_em,
+            atualizado_em=atualizado_em,
         )
     
     @classmethod
