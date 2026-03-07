@@ -32,7 +32,8 @@ class BaseModel:
                 após remoção de espaços em branco.
         """
         for field_name, value in kwargs.items():
-            if not value or not str(value).strip():
+            # Considera vazio apenas se for None ou, no caso de strings, vazia após strip.
+            if value is None or (isinstance(value, str) and not value.strip()):
                 raise ValueError(f"{field_name} não pode ser vazio")
 
     @staticmethod
