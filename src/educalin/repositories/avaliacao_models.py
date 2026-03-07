@@ -27,7 +27,7 @@ class AvaliacaoModel(BaseModel):
         valor_maximo: float,
         peso: float,
         turma_id: int,
-        topico = None,
+        topico: Optional[str] = None,
         criada_em: Optional[datetime] = None,
     ):
         self.id = id
@@ -48,7 +48,7 @@ class AvaliacaoModel(BaseModel):
         valor_maximo: float,
         peso: float,
         turma_id: int,
-        topico = None
+        topico: Optional[str] = None
     ) -> int:
         """
         Cria uma nova avaliação.
@@ -109,6 +109,7 @@ class AvaliacaoModel(BaseModel):
             valor_maximo=row['valor_maximo'],
             peso=row['peso'],
             turma_id=row['turma_id'],
+            topico=row['topico'],
             criada_em=datetime.fromisoformat(row['criada_em'])
         )
 
@@ -129,6 +130,7 @@ class AvaliacaoModel(BaseModel):
                 valor_maximo=row['valor_maximo'],
                 peso=row['peso'],
                 turma_id=row['turma_id'],
+                topico=row['topico'],
                 criada_em=datetime.fromisoformat(row['criada_em'])
             ))
         return avaliacoes

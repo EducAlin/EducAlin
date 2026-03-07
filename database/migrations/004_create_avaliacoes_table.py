@@ -18,7 +18,6 @@ steps = [
             valor_maximo REAL NOT NULL CHECK(valor_maximo > 0),
             peso REAL NOT NULL CHECK(peso >= 0 AND peso <= 1),
             turma_id INTEGER NOT NULL,
-            topico TEXT,
             criada_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             
             FOREIGN KEY (turma_id) REFERENCES turmas(id) ON DELETE CASCADE,

@@ -96,6 +96,25 @@ class TestAvaliacaoRepositoryEstrutura:
         with pytest.raises(TypeError):
             AvaliacaoRepository("não é conexão")
 
+    def test_row_factory_none_configurado_automaticamente(self):
+        """Deve configurar row_factory automaticamente quando for None"""
+        conn = sqlite3.connect(':memory:')
+        conn.execute("PRAGMA foreign_keys = ON")
+        create_all_tables(conn)
+        assert conn.row_factory is None
+        repo = AvaliacaoRepository(conn)
+        assert repo is not None
+        assert conn.row_factory is sqlite3.Row
+        conn.close()
+
+    def test_row_factory_invalido_lanca_erro(self):
+        """Deve lançar TypeError quando row_factory está configurado para valor diferente de sqlite3.Row"""
+        conn = sqlite3.connect(':memory:')
+        conn.row_factory = lambda cursor, row: row  # tipo inválido
+        with pytest.raises(TypeError):
+            AvaliacaoRepository(conn)
+        conn.close()
+
     def test_possui_metodo_criar_avaliacao(self, repo):
         """Deve possuir o método criar_avaliacao()"""
         assert callable(getattr(repo, 'criar_avaliacao', None))
@@ -178,6 +197,26 @@ class TestAvaliacaoRepositoryCriarAvaliacao:
         """Deve lançar ValueError ou TypeError quando data é string ao invés de date"""
         with pytest.raises((ValueError, TypeError)):
             repo.criar_avaliacao({**avaliacao_data, 'data': '2026-03-06'})
+
+    def test_topico_invalido_lanca_erro(self, repo, avaliacao_data):
+        """Deve lançar ValueError quando topico não é uma string"""
+        with pytest.raises(ValueError):
+            repo.criar_avaliacao({**avaliacao_data, 'topico': 123})
+
+    def test_topico_vazio_lanca_erro(self, repo, avaliacao_data):
+        """Deve lançar ValueError quando topico é uma string vazia"""
+        with pytest.raises(ValueError):
+            repo.criar_avaliacao({**avaliacao_data, 'topico': '   '})
+
+    def test_topico_none_valido(self, repo, avaliacao_data):
+        """Deve aceitar topico=None"""
+        av_id = repo.criar_avaliacao({**avaliacao_data, 'topico': None})
+        assert av_id > 0
+
+    def test_topico_string_valido(self, repo, avaliacao_data):
+        """Deve aceitar topico como string não-vazia"""
+        av_id = repo.criar_avaliacao({**avaliacao_data, 'topico': 'heranca'})
+        assert av_id > 0
 
 
 class TestAvaliacaoRepositoryRegistrarNota:

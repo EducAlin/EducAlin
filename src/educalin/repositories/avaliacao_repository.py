@@ -40,14 +40,25 @@ class AvaliacaoRepository:
         Inicializa o repositório com uma conexão SQLite.
 
         Args:
-            conn: Conexão SQLite ativa com ``row_factory = sqlite3.Row``
-                e ``PRAGMA foreign_keys = ON``.
-        
+            conn: Conexão SQLite ativa. Se ``row_factory`` for ``None``,
+                será configurado automaticamente para ``sqlite3.Row``.
+                Recomenda-se também ``PRAGMA foreign_keys = ON``.
+
         Raises:
             TypeError: Se ``conn`` não for uma instância ``sqlite3.Connection``
+                ou se ``conn.row_factory`` estiver configurado para um valor
+                diferente de ``sqlite3.Row``.
         """
         if not isinstance(conn, sqlite3.Connection):
             raise TypeError("conn deve ser uma instância de sqlite3.Connection")
+
+        if conn.row_factory is None:
+            conn.row_factory = sqlite3.Row
+        elif conn.row_factory is not sqlite3.Row:
+            raise TypeError(
+                "conn.row_factory deve ser sqlite3.Row para uso com AvaliacaoRepository"
+            )
+
         self._conn = conn
 
     # Interface pública
@@ -268,6 +279,13 @@ class AvaliacaoRepository:
         turma_id = avaliacao_data['turma_id']
         if not isinstance(turma_id, int) or turma_id <= 0:
             raise ValueError("'turma_id' deve ser um inteiro positivo")
+
+        if 'topico' in avaliacao_data:
+            topico = avaliacao_data['topico']
+            if topico is not None:
+                if not isinstance(topico, str) or not topico.strip():
+                    raise ValueError("'topico' deve ser uma string não-vazia ou None")
+                avaliacao_data['topico'] = topico.strip()
 
     def _validar_nota_data(self, nota_data: dict) -> None:
         """

@@ -167,6 +167,7 @@ def create_avaliacoes_table(conn: sqlite3.Connection):
 
     # Índices para performance
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_avaliacoes_turma ON avaliacoes(turma_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_avaliacoes_turma_topico ON avaliacoes(turma_id, topico)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_avaliacoes_data ON avaliacoes(data)")
 
     conn.commit()
