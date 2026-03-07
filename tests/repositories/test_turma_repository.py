@@ -136,7 +136,7 @@ class TestTurmaRepositoryCriar:
     def test_codigo_duplicado_lanca_erro(self, repo, turma_data):
         """Código duplicado deve lançar ValueError"""
         repo.criar(turma_data)
-        with pytest.raises((ValueError, Exception)):
+        with pytest.raises(ValueError):
             repo.criar(turma_data)
 
     def test_campos_obrigatorios_ausentes_lancam_erro(self, repo):
@@ -157,15 +157,15 @@ class TestTurmaRepositoryCriar:
     def test_ids_incrementais(self, repo, professor_id):
         """IDs devem ser únicos e crescentes"""
         id1 = repo.criar({
-            'codigo': 'T1', 
-            'disciplina': 'A', 
+            'codigo': 'T1',
+            'disciplina': 'A',
             'semestre': '2025.1',
-         'professor_id': professor_id
+            'professor_id': professor_id
         })
         id2 = repo.criar({
-            'codigo': 'T2', 
-            'disciplina': 'B', 
-            'semestre': '2025.2', 
+            'codigo': 'T2',
+            'disciplina': 'B',
+            'semestre': '2025.2',
             'professor_id': professor_id
         })
 

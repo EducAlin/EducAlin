@@ -25,7 +25,7 @@ class TurmaRepository:
     Coordena criação, busca e manipulação de turmas e seus
     relacionamentos com alunos (N:N via tabela ``turma_alunos``).
     Toda lógica SQL é delegada a ``TurmaModel``; este repositório
-    cuida de validações de entrada, tratamendo de erros e conversão
+    cuida de validações de entrada, tratamento de erros e conversão
     entre dicts (interface da API/serviços) e objetos de modelo.
 
     Attributes:
@@ -67,7 +67,7 @@ class TurmaRepository:
 
         Args:
             turma_data: Dicionário com os campos da turma. Campos
-                obrigatótios: ``'codigo'``, ``'disciplina'``, ``'semestre'``.
+                obrigatórios: ``'codigo'``, ``'disciplina'``, ``'semestre'``.
                 Campo opcional: ``'professor_id'`` (int).
 
         Returns:
@@ -87,13 +87,25 @@ class TurmaRepository:
         """
         self._validar_campos_obrigatorios(turma_data)
 
-        return TurmaModel.criar(
-            conn=self._conn,
-            codigo=turma_data['codigo'],
-            disciplina=turma_data['disciplina'],
-            semestre=turma_data['semestre'],
-            professor_id=turma_data.get('professor_id'),
-        )
+        try:
+            return TurmaModel.criar(
+                conn=self._conn,
+                codigo=turma_data['codigo'],
+                disciplina=turma_data['disciplina'],
+                semestre=turma_data['semestre'],
+                professor_id=turma_data.get('professor_id'),
+            )
+        except sqlite3.IntegrityError as exc:
+            # Normaliza erros de integridade do banco em ValueError,
+            # conforme contrato deste repositório.
+            msg = str(exc)
+            if "UNIQUE" in msg.upper():
+                raise ValueError(
+                    "Já existe uma turma com o mesmo código ou combinação de dados fornecida."
+                ) from exc
+            raise ValueError(
+                "Não foi possível criar a turma devido a uma violação de integridade no banco de dados."
+            ) from exc
 
     def buscar_por_id(self, turma_id: int) -> Optional[TurmaModel]:
         """
@@ -120,7 +132,7 @@ class TurmaRepository:
         sem lançar erro - comportamento adequado para consulta de listagem.
 
         Args:
-            professor_id: ID do professro cujas turmas devem ser listadas
+            professor_id: ID do professor cujas turmas devem ser listadas
         
         Returns:
             Lista de instâncias de ``TurmaModel``, possivelmente vazia.
@@ -141,8 +153,9 @@ class TurmaRepository:
 
         Verifica a existência da turma antes de delegar ao modelo,
         lançando ``ValueError`` com mensagem clara se não encontrada.
-        A verificação de existência do aluno fica a cargo do ``TurmaModel``,
-        que acessa diretamente a FK em ``turma_alunos``.
+        A verificação de existência e tipo do aluno é realizada por
+        ``TurmaModel.adicionar_aluno()``, que consulta a tabela de
+        usuários e lança ``ValueError`` se o ``aluno_id`` não for válido.
 
         Args:
             turma_id: ID da turma onde o aluno será matriculado.
