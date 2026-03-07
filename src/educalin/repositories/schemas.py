@@ -16,7 +16,7 @@ def create_usuarios_table(conn: sqlite3.Connection):
         conn: Conexão ativa com o banco de dados
     """
     cursor = conn.cursor()
-    
+
     # Tabela de Usuários com Single Table Inheritance
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
@@ -38,11 +38,11 @@ def create_usuarios_table(conn: sqlite3.Connection):
             atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    
+
     # Índices para performance
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_tipo ON usuarios(tipo_usuario)")
-    
+
     conn.commit()
     print("✅ Tabela 'usuarios' criada com sucesso!")
 
@@ -55,7 +55,7 @@ def create_turmas_tables(conn: sqlite3.Connection):
         conn: Conexão ativa com o banco de dados
     """
     cursor = conn.cursor()
-    
+
     # Tabela de Turmas
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS turmas (
@@ -72,7 +72,7 @@ def create_turmas_tables(conn: sqlite3.Connection):
             CHECK(semestre != '')
         )
     """)
-    
+
     # Tabela intermediária Turma-Aluno (Many-to-Many)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS turma_alunos (
@@ -85,13 +85,13 @@ def create_turmas_tables(conn: sqlite3.Connection):
             FOREIGN KEY (aluno_id) REFERENCES usuarios(id) ON DELETE CASCADE
         )
     """)
-    
+
     # Índices para performance
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_turmas_codigo ON turmas(codigo)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_turmas_professor ON turmas(professor_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_turma_alunos_turma ON turma_alunos(turma_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_turma_alunos_aluno ON turma_alunos(aluno_id)")
-    
+
     conn.commit()
     print("✅ Tabelas 'turmas' e 'turma_alunos' criadas com sucesso!")
 
@@ -104,7 +104,7 @@ def create_materiais_table(conn: sqlite3.Connection):
         conn: Conexão ativa com o banco de dados
     """
     cursor = conn.cursor()
-    
+
     # Tabela de Materiais com Single Table Inheritance
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS materiais (
@@ -129,12 +129,12 @@ def create_materiais_table(conn: sqlite3.Connection):
             CHECK(descricao != '')
         )
     """)
-    
+
     # Índices para performance
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_materiais_tipo ON materiais(tipo_material)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_materiais_autor ON materiais(autor_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_materiais_data ON materiais(data_upload)")
-    
+
     conn.commit()
     print("✅ Tabela 'materiais' criada com sucesso!")
 
@@ -147,7 +147,7 @@ def create_avaliacoes_table(conn: sqlite3.Connection):
         conn: Conexão ativa com o banco de dados
     """
     cursor = conn.cursor()
-    
+
     # Tabela de Avaliações
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS avaliacoes (
@@ -157,17 +157,18 @@ def create_avaliacoes_table(conn: sqlite3.Connection):
             valor_maximo REAL NOT NULL CHECK(valor_maximo > 0),
             peso REAL NOT NULL CHECK(peso >= 0 AND peso <= 1),
             turma_id INTEGER NOT NULL,
+            topico TEXT,
             criada_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             
             FOREIGN KEY (turma_id) REFERENCES turmas(id) ON DELETE CASCADE,
             CHECK(titulo != '')
         )
     """)
-    
+
     # Índices para performance
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_avaliacoes_turma ON avaliacoes(turma_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_avaliacoes_data ON avaliacoes(data)")
-    
+
     conn.commit()
     print("✅ Tabela 'avaliacoes' criada com sucesso!")
 
@@ -180,7 +181,7 @@ def create_notas_table(conn: sqlite3.Connection):
         conn: Conexão ativa com o banco de dados
     """
     cursor = conn.cursor()
-    
+
     # Tabela de Notas
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS notas (
@@ -195,11 +196,11 @@ def create_notas_table(conn: sqlite3.Connection):
             UNIQUE(aluno_id, avaliacao_id)
         )
     """)
-    
+
     # Índices para performance
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_notas_aluno ON notas(aluno_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_notas_avaliacao ON notas(avaliacao_id)")
-    
+
     conn.commit()
     print("✅ Tabela 'notas' criada com sucesso!")
 
@@ -212,7 +213,7 @@ def create_metas_table(conn: sqlite3.Connection):
         conn: Conexão ativa com o banco de dados
     """
     cursor = conn.cursor()
-    
+
     # Tabela de Metas
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS metas (
@@ -230,12 +231,12 @@ def create_metas_table(conn: sqlite3.Connection):
             CHECK(progresso_atual <= valor_alvo)
         )
     """)
-    
+
     # Índices para performance
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_metas_aluno ON metas(aluno_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_metas_prazo ON metas(prazo)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_metas_atingida ON metas(meta_atingida_em)")
-    
+
     conn.commit()
     print("✅ Tabela 'metas' criada com sucesso!")
 
@@ -248,7 +249,7 @@ def create_planos_acao_tables(conn: sqlite3.Connection):
         conn: Conexão ativa com o banco de dados
     """
     cursor = conn.cursor()
-    
+
     # Tabela de Planos de Ação
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS planos_acao (
@@ -266,7 +267,7 @@ def create_planos_acao_tables(conn: sqlite3.Connection):
             CHECK(data_limite > data_criacao)
         )
     """)
-    
+
     # Tabela intermediária Plano-Material (Composição Many-to-Many)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS plano_materiais (
@@ -279,14 +280,14 @@ def create_planos_acao_tables(conn: sqlite3.Connection):
             FOREIGN KEY (material_id) REFERENCES materiais(id) ON DELETE CASCADE
         )
     """)
-    
+
     # Índices para performance
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_planos_aluno ON planos_acao(aluno_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_planos_status ON planos_acao(status)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_planos_limite ON planos_acao(data_limite)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_plano_materiais_plano ON plano_materiais(plano_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_plano_materiais_material ON plano_materiais(material_id)")
-    
+
     conn.commit()
     print("✅ Tabelas 'planos_acao' e 'plano_materiais' criadas com sucesso!")
 
@@ -299,7 +300,7 @@ def create_all_tables(conn: sqlite3.Connection):
         conn: Conexão ativa com o banco de dados
     """
     print("🚀 Iniciando criação das tabelas...")
-    
+
     # Ordem é importante devido às dependências de Foreign Keys
     create_usuarios_table(conn)
     create_turmas_tables(conn)
@@ -308,5 +309,5 @@ def create_all_tables(conn: sqlite3.Connection):
     create_notas_table(conn)
     create_metas_table(conn)
     create_planos_acao_tables(conn)
-    
+
     print("✅ Todas as tabelas foram criadas com sucesso!")
