@@ -184,7 +184,7 @@ class TestAvaliacaoRepositoryRegistrarNota:
     """Testes do método registrar_nota()"""
 
     def test_retorna_inteiro(self, repo, nota_data):
-        """Deve retornar o ID da avaliação criada"""
+        """Deve retornar o ID da nota criada"""
         assert isinstance(repo.registrar_nota(nota_data), int)
 
     def test_id_positivo(self, repo, nota_data):
@@ -277,7 +277,7 @@ class TestAvaliacaoRepositoryBuscarNotasAluno:
         assert 'aluno_id' in nota
 
     def test_multiplas_avaliacoes(self, repo, aluno_id, turma_id, avaliacao_data, avaliacao_id):
-        """Aluno com notas em duas avaliações diferentes"""
+        """Aluno com notas em duas avaliações diferentes deve retornar exatamente 2 notas"""
         av2_id = repo.criar_avaliacao({**avaliacao_data, 'titulo': 'Prova 2'})
         repo.registrar_nota({
             'aluno_id': aluno_id,
@@ -293,16 +293,17 @@ class TestAvaliacaoRepositoryBuscarNotasAluno:
 
         notas = repo.buscar_notas_aluno(aluno_id, turma_id)
 
-        assert len(notas) > 1
+        assert len(notas) == 2
 
-    def test_isola_notas_entre_alunos(self, repo, nota_data, aluno_id, outro_aluno_id,
-                                      turma_id, avaliacao_id, conn):
-        """Não deve retornar notas de outros alunos"""
+    def test_isola_notas_entre_alunos(self, repo, nota_data, outro_aluno_id, turma_id):
+        """Nota de um aluno não deve aparecer na busca de outro aluno"""
         repo.registrar_nota(nota_data)
 
-        notas = repo.buscar_notas_aluno(outro_aluno_id, turma_id)
+        notas_outro = repo.buscar_notas_aluno(outro_aluno_id, turma_id)
+        notas_dono = repo.buscar_notas_aluno(nota_data['aluno_id'], turma_id)
 
-        assert notas == []
+        assert notas_outro == []
+        assert len(notas_dono) == 1
 
     def test_aluno_inexistente_retorna_lista_vazia(self, repo, turma_id):
         """Aluno inexistente deve retornar lista vazia"""
@@ -355,9 +356,9 @@ class TestAvaliacaoRepositoryBuscarNotasTurma:
 
         assert len(repo.buscar_notas_turma(turma_id)) == 2
 
-    def test_isola_notas_entre_turmas(self, repo, professor_id, aluno_id, avaliacao_data):
+    def test_isola_notas_entre_turmas(self, repo, conn, professor_id, aluno_id, avaliacao_data):
         """Não deve retornar notas de outras turmas"""
-        outra_turma_id = TurmaModel.criar(repo._conn, "ES001", "Matemática", "2025.2", professor_id)
+        outra_turma_id = TurmaModel.criar(conn, "ES001", "Matemática", "2025.2", professor_id)
         outra_av_id = repo.criar_avaliacao({**avaliacao_data, 'turma_id': outra_turma_id})
 
         repo.registrar_nota({
@@ -437,3 +438,26 @@ class TestAvaliacaoRepositoryCalcularMediaAluno:
     def test_aluno_inexistente_retorna_none(self, repo, turma_id):
         """Aluno inexistente deve retornar None"""
         assert repo.calcular_media_aluno(9999, turma_id) is None
+
+
+class TestAvaliacaoRepositoryCriarAvaliacaoPesosLimite:
+    """Testa os limites do intervalo de peso em criar_avaliacao()"""
+
+    def test_peso_zero_valido(self, repo, avaliacao_data):
+        """Peso zero deve ser aceito (limite inferior do intervalo [0, 1])"""
+        av_id = repo.criar_avaliacao({**avaliacao_data, 'peso': 0.0})
+        assert av_id > 0
+
+    def test_peso_um_valido(self, repo, avaliacao_data):
+        """Peso máximo (1.0) deve ser aceito (limite superior do intervalo [0, 1])"""
+        av_id = repo.criar_avaliacao({**avaliacao_data, 'peso': 1.0})
+        assert av_id > 0
+
+
+class TestAvaliacaoRepositoryRegistrarNotaValorNone:
+    """Testa comportamento de registrar_nota() com valor=None explícito"""
+
+    def test_valor_none_explicito_lanca_erro(self, repo, nota_data):
+        """Passar valor=None explicitamente deve lançar ValueError"""
+        with pytest.raises(ValueError):
+            repo.registrar_nota({**nota_data, 'valor': None})

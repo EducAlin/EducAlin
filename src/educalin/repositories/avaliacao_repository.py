@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import sqlite3
 from datetime import date
-from typing import Optional
 
 from .avaliacao_models import AvaliacaoModel
 from .nota_models import NotaModel
@@ -138,7 +137,7 @@ class AvaliacaoRepository:
             Lista vazia se o aluno ou turma não existirem ou não houver notas.
 
         Examples:
-            >>> notas = repo.buscar_notas_aluo(aluno_id=5, turma_id=1)
+            >>> notas = repo.buscar_notas_aluno(aluno_id=5, turma_id=1)
             >>> [n['valor'] for n in notas]
             [7.5, 8.0]
         """
@@ -192,8 +191,8 @@ class AvaliacaoRepository:
         self,
         aluno_id: int,
         turma_id: int,
-        topico: Optional[str] = None,
-    ) -> Optional[float]:
+        topico: str | None = None,
+    ) -> float | None:
         """
         Calcula a média das notas de um aluno em uma turma.
 
@@ -218,29 +217,17 @@ class AvaliacaoRepository:
             >>> repo.calcular_media_aluno(aluno_id=5, turma_id=1, topico='heranca')
             9.0
         """
-        if topico is not None:
-            cursor = self._conn.execute(
-                """
-                SELECT AVG(n.valor) as media
-                FROM notas n
-                JOIN avaliacoes a ON n.avaliacao_id = a.id
-                WHERE n.aluno_id = ?
-                  AND a.turma_id = ?
-                  AND a.topico = ?
-                """,
-                (aluno_id, turma_id, topico),
-            )
-        else:
-            cursor = self._conn.execute(
-                """
-                SELECT AVG(n.valor) as media
-                FROM notas n
-                JOIN avaliacoes a ON n.avaliacao_id = a.id
-                WHERE n.aluno_id = ?
-                  AND a.turma_id = ?
-                """,
-                (aluno_id, turma_id),
-            )
+        cursor = self._conn.execute(
+            """
+            SELECT AVG(n.valor) as media
+            FROM notas n
+            JOIN avaliacoes a ON n.avaliacao_id = a.id
+            WHERE n.aluno_id = ?
+              AND a.turma_id = ?
+              AND (? IS NULL OR a.topico = ?)
+            """,
+            (aluno_id, turma_id, topico, topico),
+        )
 
         row = cursor.fetchone()
         if row is None or row['media'] is None:
@@ -278,16 +265,31 @@ class AvaliacaoRepository:
         if not isinstance(peso, (int, float)) or not (0 <= peso <= 1):
             raise ValueError("'peso' deve estar no intervalo [0, 1]")
 
+        turma_id = avaliacao_data['turma_id']
+        if not isinstance(turma_id, int) or turma_id <= 0:
+            raise ValueError("'turma_id' deve ser um inteiro positivo")
+
     def _validar_nota_data(self, nota_data: dict) -> None:
         """
         Valida os campos obrigatórios do dicionário de nota.
 
         Raises:
-            ValueError: Se algum campo obrigatório estiver ausente ou inválido.
+            ValueError: Se algum campo obrigatório estiver ausente ou inválido,
+                se ``valor`` for negativo, ou se ``aluno_id``/``avaliacao_id``
+                não forem inteiros positivos.
         """
         for campo in ('aluno_id', 'avaliacao_id', 'valor'):
             if campo not in nota_data or nota_data[campo] is None:
                 raise ValueError(f"Campo obrigatório ausente: '{campo}'")
+
+        for campo in ('aluno_id', 'avaliacao_id'):
+            val = nota_data[campo]
+            if not isinstance(val, int) or val <= 0:
+                raise ValueError(f"'{campo}' deve ser um inteiro positivo")
+
+        valor = nota_data['valor']
+        if not isinstance(valor, (int, float)) or valor < 0:
+            raise ValueError("'valor' deve ser um número não-negativo")
 
     def _garantir_turma_existe(self, turma_id: int) -> None:
         """
