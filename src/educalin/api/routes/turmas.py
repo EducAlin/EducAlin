@@ -124,6 +124,8 @@ def criar_turma(payload: TurmaCreate, conn: sqlite3.Connection = Depends(get_db)
         msg = str(exc)
         if "não existe" in msg or "não encontrad" in msg:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=msg) from exc
+        if "obrigatório" in msg or "vazio" in msg:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=msg) from exc
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=msg) from exc
 
     turma = repo.buscar_por_id(turma_id)
@@ -178,6 +180,8 @@ def detalhe_turma(turma_id: int, conn: sqlite3.Connection = Depends(get_db)):
 
 @router.post(
     "/{turma_id}/alunos",
+    response_model=MensagemResponse,
+    status_code=status.HTTP_201_CREATED,
     summary="Adicionar aluno à turma",
 )
 def adicionar_aluno(
@@ -239,11 +243,15 @@ def remover_aluno(
         Mensagem de confirmação.
 
     Raises:
-        HTTPException 404: Se a turma não existir ou o aluno não esitver
+        HTTPException 404: Se a turma não existir ou o aluno não estiver
             matriculado nela.
     """
     repo = TurmaRepository(conn)
-    removido = repo.remover_aluno(turma_id, aluno_id)
+    try:
+        removido = repo.remover_aluno(turma_id, aluno_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
     if not removido:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -290,7 +298,7 @@ def desempenho_turma(turma_id: int, conn: sqlite3.Connection = Depends(get_db)):
         """
         SELECT
             COUNT(DISTINCT ta.aluno_id)                          AS total_alunos,
-            COALESCE(AVG(n.valor), 0.0)                          AS media_geral,
+            COALESCE(AVG(medias.media), 0.0)                     AS media_geral,
             COALESCE(
                 100.0 * SUM(CASE WHEN medias.media >= 6.0 THEN 1 ELSE 0 END)
                       / NULLIF(COUNT(DISTINCT ta.aluno_id), 0),
@@ -304,11 +312,9 @@ def desempenho_turma(turma_id: int, conn: sqlite3.Connection = Depends(get_db)):
             WHERE a2.turma_id = ?
             GROUP BY n2.aluno_id
         ) medias ON ta.aluno_id = medias.aluno_id
-        LEFT JOIN notas n ON n.aluno_id = ta.aluno_id
-        LEFT JOIN avaliacoes a ON n.avaliacao_id = a.id AND a.turma_id = ?
         WHERE ta.turma_id = ?
         """,
-        (turma_id, turma_id, turma_id),
+        (turma_id, turma_id),
     )
     row = cursor.fetchone()
 
