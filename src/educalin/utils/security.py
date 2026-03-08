@@ -6,7 +6,7 @@ gerenciamento de tokens JWT para autenticação.
 """
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 
 import bcrypt
@@ -79,13 +79,13 @@ def criar_token_jwt(usuario_id: int, perfil: str) -> str:
         >>> isinstance(token, str)
         True
     """
-    expiracao = datetime.utcnow() + timedelta(hours=TOKEN_EXPIRATION_HOURS)
+    expiracao = datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRATION_HOURS)
     
     payload = {
         "usuario_id": usuario_id,
         "perfil": perfil,
         "exp": expiracao,
-        "iat": datetime.utcnow()
+        "iat": datetime.now(timezone.utc)
     }
     
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)

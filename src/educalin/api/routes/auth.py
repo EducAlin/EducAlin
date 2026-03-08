@@ -36,10 +36,6 @@ router = APIRouter(
 )
 
 
-# Armazenamento temporário de tokens invalidados (em produção, usar Redis ou banco)
-# Esta é uma solução temporária para demonstração
-_blacklisted_tokens = set()
-
 
 @router.post(
     "/register",
@@ -179,25 +175,24 @@ def login(dados: LoginSchema) -> TokenSchema:
 )
 def logout(current_user: UsuarioSchema = Depends(get_current_user)) -> Dict[str, str]:
     """
-    Realiza logout invalidando o token do usuário.
-    
-    **Nota**: Esta implementação é simplificada para demonstração.
+    Endpoint de logout.
+
+    **Importante**: A invalidação de tokens ainda **não está implementada**.
+
     Em produção, seria necessário:
     - Armazenar tokens invalidados em Redis ou banco de dados
     - Implementar limpeza periódica de tokens expirados
     - Considerar uso de refresh tokens
-    
-    Returns:
-        Mensagem de confirmação
+
+    Atualmente, este endpoint apenas sinaliza que a funcionalidade
+    não foi implementada, para evitar uma falsa sensação de segurança.
+
+    Raises:
+        HTTPException: Sempre com status 501 (Not Implemented).
     """
-    # Em uma implementação real, você adicionaria o token à blacklist
-    # Por enquanto, apenas retornamos sucesso
-    # Token seria extraído de credentials.credentials antes
-    
-    return {
-        "message": "Logout realizado com sucesso",
-        "detail": f"Usuário {current_user.nome} desconectado"
-    }
+    # Endpoint explicitamente marcado como não implementado para evitar
+    # a falsa impressão de que o token foi invalidado.
+    raise HTTPException(status_code=501, detail="Not implemented")
 
 
 @router.post(
