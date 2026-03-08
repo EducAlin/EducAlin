@@ -247,6 +247,10 @@ class UsuarioRepository:
         if 'matricula' in dados:
             campos_atualizados['matricula'] = dados['matricula']
         
+        # Se nenhum campo válido foi fornecido, não atualiza apenas o timestamp
+        if not campos_atualizados:
+            raise ValueError("Nenhum campo válido fornecido para atualização.")
+        
         # Atualizar atualizado_em
         campos_atualizados['atualizado_em'] = 'CURRENT_TIMESTAMP'
         

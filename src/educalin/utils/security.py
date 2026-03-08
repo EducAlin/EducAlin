@@ -6,7 +6,7 @@ gerenciamento de tokens JWT para autenticação.
 """
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 
 import bcrypt
@@ -14,7 +14,11 @@ import jwt
 
 
 # Configuração JWT
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "A variável de ambiente JWT_SECRET_KEY deve estar definida para assinar tokens JWT com segurança."
+    )
 ALGORITHM = "HS256"
 TOKEN_EXPIRATION_HOURS = 24
 
@@ -40,13 +44,13 @@ def hash_senha(senha: str) -> str:
     return hash_bytes.decode("utf-8")
 
 
-def verificar_senha(senha: str, hash: str) -> bool:
+def verificar_senha(senha: str, senha_hash: str) -> bool:
     """
     Verifica se uma senha corresponde ao hash bcrypt fornecido.
 
     Args:
         senha: A senha em texto plano para verificar.
-        hash: O hash bcrypt para comparar.
+        senha_hash: O hash bcrypt para comparar.
 
     Returns:
         True se a senha corresponder ao hash, False caso contrário.
@@ -59,7 +63,7 @@ def verificar_senha(senha: str, hash: str) -> bool:
         False
     """
     senha_bytes = senha.encode("utf-8")
-    hash_bytes = hash.encode("utf-8")
+    hash_bytes = senha_hash.encode("utf-8")
     return bcrypt.checkpw(senha_bytes, hash_bytes)
 
 
@@ -79,13 +83,13 @@ def criar_token_jwt(usuario_id: int, perfil: str) -> str:
         >>> isinstance(token, str)
         True
     """
-    expiracao = datetime.utcnow() + timedelta(hours=TOKEN_EXPIRATION_HOURS)
+    expiracao = datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRATION_HOURS)
     
     payload = {
         "usuario_id": usuario_id,
         "perfil": perfil,
         "exp": expiracao,
-        "iat": datetime.utcnow()
+        "iat": datetime.now(timezone.utc)
     }
     
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
