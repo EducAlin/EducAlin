@@ -58,7 +58,7 @@ class UsuarioRepository:
         
         Raises:
             ValueError: Se dados obrigatórios estiverem faltando ou inválidos,
-                ou se o email já existir
+                       ou se o email já existir no banco de dados.
         
         Example:
             >>> repo = UsuarioRepository()
@@ -209,8 +209,8 @@ class UsuarioRepository:
             bool: True se atualizou com sucesso, False se usuário não existe
         
         Raises:
-            ValueError: Se dados inválidos forem fornecidos
-            sqlite3.IntegrityError: Se houver conflito (ex: email duplicado)
+            ValueError: Se dados inválidos forem fornecidos ou se houver conflito de integridade
+                (por exemplo, email duplicado)
         
         Example:
             >>> repo = UsuarioRepository()
@@ -247,9 +247,13 @@ class UsuarioRepository:
         if 'matricula' in dados:
             campos_atualizados['matricula'] = dados['matricula']
         
-        # Se nenhum campo válido foi fornecido, não atualiza apenas o timestamp
+        # Garante que pelo menos um campo efetivo foi fornecido
         if not campos_atualizados:
-            raise ValueError("Nenhum campo válido fornecido para atualização.")
+            raise ValueError(
+                "Nenhum campo válido para atualização foi fornecido. "
+                "Campos permitidos: nome, email, senha, registro_funcional, "
+                "codigo_coordenacao, matricula."
+            )
         
         # Atualizar atualizado_em
         campos_atualizados['atualizado_em'] = 'CURRENT_TIMESTAMP'

@@ -17,7 +17,25 @@ class BaseModel:
     
     Fornece validações comuns e operações de segurança (hash de senha).
     """
-    
+
+    @staticmethod
+    def _validate_required(**kwargs) -> None:
+        """
+        Valida que todos os campos obrigatórios estão presentes e não-vazios.
+
+        Args:
+            **kwargs: Campos a validar, onde a chave é o nome do campo
+                e o valor é o conteúdo a ser verificado.
+
+        Raises:
+            ValueError: Se algum campo estiver ausente, ``None`` ou vazio
+                após remoção de espaços em branco.
+        """
+        for field_name, value in kwargs.items():
+            # Considera vazio apenas se for None ou, no caso de strings, vazia após strip.
+            if value is None or (isinstance(value, str) and not value.strip()):
+                raise ValueError(f"{field_name} não pode ser vazio")
+
     @staticmethod
     def _validate_email(email: str) -> str:
         """
@@ -36,7 +54,7 @@ class BaseModel:
         if not EMAIL_PATTERN.match(email):
             raise ValueError(f"Formato de e-mail inválido: {email}")
         return email
-    
+
     @staticmethod
     def _validate_not_empty(value: str, field_name: str) -> str:
         """
@@ -55,7 +73,7 @@ class BaseModel:
         if not value or not value.strip():
             raise ValueError(f"{field_name} não pode ser vazio.")
         return value.strip()
-    
+
     @staticmethod
     def _hash_password(password: str) -> str:
         """
@@ -68,7 +86,7 @@ class BaseModel:
             str: Hash bcrypt da senha
         """
         return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-    
+
     @staticmethod
     def _verify_password(password: str, password_hash: str) -> bool:
         """
