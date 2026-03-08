@@ -16,6 +16,7 @@ from .models import (
     AlunoModel,
     TurmaModel,
 )
+from .usuario_repository import UsuarioRepository
 
 __all__ = [
     # Base e configuração
@@ -33,4 +34,7 @@ __all__ = [
     'CoordenadorModel',
     'AlunoModel',
     'TurmaModel',
+    
+    # Repositories
+    'UsuarioRepository',
 ]
