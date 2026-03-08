@@ -57,8 +57,8 @@ class UsuarioRepository:
             int: ID do usuário criado
         
         Raises:
-            ValueError: Se dados obrigatórios estiverem faltando ou inválidos
-            sqlite3.IntegrityError: Se email já existir
+            ValueError: Se dados obrigatórios estiverem faltando ou inválidos,
+                ou se o email já existir
         
         Example:
             >>> repo = UsuarioRepository()
