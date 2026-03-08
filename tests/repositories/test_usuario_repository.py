@@ -413,7 +413,7 @@ class TestAtualizar:
         assert sucesso is False
     
     def test_atualizar_sem_dados(self, repo):
-        """Deve falhar ao atualizar sem fornece dados."""
+        """Deve falhar ao atualizar sem fornecer dados."""
         usuario_id = repo.criar({
             'tipo_usuario': 'professor',
             'nome': 'João Silva',

@@ -6,7 +6,7 @@ gerenciamento de tokens JWT para autenticação.
 """
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 
 import bcrypt
@@ -14,7 +14,11 @@ import jwt
 
 
 # Configuração JWT
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "JWT_SECRET_KEY environment variable must be set for JWT operations."
+    )
 ALGORITHM = "HS256"
 TOKEN_EXPIRATION_HOURS = 24
 
@@ -79,13 +83,13 @@ def criar_token_jwt(usuario_id: int, perfil: str) -> str:
         >>> isinstance(token, str)
         True
     """
-    expiracao = datetime.utcnow() + timedelta(hours=TOKEN_EXPIRATION_HOURS)
+    expiracao = datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRATION_HOURS)
     
     payload = {
         "usuario_id": usuario_id,
         "perfil": perfil,
         "exp": expiracao,
-        "iat": datetime.utcnow()
+        "iat": datetime.now(timezone.utc)
     }
     
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)

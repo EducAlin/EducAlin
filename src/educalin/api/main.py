@@ -11,8 +11,10 @@ Este módulo configura a aplicação FastAPI, incluindo:
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+import os
 
 from .routes import auth
+from ..repositories.base import init_db
 
 
 # Criar aplicação FastAPI
@@ -27,9 +29,14 @@ app = FastAPI(
 
 
 # Configurar CORS
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+if not allowed_origins:
+    allowed_origins = ["http://localhost:3000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  #TODO especificar origens permitidas
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,6 +45,12 @@ app.add_middleware(
 
 # Registrar routers
 app.include_router(auth.router)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Inicializa o banco de dados na startup da aplicação."""
+    init_db()
 
 
 # Rota raiz
