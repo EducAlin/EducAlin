@@ -9,6 +9,7 @@ Este módulo implementa endpoints para:
 """
 
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.security import HTTPAuthCredentials
 from typing import Dict
 
 from ..schemas import (
@@ -19,7 +20,7 @@ from ..schemas import (
     RecuperarSenhaSchema,
     ErrorSchema
 )
-from ..dependencies import get_current_user
+from ..dependencies import get_current_user, security, _blacklisted_tokens
 from ...repositories.usuario_repository import UsuarioRepository
 from ...repositories.base import get_connection
 from ...utils.security import criar_token_jwt
@@ -34,11 +35,6 @@ router = APIRouter(
         400: {"model": ErrorSchema, "description": "Requisição inválida"},
     }
 )
-
-
-# Armazenamento temporário de tokens invalidados (em produção, usar Redis ou banco)
-# Esta é uma solução temporária para demonstração
-_blacklisted_tokens = set()
 
 
 @router.post(
@@ -177,23 +173,23 @@ def login(dados: LoginSchema) -> TokenSchema:
         401: {"description": "Token inválido ou expirado"},
     }
 )
-def logout(current_user: UsuarioSchema = Depends(get_current_user)) -> Dict[str, str]:
+def logout(
+    credentials: HTTPAuthCredentials = Depends(security),
+    current_user: UsuarioSchema = Depends(get_current_user),
+) -> Dict[str, str]:
     """
     Realiza logout invalidando o token do usuário.
     
-    **Nota**: Esta implementação é simplificada para demonstração.
-    Em produção, seria necessário:
-    - Armazenar tokens invalidados em Redis ou banco de dados
-    - Implementar limpeza periódica de tokens expirados
-    - Considerar uso de refresh tokens
+    O token é adicionado à blacklist em memória e rejeitado em chamadas futuras.
+    
+    **Nota**: A blacklist é mantida em memória (processo único). Em produção,
+    utilize Redis ou banco de dados para persistir tokens invalidados.
     
     Returns:
         Mensagem de confirmação
     """
-    # Em uma implementação real, você adicionaria o token à blacklist
-    # Por enquanto, apenas retornamos sucesso
-    # Token seria extraído de credentials.credentials antes
-    
+    _blacklisted_tokens.add(credentials.credentials)
+
     return {
         "message": "Logout realizado com sucesso",
         "detail": f"Usuário {current_user.nome} desconectado"
