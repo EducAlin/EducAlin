@@ -12,7 +12,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from ..utils.security import decodificar_token_jwt
 from ..repositories.usuario_repository import UsuarioRepository
 from ..repositories.base import get_connection
-from ..api.schemas import UsuarioSchema
+from .schemas import UsuarioSchema
 
 
 # Security scheme para Bearer Token

@@ -6,16 +6,9 @@ import pytest
 import sqlite3
 import tempfile
 import os
-from pathlib import Path
 from fastapi.testclient import TestClient
 
 from educalin.api.main import app
-from educalin.repositories.base import get_connection
-
-
-# Flag para indicar que estamos em ambiente de teste
-_is_testing = False
-_test_db_path = None
 
 
 @pytest.fixture(scope="session")
@@ -25,12 +18,9 @@ def test_db():
     
     Scope 'session' garante que o banco seja criado uma vez por sessão de testes.
     """
-    global _test_db_path
-    
     # Criar arquivo temporário para o banco
     fd, db_path = tempfile.mkstemp(suffix='.db')
     os.close(fd)
-    _test_db_path = db_path
     
     # Criar conexão e estrutura do banco
     conn = sqlite3.connect(db_path)
@@ -75,7 +65,7 @@ def test_db():
     # Cleanup: remover arquivo temporário
     try:
         os.unlink(db_path)
-    except:
+    except Exception:
         pass
 
 
@@ -107,7 +97,7 @@ def db_connection(test_db, monkeypatch):
         cursor = conn.cursor()
         cursor.execute("DELETE FROM usuarios")
         conn.commit()
-    except:
+    except Exception:
         pass
     finally:
         conn.close()
