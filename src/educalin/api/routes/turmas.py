@@ -45,13 +45,25 @@ class TurmaResponse(BaseModel):
     semestre: str
     professor_id: Optional[int] = None
 
+class AlunoResumoResponse(BaseModel):
+    """Resumo de um aluno matriculado em uma turma"""
+    id: int
+    nome: str
+    email: str
+    matricula: Optional[str] = None
+    data_matricula: Optional[str] = None
+
 class TurmaDetalheResponse(TurmaResponse):
     """Turma com lista de alunos matriculados"""
-    alunos: list[dict] = []
+    alunos: list[AlunoResumoResponse] = []
 
 class AdicionarAlunoPayload(BaseModel):
     """Payload para matricular um aluno em uma turma"""
     aluno_id: int
+
+class MensagemResponse(BaseModel):
+    """Resposta simples com mensagem de confirmação"""
+    mensagem: str
 
 class DesempenhoResponse(BaseModel):
     """Resumo de desempenho de uma turma"""
@@ -145,7 +157,7 @@ def criar_turma(payload: TurmaCreate, conn: sqlite3.Connection = Depends(get_db)
 )
 def detalhe_turma(turma_id: int, conn: sqlite3.Connection = Depends(get_db)):
     """
-    Retorna os dados completo de uma turma, incluindo a lista de alunos.
+    Retorna os dados completos de uma turma, incluindo a lista de alunos.
 
     Args:
         turma_id: ID da turma a ser consultada.
@@ -219,11 +231,12 @@ def adicionar_aluno(
             detail=f"Aluno {payload.aluno_id} já está matriculado nesta turma",
         )
 
-    return {"mensagem": f"Aluno {payload.aluno_id} matriculado com sucesso"}
+    return MensagemResponse(mensagem=f"Aluno {payload.aluno_id} matriculado com sucesso")
 
 
 @router.delete(
     "/{turma_id}/alunos/{aluno_id}",
+    response_model=MensagemResponse,
     summary="Remover aluno da turma",
 )
 def remover_aluno(
@@ -258,7 +271,7 @@ def remover_aluno(
             detail=f"Aluno {aluno_id} não está matriculado na turma {turma_id}",
         )
 
-    return {"mensagem": f"Aluno {aluno_id} removido com sucesso"}
+    return MensagemResponse(mensagem=f"Aluno {aluno_id} removido com sucesso")
 
 
 @router.get(
