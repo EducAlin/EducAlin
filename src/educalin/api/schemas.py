@@ -247,6 +247,20 @@ class UsuarioUpdateSchema(BaseModel):
         return v
 
 
+class RecuperarSenhaSchema(BaseModel):
+    """
+    Schema para solicitação de recuperação de senha.
+    
+    Attributes:
+        email: Email do usuário que deseja recuperar a senha
+    """
+    email: EmailStr = Field(
+        ...,
+        description="Email do usuário",
+        json_schema_extra={"example": "usuario@email.com"}
+    )
+
+
 class ErrorSchema(BaseModel):
     """
     Schema para respostas de erro.

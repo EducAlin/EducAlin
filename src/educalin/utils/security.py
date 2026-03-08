@@ -14,7 +14,12 @@ import bcrypt
 import jwt
 
 
-_FALLBACK_SECRET_KEY = "dev-secret-key-change-in-production"
+# Configuração JWT
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "JWT_SECRET_KEY environment variable must be set for JWT operations."
+    )
 ALGORITHM = "HS256"
 TOKEN_EXPIRATION_HOURS = 24
 

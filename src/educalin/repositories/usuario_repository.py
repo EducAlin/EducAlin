@@ -57,8 +57,8 @@ class UsuarioRepository:
             int: ID do usuário criado
         
         Raises:
-            ValueError: Se dados obrigatórios estiverem faltando ou inválidos,
-                       ou se o email já existir no banco de dados.
+            ValueError: Se dados obrigatórios estiverem faltando, inválidos, ou se
+                ocorrer violação de integridade/unicidade (ex.: email já existir)
         
         Example:
             >>> repo = UsuarioRepository()
@@ -210,7 +210,7 @@ class UsuarioRepository:
         
         Raises:
             ValueError: Se dados inválidos forem fornecidos ou se houver conflito de integridade
-                (por exemplo, email duplicado)
+                (por exemplo, e-mail duplicado)
         
         Example:
             >>> repo = UsuarioRepository()
@@ -221,11 +221,48 @@ class UsuarioRepository:
         """
         if not dados:
             raise ValueError("Nenhum dado fornecido para atualização")
-        
+
+        # Chaves permitidas na atualização
+        _CAMPOS_PERMITIDOS = {
+            'nome', 'email', 'senha',
+            'registro_funcional', 'codigo_coordenacao', 'matricula',
+        }
+        chaves_invalidas = set(dados.keys()) - _CAMPOS_PERMITIDOS
+        if chaves_invalidas:
+            raise ValueError(
+                f"Campos não permitidos para atualização: {', '.join(sorted(chaves_invalidas))}"
+            )
+
+        campos_validos = set(dados.keys()) & _CAMPOS_PERMITIDOS
+        if not campos_validos:
+            raise ValueError("Nenhum campo atualizável válido fornecido")
+
         # Verificar se usuário existe
-        if not self.buscar_por_id(id):
+        usuario = self.buscar_por_id(id)
+        if not usuario:
             return False
-        
+
+        # Validações de campos por tipo de usuário
+        tipo_usuario = usuario.tipo_usuario
+
+        if 'registro_funcional' in dados:
+            if tipo_usuario != 'professor':
+                raise ValueError("registro_funcional só pode ser atualizado para professores")
+            if dados['registro_funcional'] is not None and not dados['registro_funcional']:
+                raise ValueError("registro_funcional não pode ser vazio para professores")
+
+        if 'codigo_coordenacao' in dados:
+            if tipo_usuario != 'coordenador':
+                raise ValueError("codigo_coordenacao só pode ser atualizado para coordenadores")
+            if dados['codigo_coordenacao'] is not None and not dados['codigo_coordenacao']:
+                raise ValueError("codigo_coordenacao não pode ser vazio para coordenadores")
+
+        if 'matricula' in dados:
+            if tipo_usuario != 'aluno':
+                raise ValueError("matricula só pode ser atualizada para alunos")
+            if dados['matricula'] is not None and not dados['matricula']:
+                raise ValueError("matricula não pode ser vazia para alunos")
+
         # Validações
         campos_atualizados = {}
         
