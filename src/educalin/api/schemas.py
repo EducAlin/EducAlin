@@ -4,7 +4,7 @@ Schemas Pydantic para validação de dados da API.
 Define modelos de dados para requisições e respostas da API REST.
 """
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from typing import Literal, Optional
 from datetime import datetime
 
@@ -126,7 +126,7 @@ class TokenSchema(BaseModel):
         description="Token JWT de acesso",
         json_schema_extra={"example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}
     )
-    token_type: str = Field(
+    token_type: Literal["bearer"] = Field(
         default="bearer",
         description="Tipo do token",
         json_schema_extra={"example": "bearer"}
@@ -141,7 +141,7 @@ class UsuarioSchema(BaseModel):
         id: ID do usuário
         nome: Nome completo
         email: Email do usuário
-        tipo: Tipo de usuário
+        tipo_usuario: Tipo de usuário
         registro_funcional: Registro funcional (se professor)
         codigo_coordenacao: Código de coordenação (se coordenador)
         matricula: Matrícula (se aluno)
@@ -163,7 +163,7 @@ class UsuarioSchema(BaseModel):
         description="Email do usuário",
         json_schema_extra={"example": "joao@email.com"}
     )
-    tipo: Literal["professor", "coordenador", "aluno"] = Field(
+    tipo_usuario: Literal["professor", "coordenador", "aluno"] = Field(
         ...,
         description="Tipo de usuário",
         json_schema_extra={"example": "professor"}
@@ -186,20 +186,18 @@ class UsuarioSchema(BaseModel):
         json_schema_extra={"example": "2024001"}
     )
     
-    criado_em: datetime = Field(
-        ...,
+    criado_em: Optional[datetime] = Field(
+        None,
         description="Data de criação do usuário",
         json_schema_extra={"example": "2024-01-01T10:00:00"}
     )
-    atualizado_em: datetime = Field(
-        ...,
+    atualizado_em: Optional[datetime] = Field(
+        None,
         description="Data de última atualização",
         json_schema_extra={"example": "2024-01-01T10:00:00"}
     )
     
-    class Config:
-        """Configuração do Pydantic."""
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UsuarioUpdateSchema(BaseModel):
