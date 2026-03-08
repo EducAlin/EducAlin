@@ -1,1 +1,1 @@
-"""Tests para repositories."""
+"""Testes para repositories."""

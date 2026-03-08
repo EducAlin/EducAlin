@@ -284,6 +284,14 @@ class UsuarioRepository:
         if 'matricula' in dados:
             campos_atualizados['matricula'] = dados['matricula']
         
+        # Garante que pelo menos um campo efetivo foi fornecido
+        if not campos_atualizados:
+            raise ValueError(
+                "Nenhum campo válido para atualização foi fornecido. "
+                "Campos permitidos: nome, email, senha, registro_funcional, "
+                "codigo_coordenacao, matricula."
+            )
+        
         # Atualizar atualizado_em
         campos_atualizados['atualizado_em'] = 'CURRENT_TIMESTAMP'
         
