@@ -14,7 +14,12 @@ import jwt
 
 
 # Configuração JWT
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "Variável de ambiente JWT_SECRET_KEY não está definida. "
+        "Defina uma chave secreta forte para assinatura de JWTs."
+    )
 ALGORITHM = "HS256"
 TOKEN_EXPIRATION_HOURS = 24
 
