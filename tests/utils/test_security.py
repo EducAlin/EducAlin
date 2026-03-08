@@ -1,18 +1,19 @@
 """
-Testes para o módulo utils/security.py.
+Testes unitários para o módulo de segurança (src/educalin/utils/security.py).
 
-Cobre hash/verificação de senha e encode/decode de JWT.
+Cobre: hash_senha, verificar_senha, criar_token_jwt e decodificar_token_jwt.
 """
 
 import time
+from datetime import datetime, timedelta, timezone
+
 import pytest
 
 from educalin.utils.security import (
-    hash_senha,
-    verificar_senha,
     criar_token_jwt,
     decodificar_token_jwt,
-    TOKEN_EXPIRATION_HOURS,
+    hash_senha,
+    verificar_senha,
 )
 
 
@@ -21,47 +22,47 @@ class TestHashSenha:
 
     def test_retorna_string(self):
         """Deve retornar uma string."""
-        resultado = hash_senha("minha_senha_123")
+        resultado = hash_senha("minha_senha")
         assert isinstance(resultado, str)
 
     def test_hash_diferente_da_senha_original(self):
-        """O hash não deve ser igual à senha original."""
-        senha = "senha_original"
+        """O hash não deve ser igual à senha em texto plano."""
+        senha = "minha_senha_123"
         assert hash_senha(senha) != senha
 
     def test_hashes_diferentes_para_mesma_senha(self):
-        """Duas chamadas com a mesma senha devem gerar hashes diferentes (salt)."""
-        senha = "senha_igual"
+        """Chamadas distintas devem gerar hashes distintos (salt aleatório)."""
+        senha = "minha_senha_123"
         assert hash_senha(senha) != hash_senha(senha)
 
     def test_hash_nao_vazio(self):
-        """O hash não deve ser uma string vazia."""
-        assert hash_senha("qualquer_senha") != ""
+        """O hash não deve ser vazio."""
+        assert hash_senha("senha") != ""
 
 
 class TestVerificarSenha:
     """Testes para a função verificar_senha."""
 
     def test_senha_correta_retorna_true(self):
-        """Deve retornar True para senha correta."""
+        """Deve retornar True quando a senha corresponde ao hash."""
         senha = "senha_correta_123"
-        hash_gerado = hash_senha(senha)
-        assert verificar_senha(senha, hash_gerado) is True
+        h = hash_senha(senha)
+        assert verificar_senha(senha, h) is True
 
-    def test_senha_errada_retorna_false(self):
-        """Deve retornar False para senha incorreta."""
-        hash_gerado = hash_senha("senha_correta")
-        assert verificar_senha("senha_errada", hash_gerado) is False
+    def test_senha_incorreta_retorna_false(self):
+        """Deve retornar False quando a senha não corresponde ao hash."""
+        h = hash_senha("senha_correta_123")
+        assert verificar_senha("senha_errada", h) is False
 
-    def test_senha_vazia_retorna_false(self):
-        """Deve retornar False para senha vazia contra hash de senha não-vazia."""
-        hash_gerado = hash_senha("senha_nao_vazia")
-        assert verificar_senha("", hash_gerado) is False
+    def test_senha_vazia_incorreta(self):
+        """Deve retornar False para senha vazia comparada a hash não-vazio."""
+        h = hash_senha("senha123")
+        assert verificar_senha("", h) is False
 
-    def test_hash_de_senha_diferente_retorna_false(self):
-        """Deve retornar False quando o hash não corresponde à senha."""
-        hash_outra_senha = hash_senha("outra_senha")
-        assert verificar_senha("minha_senha", hash_outra_senha) is False
+    def test_case_sensitive(self):
+        """A verificação deve ser sensível a maiúsculas/minúsculas."""
+        h = hash_senha("SenhaMaiuscula")
+        assert verificar_senha("senhamaiuscula", h) is False
 
 
 class TestCriarTokenJwt:
@@ -69,91 +70,83 @@ class TestCriarTokenJwt:
 
     def test_retorna_string(self):
         """Deve retornar uma string."""
-        token = criar_token_jwt(1, "aluno")
+        token = criar_token_jwt(1, "professor")
         assert isinstance(token, str)
 
     def test_token_nao_vazio(self):
-        """O token não deve ser uma string vazia."""
-        assert criar_token_jwt(42, "professor") != ""
+        """O token não deve ser vazio."""
+        assert criar_token_jwt(1, "aluno") != ""
 
-    def test_token_decodificavel(self):
-        """O token criado deve ser decodificável."""
-        token = criar_token_jwt(10, "coordenador")
-        payload = decodificar_token_jwt(token)
-        assert payload is not None
+    def test_tokens_diferentes_para_ids_diferentes(self):
+        """Tokens gerados para IDs distintos devem ser diferentes."""
+        token1 = criar_token_jwt(1, "professor")
+        token2 = criar_token_jwt(2, "professor")
+        assert token1 != token2
 
     def test_payload_contem_usuario_id(self):
-        """O payload deve conter o usuario_id correto."""
-        token = criar_token_jwt(99, "aluno")
+        """O payload decodificado deve conter o usuario_id correto."""
+        token = criar_token_jwt(42, "aluno")
         payload = decodificar_token_jwt(token)
-        assert payload["usuario_id"] == 99
+        assert payload is not None
+        assert payload["usuario_id"] == 42
 
     def test_payload_contem_perfil(self):
-        """O payload deve conter o perfil correto."""
-        token = criar_token_jwt(1, "professor")
+        """O payload decodificado deve conter o perfil correto."""
+        token = criar_token_jwt(1, "coordenador")
         payload = decodificar_token_jwt(token)
-        assert payload["perfil"] == "professor"
+        assert payload is not None
+        assert payload["perfil"] == "coordenador"
 
     def test_payload_contem_exp(self):
         """O payload deve conter o campo de expiração."""
-        token = criar_token_jwt(1, "aluno")
+        token = criar_token_jwt(1, "professor")
         payload = decodificar_token_jwt(token)
+        assert payload is not None
         assert "exp" in payload
 
     def test_payload_contem_iat(self):
-        """O payload deve conter o campo de emissão."""
-        token = criar_token_jwt(1, "aluno")
+        """O payload deve conter o campo issued-at."""
+        token = criar_token_jwt(1, "professor")
         payload = decodificar_token_jwt(token)
+        assert payload is not None
         assert "iat" in payload
-
-    @pytest.mark.parametrize("perfil", ["aluno", "professor", "coordenador"])
-    def test_diferentes_perfis(self, perfil):
-        """Deve criar tokens para todos os perfis válidos."""
-        token = criar_token_jwt(1, perfil)
-        payload = decodificar_token_jwt(token)
-        assert payload["perfil"] == perfil
 
 
 class TestDecodificarTokenJwt:
     """Testes para a função decodificar_token_jwt."""
 
-    def test_token_valido_retorna_payload(self):
-        """Deve retornar o payload para token válido."""
-        token = criar_token_jwt(5, "aluno")
-        payload = decodificar_token_jwt(token)
-        assert payload is not None
-        assert payload["usuario_id"] == 5
+    def test_token_valido_retorna_dict(self):
+        """Deve retornar um dicionário para token válido."""
+        token = criar_token_jwt(1, "professor")
+        resultado = decodificar_token_jwt(token)
+        assert isinstance(resultado, dict)
 
     def test_token_invalido_retorna_none(self):
-        """Deve retornar None para token completamente inválido."""
-        resultado = decodificar_token_jwt("token.invalido.aqui")
-        assert resultado is None
+        """Deve retornar None para token inválido."""
+        assert decodificar_token_jwt("token.invalido.aqui") is None
 
     def test_token_vazio_retorna_none(self):
         """Deve retornar None para string vazia."""
-        resultado = decodificar_token_jwt("")
-        assert resultado is None
+        assert decodificar_token_jwt("") is None
 
     def test_token_adulterado_retorna_none(self):
         """Deve retornar None para token com assinatura adulterada."""
-        token = criar_token_jwt(1, "aluno")
+        token = criar_token_jwt(1, "professor")
         partes = token.split(".")
-        token_adulterado = partes[0] + "." + partes[1] + ".assinatura_falsa"
-        resultado = decodificar_token_jwt(token_adulterado)
-        assert resultado is None
+        partes[2] = "assinaturafalsa"
+        token_adulterado = ".".join(partes)
+        assert decodificar_token_jwt(token_adulterado) is None
 
     def test_token_expirado_retorna_none(self):
         """Deve retornar None para token expirado."""
-        import jwt
-        from datetime import datetime, timedelta, timezone
-        from educalin.utils.security import SECRET_KEY, ALGORITHM
+        import jwt as pyjwt
+        from educalin.utils.security import ALGORITHM, SECRET_KEY
 
-        payload_expirado = {
+        payload = {
             "usuario_id": 1,
-            "perfil": "aluno",
+            "perfil": "professor",
             "exp": datetime.now(timezone.utc) - timedelta(seconds=1),
             "iat": datetime.now(timezone.utc) - timedelta(hours=25),
         }
-        token_expirado = jwt.encode(payload_expirado, SECRET_KEY, algorithm=ALGORITHM)
-        resultado = decodificar_token_jwt(token_expirado)
-        assert resultado is None
+        token_expirado = pyjwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+        assert decodificar_token_jwt(token_expirado) is None

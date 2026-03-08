@@ -4,7 +4,7 @@ Schemas Pydantic para validação de dados da API.
 Define modelos de dados para requisições e respostas da API REST.
 """
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Literal, Optional
 from datetime import datetime
 
@@ -103,7 +103,8 @@ class RegisterSchema(BaseModel):
             raise ValueError("Senha não pode conter apenas espaços")
         return v
     
-    def model_post_init(self, __context) -> None:
+    @model_validator(mode='after')
+    def validate_campos_por_tipo(self) -> 'RegisterSchema':
         """Valida campos específicos por tipo após inicialização."""
         if self.tipo == 'professor' and not self.registro_funcional:
             raise ValueError("registro_funcional é obrigatório para professores")
@@ -111,6 +112,7 @@ class RegisterSchema(BaseModel):
             raise ValueError("codigo_coordenacao é obrigatório para coordenadores")
         if self.tipo == 'aluno' and not self.matricula:
             raise ValueError("matricula é obrigatória para alunos")
+        return self
 
 
 class TokenSchema(BaseModel):

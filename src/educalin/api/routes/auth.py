@@ -37,6 +37,7 @@ router = APIRouter(
 )
 
 
+
 @router.post(
     "/register",
     response_model=UsuarioSchema,
@@ -178,22 +179,24 @@ def logout(
     current_user: UsuarioSchema = Depends(get_current_user),
 ) -> Dict[str, str]:
     """
-    Realiza logout invalidando o token do usuário.
-    
-    O token é adicionado à blacklist em memória e rejeitado em chamadas futuras.
-    
-    **Nota**: A blacklist é mantida em memória (processo único). Em produção,
-    utilize Redis ou banco de dados para persistir tokens invalidados.
-    
-    Returns:
-        Mensagem de confirmação
-    """
-    _blacklisted_tokens.add(credentials.credentials)
+    Endpoint de logout.
 
-    return {
-        "message": "Logout realizado com sucesso",
-        "detail": f"Usuário {current_user.nome} desconectado"
-    }
+    **Importante**: A invalidação de tokens ainda **não está implementada**.
+
+    Em produção, seria necessário:
+    - Armazenar tokens invalidados em Redis ou banco de dados
+    - Implementar limpeza periódica de tokens expirados
+    - Considerar uso de refresh tokens
+
+    Atualmente, este endpoint apenas sinaliza que a funcionalidade
+    não foi implementada, para evitar uma falsa sensação de segurança.
+
+    Raises:
+        HTTPException: Sempre com status 501 (Not Implemented).
+    """
+    # Endpoint explicitamente marcado como não implementado para evitar
+    # a falsa impressão de que o token foi invalidado.
+    raise HTTPException(status_code=501, detail="Not implemented")
 
 
 @router.post(

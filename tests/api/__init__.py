@@ -1,1 +1,3 @@
-"""Testes para a camada de API."""
+"""
+Testes de integração para a API FastAPI.
+"""

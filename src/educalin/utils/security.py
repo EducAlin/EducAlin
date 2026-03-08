@@ -6,7 +6,6 @@ gerenciamento de tokens JWT para autenticação.
 """
 
 import os
-import warnings
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 

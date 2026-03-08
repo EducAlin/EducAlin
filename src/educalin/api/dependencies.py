@@ -6,12 +6,12 @@ e obter informações do usuário autenticado.
 """
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from ..utils.security import decodificar_token_jwt
 from ..repositories.usuario_repository import UsuarioRepository
 from ..repositories.base import get_connection
-from ..api.schemas import UsuarioSchema
+from .schemas import UsuarioSchema
 
 
 # Security scheme para Bearer Token
@@ -22,7 +22,7 @@ _blacklisted_tokens: set[str] = set()
 
 
 def get_current_user(
-    credentials: HTTPAuthCredentials = Depends(security)
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> UsuarioSchema:
     """
     Dependência para obter o usuário autenticado a partir do token JWT.

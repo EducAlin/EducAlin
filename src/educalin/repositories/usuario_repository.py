@@ -435,7 +435,7 @@ class UsuarioRepository:
         """
         email = email.strip().lower()
         
-        if excluir_id:
+        if excluir_id is not None:
             cursor = self.conn.execute(
                 "SELECT COUNT(*) FROM usuarios WHERE email = ? AND id != ?",
                 (email, excluir_id)
