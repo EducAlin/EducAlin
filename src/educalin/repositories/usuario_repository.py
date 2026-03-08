@@ -209,8 +209,8 @@ class UsuarioRepository:
             bool: True se atualizou com sucesso, False se usuário não existe
         
         Raises:
-            ValueError: Se dados inválidos forem fornecidos
-            sqlite3.IntegrityError: Se houver conflito (ex: email duplicado)
+            ValueError: Se dados inválidos forem fornecidos ou se houver conflito de integridade
+                (por exemplo, email duplicado)
         
         Example:
             >>> repo = UsuarioRepository()
