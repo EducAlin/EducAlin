@@ -4,7 +4,7 @@ Testes para os endpoints de turmas.
 Usa TestClient do FastAPI com banco SQLite na memória,
 injetado via override de dependência.
 """
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, unused-argument, too-many-positional-arguments
 import sqlite3
 import pytest
 from fastapi.testclient import TestClient
@@ -109,7 +109,9 @@ class TestListarTurmas:
 
         assert len(response.json()) == 1
 
-    def test_isola_turmas_entre_professores(self, client, professor_id, outro_professor_id, turma_id):
+    def test_isola_turmas_entre_professores(
+        self, client, professor_id, outro_professor_id, turma_id
+    ):
         """Verifica que turmas são isoladas entre diferentes professores"""
         response = client.get(f"/turmas?professor_id={outro_professor_id}")
 
@@ -250,14 +252,14 @@ class TestDetalhesTurma:
 class TestAdicionarAluno:
     """Testa POST /turmas/{id}/alunos"""
 
-    def test_retorna_200(self, client, turma_id, aluno_id):
-        """Verifica que POST /turmas/{id}/alunos retorna status 200"""
+    def test_retorna_201(self, client, turma_id, aluno_id):
+        """Verifica que POST /turmas/{id}/alunos retorna status 201"""
         response = client.post(
             f"/turmas/{turma_id}/alunos",
             json={"aluno_id": aluno_id}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 201
 
     def test_aluno_aparece_na_turma(self, client, turma_id, aluno_id):
         """Verifica que aluno adicionado aparece na turma"""
@@ -291,7 +293,7 @@ class TestAdicionarAluno:
 
 # DELETE /turmas/{id}/alunos/{aluno_id}
 class TestRemoverAluno:
-    """Testa DELETE /turmas/{id}/alunos{aluno_id}"""
+    """Testa DELETE /turmas/{id}/alunos/{aluno_id}"""
 
     def test_retorna_200(self, client, turma_id, aluno_id):
         """Verifica que DELETE /turmas/{id}/alunos/{aluno_id} retorna status 200"""
@@ -306,7 +308,7 @@ class TestRemoverAluno:
         client.post(f"/turmas/{turma_id}/alunos", json={"aluno_id": aluno_id})
         client.delete(f"/turmas/{turma_id}/alunos/{aluno_id}")
 
-        response = client.get(f"turmas/{turma_id}")
+        response = client.get(f"/turmas/{turma_id}")
         ids = [a['id'] for a in response.json()['alunos']]
 
         assert aluno_id not in ids
@@ -352,9 +354,97 @@ class TestDesempenhoTurma:
 
         assert data['total_alunos'] == 0
         assert data['media_geral'] == 0.0
+        assert data['taxa_aprovacao'] == 0.0
 
     def test_id_inexistente_retorna_404(self, client):
         """Verifica que ID inexistente retorna status 404"""
         response = client.get("/turmas/9999/desempenho")
 
         assert response.status_code == 404
+
+    def test_media_calculada_corretamente(self, client, conn, turma_id, aluno_id):
+        """Verifica que media_geral é calculada apenas com notas da própria turma"""
+        client.post(f"/turmas/{turma_id}/alunos", json={"aluno_id": aluno_id})
+
+        av_id = conn.execute(
+            "INSERT INTO avaliacoes (titulo, data, valor_maximo, peso, turma_id) "
+            "VALUES (?, ?, ?, ?, ?)",
+            ("Prova 1", "2025-06-01", 10.0, 1.0, turma_id),
+        ).lastrowid
+        conn.execute(
+            "INSERT INTO notas (aluno_id, avaliacao_id, valor) VALUES (?, ?, ?)",
+            (aluno_id, av_id, 8.0),
+        )
+        conn.commit()
+
+        response = client.get(f"/turmas/{turma_id}/desempenho")
+        data = response.json()
+
+        assert data['total_alunos'] == 1
+        assert data['media_geral'] == 8.0
+        assert data['taxa_aprovacao'] == 100.0
+
+    def test_taxa_aprovacao_parcial(self, client, conn, turma_id):
+        """Verifica cálculo de taxa_aprovacao com alunos aprovados e reprovados"""
+        aluno_aprovado = AlunoModel.criar(conn, "Aprovado", "aprovado@edu.br", "s", "MAT002")
+        aluno_reprovado = AlunoModel.criar(conn, "Reprovado", "reprovado@edu.br", "s", "MAT003")
+
+        client.post(f"/turmas/{turma_id}/alunos", json={"aluno_id": aluno_aprovado})
+        client.post(f"/turmas/{turma_id}/alunos", json={"aluno_id": aluno_reprovado})
+
+        av_id = conn.execute(
+            "INSERT INTO avaliacoes (titulo, data, valor_maximo, peso, turma_id) "
+            "VALUES (?, ?, ?, ?, ?)",
+            ("Prova Final", "2025-12-01", 10.0, 1.0, turma_id),
+        ).lastrowid
+        conn.execute(
+            "INSERT INTO notas (aluno_id, avaliacao_id, valor) VALUES (?, ?, ?)",
+            (aluno_aprovado, av_id, 7.0),
+        )
+        conn.execute(
+            "INSERT INTO notas (aluno_id, avaliacao_id, valor) VALUES (?, ?, ?)",
+            (aluno_reprovado, av_id, 4.0),
+        )
+        conn.commit()
+
+        response = client.get(f"/turmas/{turma_id}/desempenho")
+        data = response.json()
+
+        assert data['total_alunos'] == 2
+        assert data['media_geral'] == 5.5
+        assert data['taxa_aprovacao'] == 50.0
+
+    def test_notas_de_outra_turma_nao_afetam_media(
+        self, client, conn, turma_id, professor_id, aluno_id
+    ):
+        """Verifica que notas de outras turmas não contaminam media_geral"""
+        outra_turma_id = TurmaModel.criar(conn, "OUT001", "Outra Disc", "2025.2", professor_id)
+
+        client.post(f"/turmas/{turma_id}/alunos", json={"aluno_id": aluno_id})
+        client.post(f"/turmas/{outra_turma_id}/alunos", json={"aluno_id": aluno_id})
+
+        av_turma = conn.execute(
+            "INSERT INTO avaliacoes (titulo, data, valor_maximo, peso, turma_id) "
+            "VALUES (?, ?, ?, ?, ?)",
+            ("P1 Turma", "2025-06-01", 10.0, 1.0, turma_id),
+        ).lastrowid
+        av_outra = conn.execute(
+            "INSERT INTO avaliacoes (titulo, data, valor_maximo, peso, turma_id) "
+            "VALUES (?, ?, ?, ?, ?)",
+            ("P1 Outra", "2025-06-01", 10.0, 1.0, outra_turma_id),
+        ).lastrowid
+
+        conn.execute(
+            "INSERT INTO notas (aluno_id, avaliacao_id, valor) VALUES (?, ?, ?)",
+            (aluno_id, av_turma, 6.0),
+        )
+        conn.execute(
+            "INSERT INTO notas (aluno_id, avaliacao_id, valor) VALUES (?, ?, ?)",
+            (aluno_id, av_outra, 2.0),
+        )
+        conn.commit()
+
+        response = client.get(f"/turmas/{turma_id}/desempenho")
+        data = response.json()
+
+        assert data['media_geral'] == 6.0
