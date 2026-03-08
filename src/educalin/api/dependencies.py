@@ -5,7 +5,6 @@ Este módulo fornece dependências reutilizáveis para proteger rotas
 e obter informações do usuário autenticado.
 """
 
-from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -17,6 +16,9 @@ from .schemas import UsuarioSchema
 
 # Security scheme para Bearer Token
 security = HTTPBearer()
+
+# Conjunto de tokens invalidados (em produção, usar Redis ou banco persistente)
+_blacklisted_tokens: set[str] = set()
 
 
 def get_current_user(
@@ -49,7 +51,15 @@ def get_current_user(
     """
     # Extrair o token das credenciais
     token = credentials.credentials
-    
+
+    # Verificar se o token foi invalidado (logout)
+    if token in _blacklisted_tokens:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido ou expirado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     # Decodificar o token JWT
     payload = decodificar_token_jwt(token)
     
