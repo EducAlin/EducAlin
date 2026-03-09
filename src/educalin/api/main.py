@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import os
 
-from .routes import auth
+from .routes import auth, materiais
 from ..repositories.base import init_db
 
 
@@ -45,6 +45,7 @@ app.add_middleware(
 
 # Registrar routers
 app.include_router(auth.router)
+app.include_router(materiais.router)
 
 
 @app.on_event("startup")
