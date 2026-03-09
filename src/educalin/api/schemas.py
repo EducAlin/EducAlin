@@ -4,7 +4,7 @@ Schemas Pydantic para validação de dados da API.
 Define modelos de dados para requisições e respostas da API REST.
 """
 
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator, ConfigDict
 from typing import Literal, Optional
 from datetime import datetime
 

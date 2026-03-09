@@ -44,7 +44,7 @@ def create_usuarios_table(conn: sqlite3.Connection):
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_tipo ON usuarios(tipo_usuario)")
     
     conn.commit()
-    print("✅ Tabela 'usuarios' criada com sucesso!")
+    print("[OK] Tabela 'usuarios' criada com sucesso!")
 
 
 def create_turmas_tables(conn: sqlite3.Connection):
@@ -93,7 +93,7 @@ def create_turmas_tables(conn: sqlite3.Connection):
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_turma_alunos_aluno ON turma_alunos(aluno_id)")
     
     conn.commit()
-    print("✅ Tabelas 'turmas' e 'turma_alunos' criadas com sucesso!")
+    print("[OK] Tabelas 'turmas' e 'turma_alunos' criadas com sucesso!")
 
 
 def create_materiais_table(conn: sqlite3.Connection):
@@ -138,7 +138,7 @@ def create_materiais_table(conn: sqlite3.Connection):
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_materiais_data ON materiais(data_upload)")
     
     conn.commit()
-    print("✅ Tabela 'materiais' criada com sucesso!")
+    print("[OK] Tabela 'materiais' criada com sucesso!")
 
 
 def create_avaliacoes_table(conn: sqlite3.Connection):
@@ -171,7 +171,7 @@ def create_avaliacoes_table(conn: sqlite3.Connection):
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_avaliacoes_data ON avaliacoes(data)")
     
     conn.commit()
-    print("✅ Tabela 'avaliacoes' criada com sucesso!")
+    print("[OK] Tabela 'avaliacoes' criada com sucesso!")
 
 
 def create_notas_table(conn: sqlite3.Connection):
@@ -203,7 +203,7 @@ def create_notas_table(conn: sqlite3.Connection):
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_notas_avaliacao ON notas(avaliacao_id)")
     
     conn.commit()
-    print("✅ Tabela 'notas' criada com sucesso!")
+    print("[OK] Tabela 'notas' criada com sucesso!")
 
 
 def create_metas_table(conn: sqlite3.Connection):
@@ -239,7 +239,7 @@ def create_metas_table(conn: sqlite3.Connection):
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_metas_atingida ON metas(meta_atingida_em)")
     
     conn.commit()
-    print("✅ Tabela 'metas' criada com sucesso!")
+    print("[OK] Tabela 'metas' criada com sucesso!")
 
 
 def create_planos_acao_tables(conn: sqlite3.Connection):
@@ -290,7 +290,7 @@ def create_planos_acao_tables(conn: sqlite3.Connection):
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_plano_materiais_material ON plano_materiais(material_id)")
     
     conn.commit()
-    print("✅ Tabelas 'planos_acao' e 'plano_materiais' criadas com sucesso!")
+    print("[OK] Tabelas 'planos_acao' e 'plano_materiais' criadas com sucesso!")
 
 
 def create_all_tables(conn: sqlite3.Connection):
@@ -300,7 +300,7 @@ def create_all_tables(conn: sqlite3.Connection):
     Args:
         conn: Conexão ativa com o banco de dados
     """
-    print("🚀 Iniciando criação das tabelas...")
+    print("[INFO] Iniciando criação das tabelas...")
     
     # Ordem é importante devido às dependências de Foreign Keys
     create_usuarios_table(conn)
@@ -311,4 +311,4 @@ def create_all_tables(conn: sqlite3.Connection):
     create_metas_table(conn)
     create_planos_acao_tables(conn)
     
-    print("✅ Todas as tabelas foram criadas com sucesso!")
+    print("[OK] Todas as tabelas foram criadas com sucesso!")

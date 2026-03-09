@@ -8,6 +8,9 @@ import tempfile
 import os
 from fastapi.testclient import TestClient
 
+# Definir variável de ambiente JWT_SECRET_KEY ANTES de importar a app
+os.environ["JWT_SECRET_KEY"] = "test-secret-key-for-jwt-operations-only"
+
 from educalin.api.main import app
 
 
@@ -130,6 +133,8 @@ def usuario_registrado(client):
     }
     
     response = client.post("/auth/register", json=usuario_data)
+    if response.status_code != 201:
+        print(f"ERROR registering user: {response.json()}")
     assert response.status_code == 201
     
     return {

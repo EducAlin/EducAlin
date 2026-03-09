@@ -68,10 +68,10 @@ def init_db():
     Esta função deve ser chamada uma vez na inicialização da aplicação.
     Importa e executa todos os schemas dos modelos.
     """
-    from .schemas import create_tables
+    from .schemas import create_all_tables
     
     with get_db() as conn:
-        create_tables(conn)
+        create_all_tables(conn)
         conn.commit()
     
-    print(f"✅ Banco de dados inicializado em: {DATABASE_PATH}")
+    print(f"[OK] Banco de dados inicializado em: {DATABASE_PATH}")
