@@ -59,7 +59,7 @@ class NotaModel(BaseModel):
 
         Raises:
             ValueError: Se os dados forem inválidos
-            sqlite3.IntegrityError: Se já existe nota para este aluno nesta avaliação
+            NotaDuplicadaError: Se já existe nota para este aluno nesta avaliação
         """
         # Validações
         if not isinstance(valor, (int, float)):
@@ -99,10 +99,10 @@ class NotaModel(BaseModel):
             )
             conn.commit()
             return cursor.lastrowid
-        except sqlite3.IntegrityError:
+        except sqlite3.IntegrityError as e:
             raise NotaDuplicadaError(
                 f"Já existe nota para o aluno {aluno_id} na avaliação {avaliacao_id}."
-            )
+            ) from e
 
     @classmethod
     def buscar_por_id(cls, conn: sqlite3.Connection, nota_id: int) -> Optional['NotaModel']:

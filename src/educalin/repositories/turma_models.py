@@ -402,5 +402,5 @@ class _AlunoProxy:
         )
         row = cursor.fetchone()
         if row is None or row['media'] is None:
-            return 0.0
+            return None
         return round(float(row['media']), 2)

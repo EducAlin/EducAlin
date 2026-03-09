@@ -19,7 +19,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
-from educalin.api.dependencies import get_db
+from educalin.api.dependencies import get_current_user, get_db, require_role
+from educalin.api.schemas import UsuarioSchema
 from educalin.repositories.avaliacao_repository import AvaliacaoRepository
 from educalin.repositories.avaliacao_models import AvaliacaoModel
 from educalin.repositories.turma_models import TurmaModel
@@ -33,13 +34,17 @@ from educalin.services.relatorios.turma import RelatorioTurma
 router = APIRouter(tags=["notas"])
 
 
-class FormatoRelatorio(str, enum.Enum):
+class FormatoRelatorioAPI(str, enum.Enum):
     """
     Formatos de saída suportados pelo endpoint de relatório de turma.
 
     Implementado como ``str`` Enum para que o FastAPI serialize o valor
     diretamente como string na documentação OpenAPI e na validação do
     query parameter, sem exigir conversão manual.
+
+    Distinct from ``FormatoRelatorio`` in ``services.relatorios.base``,
+    which covers the broader set of export formats (PDF, Excel, JSON).
+    This enum restricts the API to currently supported formats only.
 
     Members:
         TXT: Formato texto plano (único formato atualmente suportado).
@@ -111,6 +116,7 @@ def criar_avaliacao(
     turma_id: int,
     payload: AvaliacaoCreate,
     conn: sqlite3.Connection = Depends(get_db),
+    current_user: UsuarioSchema = Depends(require_role("professor", "coordenador")),
 ):
     """
     Cria uma nova avaliação associada à turma especificada.
@@ -120,6 +126,7 @@ def criar_avaliacao(
         payload: Dados da avaliação (título, data, valor máximo,
             peso e tópico opcional).
         conn: Conexão com o banco de dados (injetada).
+        current_user: Usuário autenticado (professor ou coordenador).
 
     Returns:
         Dados da avaliação criada, incluindo o ID gerado.
@@ -170,18 +177,20 @@ def registrar_nota(
     avaliacao_id: int,
     payload: NotaCreate,
     conn: sqlite3.Connection = Depends(get_db),
+    current_user: UsuarioSchema = Depends(require_role("professor", "coordenador")),
 ):
     """
     Registra a nota de um aluno em uma avaliação.
 
     Valida que o valor não excede o ``valor_maximo`` da avaliação
     antes de persistir. O disparo de notificações via Observer
-    ocorre dentro do ``NotaModel.criar()``.
+    ocorre dentro do ``NotaService.registrar_nota()``.
 
     Args:
         avaliacao_id: ID da avaliação onde a nota será registrada.
         payload: Dados da nota (aluno_id e valor).
         conn: Conexão com o banco de dados (injetada).
+        current_user: Usuário autenticado (professor ou coordenador).
 
     Returns:
         Dados da nota criada.
@@ -252,6 +261,7 @@ def historico_aluno(
     aluno_id: int,
     turma_id: int | None = Query(default=None),
     conn: sqlite3.Connection = Depends(get_db),
+    current_user: UsuarioSchema = Depends(get_current_user),
 ):
     """
     Retorna o histórico de notas de um aluno.
@@ -260,17 +270,30 @@ def historico_aluno(
     apenas as notas das avaliações daquela turma. Caso contrário,
     retorna todas as notas do aluno em todas as turmas.
 
+    Professores e coordenadores podem consultar qualquer aluno.
+    Alunos só podem consultar o próprio histórico.
+
     Args:
         aluno_id: ID do aluno cujo histórico será consultado.
         turma_id: ID da turma para filtrar (opcional).
         conn: Conexão com o banco de dados (injetada).
+        current_user: Usuário autenticado.
 
     Returns:
         Lista de notas. Vazia se o aluno não tiver notas.
 
     Raises:
+        HTTPException 403: Se o aluno tentar consultar outro aluno.
         HTTPException 404: Se o aluno não for encontrado.
     """
+    if (
+        current_user.tipo_usuario == 'aluno'
+        and current_user.id != aluno_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Alunos só podem consultar o próprio histórico de notas.",
+        )
     aluno = UsuarioModel.buscar_por_id(conn, aluno_id)
     if aluno is None or aluno.tipo_usuario != 'aluno':
         raise HTTPException(
@@ -304,10 +327,11 @@ def historico_aluno(
 def relatorio_turma(  # pylint: disable=W0613
     turma_id: int,
     formato: Annotated[
-        FormatoRelatorio,
+        FormatoRelatorioAPI,
         Query(description="Formato de saída. Aceito: 'txt'"),
-    ] = FormatoRelatorio.TXT,
+    ] = FormatoRelatorioAPI.TXT,
     conn: sqlite3.Connection = Depends(get_db),
+    current_user: UsuarioSchema = Depends(require_role("professor", "coordenador")),
 ):
     """
     Gera o relatório de desempenho da turma usando o Template Method
@@ -322,6 +346,7 @@ def relatorio_turma(  # pylint: disable=W0613
         formato: Formato de saída desejado. Atualmente apenas ``'txt'``
             é suportado.
         conn: Conexão com o banco de dados (injetada).
+        current_user: Usuário autenticado (professor ou coordenador).
 
     Returns:
         Objeto com ``turma_id`` e ``conteudo`` (string formatada do relatório).
