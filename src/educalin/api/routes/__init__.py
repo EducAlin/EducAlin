@@ -4,6 +4,6 @@ Módulo de rotas da API.
 Este pacote contém todos os routers FastAPI organizados por domínio.
 """
 
-from . import auth
+from . import auth, turmas
 
-__all__ = ["auth"]
+__all__ = ["auth", "turmas"]
