@@ -20,8 +20,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from educalin.repositories.base import init_db
-from .routes import auth, turmas, materiais, planos
-
+from .routes import auth, turmas, notas, materiais, planos
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

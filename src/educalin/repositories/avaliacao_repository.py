@@ -11,6 +11,7 @@ import sqlite3
 from datetime import date
 
 from .avaliacao_models import AvaliacaoModel
+from .exceptions import ValorInvalidoError
 from .nota_models import NotaModel
 
 
@@ -24,7 +25,7 @@ class AvaliacaoRepository:
 
     Attributes:
         _conn (sqlite3.Connection): Conexão ativa com o banco de dados.
-    
+
     Examples:
         >>> from educalin.repositories import get_connection
         >>> from educalin.repositories.avaliacao_repository import AvaliacaoRepository
@@ -42,7 +43,7 @@ class AvaliacaoRepository:
         Args:
             conn: Conexão SQLite ativa com ``row_factory = sqlite3.Row``
                 e ``PRAGMA foreign_keys = ON``.
-        
+
         Raises:
             TypeError: Se ``conn`` não for uma instância ``sqlite3.Connection``
         """
@@ -101,10 +102,12 @@ class AvaliacaoRepository:
             ID (int) da nota criada.
 
         Raises:
-            ValueError: Se campos obrigatórios estiverem ausentes, se o valor
-                for negativo ou superior ao ``valor_maximo`` da avaliação,
-                se o aluno ou a avaliação não existirem, ou se já existir
-                nota para este aluno nesta avaliação.
+            ValorInvalidoError: Se o valor for negativo ou superior ao
+                ``valor_maximo`` da avaliação.
+            NotaDuplicadaError: Se já existir nota para este aluno
+                nesta avaliação.
+            ValueError: Se campos obrigatórios estiverem ausentes ou
+                com formato inválido.
 
         Examples:
             >>> nota_id = repo.registrar_nota({
@@ -119,6 +122,39 @@ class AvaliacaoRepository:
             avaliacao_id=nota_data['avaliacao_id'],
             valor=nota_data['valor']
         )
+
+    def buscar_todas_notas_aluno(self, aluno_id: int) -> list[dict]:
+        """
+        Retorna todas as notas de um aluno em todas as turmas.
+
+        Consulta usada quando ``turma_id`` não é fornecido no endpoint
+        de histórico, retornando o histórico completo do aluno.
+
+        Args:
+            aluno_id: ID do aluno.
+
+        Returns:
+            Lista de dicts com campos ``id``, ``aluno_id``,
+            ``avaliacao_id``, ``valor`` e ``data_registro``,
+            ordenados por data da avaliação. Lista vazia se o
+            aluno não tiver notas.
+
+        Examples:
+            >>> notas = repo.buscar_todas_notas_aluno(aluno_id=5)
+            >>> [n['valor'] for n in notas]
+            [7.5, 8.0, 9.0]
+        """
+        cursor = self._conn.execute(
+            """
+            SELECT n.id, n.aluno_id, n.avaliacao_id, n.valor, n.data_registro
+            FROM notas n
+            JOIN avaliacoes a ON n.avaliacao_id = a.id
+            WHERE n.aluno_id = ?
+            ORDER BY a.data ASC
+            """,
+            (aluno_id,),
+        )
+        return [dict(row) for row in cursor.fetchall()]
 
     def buscar_notas_aluno(self, aluno_id: int, turma_id: int) -> list[dict]:
         """
@@ -213,7 +249,7 @@ class AvaliacaoRepository:
 
         Examples:
             >>> repo.calcular_media_aluno(aluno_id=5, turma_id=1)
-            7.75 
+            7.75
             >>> repo.calcular_media_aluno(aluno_id=5, turma_id=1, topico='heranca')
             9.0
         """
@@ -274,9 +310,9 @@ class AvaliacaoRepository:
         Valida os campos obrigatórios do dicionário de nota.
 
         Raises:
-            ValueError: Se algum campo obrigatório estiver ausente ou inválido,
-                se ``valor`` for negativo, ou se ``aluno_id``/``avaliacao_id``
-                não forem inteiros positivos.
+            ValorInvalidoError: Se ``valor`` for negativo.
+            ValueError: Se algum campo obrigatório estiver ausente ou se
+                ``aluno_id``/``avaliacao_id`` não forem inteiros positivos.
         """
         for campo in ('aluno_id', 'avaliacao_id', 'valor'):
             if campo not in nota_data or nota_data[campo] is None:
@@ -289,7 +325,7 @@ class AvaliacaoRepository:
 
         valor = nota_data['valor']
         if not isinstance(valor, (int, float)) or valor < 0:
-            raise ValueError("'valor' deve ser um número não-negativo")
+            raise ValorInvalidoError("'valor' deve ser um número não-negativo")
 
     def _garantir_turma_existe(self, turma_id: int) -> None:
         """

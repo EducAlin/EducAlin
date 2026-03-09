@@ -209,14 +209,16 @@ class TestAvaliacaoRepositoryRegistrarNota:
 
     def test_nota_duplicada_lanca_erro(self, repo, nota_data):
         """Mesmo aluno na mesma avaliação não pode ter duas notas"""
+        from educalin.repositories.exceptions import NotaDuplicadaError
         repo.registrar_nota(nota_data)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(NotaDuplicadaError):
             repo.registrar_nota(nota_data)
 
     def test_valor_negativo_lanca_erro(self, repo, nota_data):
-        """Deve lançar ValueError quando valor da nota é negativo"""
-        with pytest.raises(ValueError):
+        """Deve lançar ValorInvalidoError quando valor da nota é negativo"""
+        from educalin.repositories.exceptions import ValorInvalidoError
+        with pytest.raises(ValorInvalidoError):
             repo.registrar_nota({**nota_data, 'valor': -1.0})
 
     def test_valor_acima_do_maximo_lanca_erro(self, repo, nota_data):
@@ -312,6 +314,56 @@ class TestAvaliacaoRepositoryBuscarNotasAluno:
     def test_turma_inexistente_retorna_lista_vazia(self, repo, aluno_id):
         """Turma inexistente deve retornar lista vazia"""
         assert repo.buscar_notas_aluno(aluno_id, 9999) == []
+
+
+class TestAvaliacaoRepositoryBuscarTodasNotasAluno:
+    """Testes do método buscar_todas_notas_aluno()"""
+
+    def test_retorna_lista(self, repo, aluno_id):
+        """Deve retornar uma lista"""
+        assert isinstance(repo.buscar_todas_notas_aluno(aluno_id), list)
+
+    def test_lista_vazia_sem_notas(self, repo, aluno_id):
+        """Deve retornar lista vazia quando aluno não possui notas"""
+        assert repo.buscar_todas_notas_aluno(aluno_id) == []
+
+    def test_retorna_nota_registrada(self, repo, nota_data, aluno_id):
+        """Nota registrada deve ser retornada na busca global do aluno"""
+        repo.registrar_nota(nota_data)
+        notas = repo.buscar_todas_notas_aluno(aluno_id)
+        assert len(notas) == 1
+
+    def test_cada_nota_tem_campos_obrigatorios(self, repo, nota_data, aluno_id):
+        """Cada nota retornada deve ter os campos obrigatórios"""
+        repo.registrar_nota(nota_data)
+        nota = repo.buscar_todas_notas_aluno(aluno_id)[0]
+        assert 'valor' in nota
+        assert 'avaliacao_id' in nota
+        assert 'aluno_id' in nota
+
+    def test_retorna_notas_de_multiplas_turmas(
+        self, repo, aluno_id, avaliacao_data, conn, professor_id
+    ):
+        """Deve retornar notas de diferentes turmas do mesmo aluno"""
+        from educalin.repositories.turma_models import TurmaModel
+        turma2_id = TurmaModel.criar(conn, "BD-2026.1", "BD", "2026.1", professor_id)
+        av2_id = repo.criar_avaliacao({**avaliacao_data, 'titulo': 'P1 BD', 'turma_id': turma2_id})
+        av1_id = repo.criar_avaliacao(avaliacao_data)
+
+        repo.registrar_nota({'aluno_id': aluno_id, 'avaliacao_id': av1_id, 'valor': 6.0})
+        repo.registrar_nota({'aluno_id': aluno_id, 'avaliacao_id': av2_id, 'valor': 9.0})
+
+        notas = repo.buscar_todas_notas_aluno(aluno_id)
+        assert len(notas) == 2
+
+    def test_isola_notas_entre_alunos(self, repo, nota_data, outro_aluno_id):
+        """Notas de outros alunos não devem aparecer"""
+        repo.registrar_nota(nota_data)
+        assert repo.buscar_todas_notas_aluno(outro_aluno_id) == []
+
+    def test_aluno_inexistente_retorna_lista_vazia(self, repo):
+        """Aluno inexistente deve retornar lista vazia"""
+        assert repo.buscar_todas_notas_aluno(9999) == []
 
 
 class TestAvaliacaoRepositoryBuscarNotasTurma:
