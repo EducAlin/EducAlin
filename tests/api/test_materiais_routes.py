@@ -326,6 +326,11 @@ class TestObterMaterial:
         resp = client.get("/materiais/99999", headers=professor_autenticado["headers"])
         assert resp.status_code == 404
 
+    def test_obter_material_id_invalido(self, client, professor_autenticado):
+        """Deve rejeitar ID negativo."""
+        resp = client.get("/materiais/-1", headers=professor_autenticado["headers"])
+        assert resp.status_code == 400
+
     def test_obter_material_sem_autenticacao(self, client):
         """Deve retornar 401 sem token."""
         resp = client.get("/materiais/1")

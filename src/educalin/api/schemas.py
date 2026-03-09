@@ -283,10 +283,10 @@ class ErrorSchema(BaseModel):
 class MaterialResponseSchema(BaseModel):
     """
     Schema para resposta de um material individual.
-    
+
     Retorna os dados de um material específico, incluindo
     informações polimórficas baseadas no tipo.
-    
+
     Attributes:
         id: ID único do material
         tipo_material: Tipo do material (pdf, video, link)
@@ -336,7 +336,7 @@ class MaterialResponseSchema(BaseModel):
         description="Data de upload do material",
         json_schema_extra={"example": "2024-01-01T10:00:00"}
     )
-    
+
     # Campos específicos por tipo (podem ser None)
     num_paginas: Optional[int] = Field(
         None,
@@ -368,9 +368,9 @@ class MaterialResponseSchema(BaseModel):
 class MaterialListSchema(BaseModel):
     """
     Schema para listagem de materiais.
-    
+
     Retorna um conjunto de materiais com paginação.
-    
+
     Attributes:
         total: Quantidade total de materiais
         materiais: Lista de materiais
@@ -390,7 +390,7 @@ class MaterialListSchema(BaseModel):
 class MaterialUploadSchema(BaseModel):
     """
     Schema para requisição de upload de material.
-    
+
     Attributes:
         titulo: Título do material
         descricao: Descrição do material
@@ -419,7 +419,7 @@ class MaterialUploadSchema(BaseModel):
         description="Tópico ou área de estudo",
         json_schema_extra={"example": "Programação"}
     )
-    
+
     # Campos específicos por tipo (opcionais no schema, validados posteriormente)
     num_paginas: Optional[int] = Field(
         None,
@@ -439,7 +439,7 @@ class MaterialUploadSchema(BaseModel):
         description="Codec do vídeo (obrigatório para vídeo)",
         json_schema_extra={"example": "h264"}
     )
-    
+
     @field_validator('titulo', 'descricao')
     @classmethod
     def validate_titulo_descricao(cls, v: str) -> str:
@@ -449,7 +449,7 @@ class MaterialUploadSchema(BaseModel):
             if not v:
                 raise ValueError("Campo não pode ser vazio")
         return v
-    
+
     @field_validator('topico')
     @classmethod
     def validate_topico(cls, v: Optional[str]) -> Optional[str]:
@@ -459,7 +459,7 @@ class MaterialUploadSchema(BaseModel):
             if not v:
                 raise ValueError("Tópico não pode ser vazio")
         return v
-    
+
     @field_validator('codec')
     @classmethod
     def validate_codec(cls, v: Optional[str]) -> Optional[str]:
@@ -477,7 +477,7 @@ class MaterialUploadSchema(BaseModel):
 class PlanoAcaoCreateSchema(BaseModel):
     """
     Schema para criação de um novo Plano de Ação.
-    
+
     Attributes:
         objetivo: Objetivo/descrição do plano
         prazo_dias: Número de dias até a data limite
@@ -503,7 +503,7 @@ class PlanoAcaoCreateSchema(BaseModel):
         description="Observações adicionais",
         json_schema_extra={"example": "Foco em álgebra básica"}
     )
-    
+
     @field_validator('objetivo')
     @classmethod
     def validate_objetivo(cls, v: str) -> str:
@@ -512,7 +512,7 @@ class PlanoAcaoCreateSchema(BaseModel):
         if not v:
             raise ValueError("Objetivo não pode ser vazio")
         return v
-    
+
     @field_validator('observacoes')
     @classmethod
     def validate_observacoes(cls, v: Optional[str]) -> Optional[str]:
@@ -527,7 +527,7 @@ class PlanoAcaoCreateSchema(BaseModel):
 class PlanoAcaoMaterialSchema(BaseModel):
     """
     Schema para adicionar/remover material de um Plano de Ação.
-    
+
     Attributes:
         material_id: ID do material a adicionar
     """
@@ -542,7 +542,7 @@ class PlanoAcaoMaterialSchema(BaseModel):
 class PlanoAcaoStatusSchema(BaseModel):
     """
     Schema para atualizar o status de um Plano de Ação.
-    
+
     Attributes:
         status: Novo status (rascunho, enviado, em_andamento, concluido, cancelado)
     """
@@ -556,7 +556,7 @@ class PlanoAcaoStatusSchema(BaseModel):
 class PlanoAcaoResponseSchema(BaseModel):
     """
     Schema para resposta de um Plano de Ação.
-    
+
     Attributes:
         id: ID único do plano
         aluno_id: ID do aluno
@@ -612,7 +612,7 @@ class PlanoAcaoResponseSchema(BaseModel):
 class PlanoAcaoListSchema(BaseModel):
     """
     Schema para listagem de Planos de Ação.
-    
+
     Attributes:
         total: Quantidade total de planos
         planos: Lista de planos

@@ -491,7 +491,7 @@ def deletar_material(
 
     Raises:
         HTTPException 401: Se usuário não autenticado
-        HTTPException 403: Se não for o autor do material
+        HTTPException 403: Se não for o autor do material nem coordenador
         HTTPException 404: Se material não existe
     """
     if material_id <= 0:
