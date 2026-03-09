@@ -140,7 +140,7 @@ class TestDecodificarTokenJwt:
     def test_token_expirado_retorna_none(self):
         """Deve retornar None para token expirado."""
         import jwt as pyjwt
-        from educalin.utils.security import ALGORITHM, SECRET_KEY
+        from educalin.utils.security import ALGORITHM, _get_secret_key
 
         payload = {
             "usuario_id": 1,
@@ -148,5 +148,5 @@ class TestDecodificarTokenJwt:
             "exp": datetime.now(timezone.utc) - timedelta(seconds=1),
             "iat": datetime.now(timezone.utc) - timedelta(hours=25),
         }
-        token_expirado = pyjwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+        token_expirado = pyjwt.encode(payload, _get_secret_key(), algorithm=ALGORITHM)
         assert decodificar_token_jwt(token_expirado) is None

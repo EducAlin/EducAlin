@@ -5,15 +5,21 @@ Usa TestClient do FastAPI com banco SQLite na memória,
 injetado via override de dependência.
 """
 # pylint: disable=redefined-outer-name, unused-argument, too-many-positional-arguments
+import os
 import sqlite3
+
 import pytest
 from fastapi.testclient import TestClient
 
-from educalin.api.main import app
-from educalin.api.routes.turmas import get_db
-from educalin.repositories.schemas import create_all_tables
-from educalin.repositories.usuario_models import ProfessorModel, AlunoModel
-from educalin.repositories.turma_models import TurmaModel
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-turmas")
+
+from educalin.api.main import app  # noqa: E402
+from educalin.api.dependencies import get_current_user  # noqa: E402
+from educalin.api.routes.turmas import get_db  # noqa: E402
+from educalin.api.schemas import UsuarioSchema  # noqa: E402
+from educalin.repositories.schemas import create_all_tables  # noqa: E402
+from educalin.repositories.usuario_models import ProfessorModel, AlunoModel  # noqa: E402
+from educalin.repositories.turma_models import TurmaModel  # noqa: E402
 
 
 @pytest.fixture
@@ -27,14 +33,31 @@ def conn():
     conn.close()
 
 @pytest.fixture
-def client(conn):
-    """TestClient com banco em memória injetado"""
+def client(conn, professor_id):
+    """TestClient com banco em memória injetado e autenticação mockada como professor"""
     def override_get_db():
         yield conn
 
+    def override_get_current_user():
+        row = conn.execute(
+            "SELECT id, nome, email, tipo_usuario, registro_funcional FROM usuarios WHERE id = ?",
+            (professor_id,),
+        ).fetchone()
+        return UsuarioSchema(
+            id=row["id"],
+            nome=row["nome"],
+            email=row["email"],
+            tipo_usuario=row["tipo_usuario"],
+            registro_funcional=row["registro_funcional"],
+        )
+
     app.dependency_overrides[get_db] = override_get_db
-    yield TestClient(app)
-    app.dependency_overrides.clear()
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    try:
+        with TestClient(app) as c:
+            yield c
+    finally:
+        app.dependency_overrides.clear()
 
 @pytest.fixture
 def professor_id(conn):
@@ -45,17 +68,6 @@ def professor_id(conn):
         "prof@edu.br",
         "senha123",
         "PROF001"
-    )
-
-@pytest.fixture
-def outro_professor_id(conn):
-    """Professor adicional para testes de isolamento entre professores"""
-    return ProfessorModel.criar(
-        conn,
-        "Dra. Outra",
-        "profa@edu.br",
-        "senha456",
-        "PROF002"
     )
 
 @pytest.fixture
@@ -87,51 +99,37 @@ class TestListarTurmas:
 
     def test_retorna_200(self, client, professor_id):
         """Verifica que GET /turmas retorna status 200"""
-        response = client.get(f"/turmas?professor_id={professor_id}")
+        response = client.get("/turmas")
 
         assert response.status_code == 200
 
     def test_retorna_lista(self, client, professor_id):
         """Verifica que GET /turmas retorna uma lista"""
-        response = client.get(f"/turmas?professor_id={professor_id}")
+        response = client.get("/turmas")
 
         assert isinstance(response.json(), list)
 
     def test_lista_vazia_sem_turmas(self, client, professor_id):
         """Verifica que lista vazia é retornada quando professor não tem turmas"""
-        response = client.get(f"/turmas?professor_id={professor_id}")
+        response = client.get("/turmas")
 
         assert response.json() == []
 
     def test_retorna_turmas_do_professor(self, client, professor_id, turma_id):
-        """Verifica que GET /turmas retorna turmas do professor"""
-        response = client.get(f"/turmas?professor_id={professor_id}")
+        """Verifica que GET /turmas retorna turmas do professor autenticado"""
+        response = client.get("/turmas")
 
         assert len(response.json()) == 1
 
-    def test_isola_turmas_entre_professores(
-        self, client, professor_id, outro_professor_id, turma_id
-    ):
-        """Verifica que turmas são isoladas entre diferentes professores"""
-        response = client.get(f"/turmas?professor_id={outro_professor_id}")
-
-        assert response.json() == []
-
     def test_cada_turma_tem_campos_esperados(self, client, professor_id, turma_id):
         """Verifica que cada turma contém os campos obrigatórios"""
-        response = client.get(f"/turmas?professor_id={professor_id}")
+        response = client.get("/turmas")
         turma = response.json()[0]
 
         assert 'id' in turma
         assert 'codigo' in turma
         assert 'disciplina' in turma
         assert 'semestre' in turma
-
-    def test_professor_id_ausente_retorna_422(self, client):
-        """Verifica que ausência de professor_id retorna status 422"""
-        response = client.get("/turmas")
-
-        assert response.status_code == 422
 
 
 # POST /turmas
@@ -162,7 +160,7 @@ class TestCriarTurma:
         assert isinstance(response.json()['id'], int)
 
     def test_turma_aparece_na_listagem(self, client, professor_id):
-        """Verifica que turma criada aparece na listagem"""
+        """Verifica que turma criada aparece na listagem do professor autenticado"""
         client.post("/turmas", json={
             "codigo": "ES003",
             "disciplina": "Matemática",
@@ -170,7 +168,7 @@ class TestCriarTurma:
             "professor_id": professor_id,
         })
 
-        response = client.get(f"/turmas?professor_id={professor_id}")
+        response = client.get("/turmas")
         assert len(response.json()) == 1
 
     def test_codigo_duplicado_retorna_409(self, client, professor_id):
@@ -193,7 +191,7 @@ class TestCriarTurma:
         assert response.status_code == 422
 
     def test_professor_inexistente_retorna_404(self, client):
-        """Verifica que professor inexistente retorna status 404"""
+        """Verifica que professor_id explícito inexistente retorna status 404"""
         response = client.post("/turmas", json={
             "codigo": "X001",
             "disciplina": "X",
@@ -203,8 +201,8 @@ class TestCriarTurma:
 
         assert response.status_code == 404
 
-    def test_sem_professor_retorna_201(self, client):
-        """Verifica que turma pode ser criada sem professor responsável"""
+    def test_sem_professor_id_usa_usuario_autenticado(self, client, professor_id):
+        """Verifica que omitir professor_id usa o ID do usuário autenticado"""
         response = client.post("/turmas", json={
             "codigo": "SEM-PROF",
             "disciplina": "X",
@@ -212,6 +210,7 @@ class TestCriarTurma:
         })
 
         assert response.status_code == 201
+        assert response.json()["professor_id"] == professor_id
 
 
 # GET /turmas/{id}

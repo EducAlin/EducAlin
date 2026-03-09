@@ -98,7 +98,7 @@ def get_current_user(
             id=usuario.id,
             nome=usuario.nome,
             email=usuario.email,
-            tipo=usuario.tipo_usuario,
+            tipo_usuario=usuario.tipo_usuario,
             registro_funcional=getattr(usuario, 'registro_funcional', None),
             codigo_coordenacao=getattr(usuario, 'codigo_coordenacao', None),
             matricula=getattr(usuario, 'matricula', None),
@@ -138,7 +138,7 @@ def require_role(*allowed_roles: str):
         ```
     """
     def role_checker(current_user: UsuarioSchema = Depends(get_current_user)) -> UsuarioSchema:
-        if current_user.tipo not in allowed_roles:
+        if current_user.tipo_usuario not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Acesso negado. Apenas {', '.join(allowed_roles)} podem acessar este recurso."

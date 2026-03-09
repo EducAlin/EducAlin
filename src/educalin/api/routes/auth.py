@@ -94,7 +94,7 @@ def register(dados: RegisterSchema) -> UsuarioSchema:
             id=usuario.id,
             nome=usuario.nome,
             email=usuario.email,
-            tipo=usuario.tipo_usuario,
+            tipo_usuario=usuario.tipo_usuario,
             registro_funcional=getattr(usuario, 'registro_funcional', None),
             codigo_coordenacao=getattr(usuario, 'codigo_coordenacao', None),
             matricula=getattr(usuario, 'matricula', None),
