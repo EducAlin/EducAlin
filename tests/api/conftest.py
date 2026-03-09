@@ -57,6 +57,24 @@ def test_db():
         )
     """)
     
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS materiais (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tipo_material TEXT NOT NULL CHECK(tipo_material IN ('pdf', 'video', 'link')),
+            titulo TEXT NOT NULL,
+            descricao TEXT NOT NULL,
+            autor_id INTEGER NOT NULL,
+            topico TEXT DEFAULT NULL,
+            data_upload TIMESTAMP NOT NULL,
+            num_paginas INTEGER,
+            duracao_segundos INTEGER,
+            codec TEXT,
+            url TEXT,
+            tipo_conteudo TEXT,
+            FOREIGN KEY (autor_id) REFERENCES usuarios(id) ON DELETE CASCADE
+        )
+    """)
+    
     conn.commit()
     conn.close()
     
@@ -87,6 +105,7 @@ def db_connection(test_db, monkeypatch):
     # Substituir a função get_connection para usar o banco de teste
     monkeypatch.setattr("educalin.repositories.base.get_connection", mock_get_connection)
     monkeypatch.setattr("educalin.api.routes.auth.get_connection", mock_get_connection)
+    monkeypatch.setattr("educalin.api.routes.materiais.get_connection", mock_get_connection)
     monkeypatch.setattr("educalin.api.dependencies.get_connection", mock_get_connection)
     
     conn = mock_get_connection()
@@ -95,6 +114,7 @@ def db_connection(test_db, monkeypatch):
     # Limpar dados após cada teste
     try:
         cursor = conn.cursor()
+        cursor.execute("DELETE FROM materiais")
         cursor.execute("DELETE FROM usuarios")
         conn.commit()
     except Exception:

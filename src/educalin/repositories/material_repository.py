@@ -205,7 +205,8 @@ class MaterialRepository:
         
         except sqlite3.IntegrityError as e:
             self.conn.rollback()
-            if 'autor_id' in str(e):
+            erro = str(e).lower()
+            if 'foreign key constraint failed' in erro or 'autor_id' in erro:
                 raise ValueError(f"Autor com ID {autor_id} não existe")
             else:
                 raise ValueError(f"Erro de integridade: {e}")
@@ -408,7 +409,7 @@ class MaterialRepository:
             query += " AND tipo_material = ?"
             params.append(tipo_material)
         
-        if professor_id:
+        if professor_id is not None:
             if not isinstance(professor_id, int) or professor_id <= 0:
                 raise ValueError("professor_id deve ser um inteiro positivo")
             query += " AND autor_id = ?"

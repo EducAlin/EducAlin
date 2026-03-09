@@ -9,7 +9,7 @@ Este módulo implementa endpoints para:
 """
 
 from fastapi import APIRouter, HTTPException, status, Depends
-from fastapi.security import HTTPAuthCredentials
+from fastapi.security import HTTPAuthorizationCredentials
 from typing import Dict
 
 from ..schemas import (
@@ -94,7 +94,7 @@ def register(dados: RegisterSchema) -> UsuarioSchema:
             id=usuario.id,
             nome=usuario.nome,
             email=usuario.email,
-            tipo=usuario.tipo_usuario,
+            tipo_usuario=usuario.tipo_usuario,
             registro_funcional=getattr(usuario, 'registro_funcional', None),
             codigo_coordenacao=getattr(usuario, 'codigo_coordenacao', None),
             matricula=getattr(usuario, 'matricula', None),
@@ -175,7 +175,7 @@ def login(dados: LoginSchema) -> TokenSchema:
     }
 )
 def logout(
-    credentials: HTTPAuthCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     current_user: UsuarioSchema = Depends(get_current_user),
 ) -> Dict[str, str]:
     """

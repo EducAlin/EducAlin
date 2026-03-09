@@ -39,7 +39,7 @@ class TestRegistro:
         assert "id" in data
         assert data["nome"] == usuario_data["nome"]
         assert data["email"] == usuario_data["email"]
-        assert data["tipo"] == usuario_data["tipo"]
+        assert data["tipo_usuario"] == usuario_data["tipo"]
         assert data["registro_funcional"] == usuario_data["registro_funcional"]
         
         # Garantir que senha não é retornada
@@ -66,7 +66,7 @@ class TestRegistro:
         
         assert response.status_code == 201
         data = response.json()
-        assert data["tipo"] == "coordenador"
+        assert data["tipo_usuario"] == "coordenador"
         assert data["codigo_coordenacao"] == usuario_data["codigo_coordenacao"]
     
     def test_registro_com_dados_validos_aluno(self, client):
@@ -85,7 +85,7 @@ class TestRegistro:
         
         assert response.status_code == 201
         data = response.json()
-        assert data["tipo"] == "aluno"
+        assert data["tipo_usuario"] == "aluno"
         assert data["matricula"] == usuario_data["matricula"]
     
     def test_registro_com_email_duplicado(self, client, usuario_registrado):
@@ -319,7 +319,7 @@ class TestRotasProtegidas:
         
         # Verificar que os dados batem com o usuário original
         assert data["email"] == usuario_autenticado["usuario"]["email"]
-        assert data["tipo"] == usuario_autenticado["usuario"]["tipo"]
+        assert data["tipo_usuario"] == usuario_autenticado["usuario"]["tipo_usuario"]
 
 
 class TestFluxoCompletoAutenticacao:
