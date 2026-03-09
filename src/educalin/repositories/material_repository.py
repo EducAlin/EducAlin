@@ -295,6 +295,8 @@ class MaterialRepository:
             raise ValueError("topico deve ser uma string não-vazia")
         
         topico = topico.strip()
+        if not topico:
+            raise ValueError("topico deve ser uma string não-vazia")
         
         cursor = self.conn.execute(
             """
@@ -408,7 +410,7 @@ class MaterialRepository:
             query += " AND tipo_material = ?"
             params.append(tipo_material)
         
-        if professor_id:
+        if professor_id is not None:
             if not isinstance(professor_id, int) or professor_id <= 0:
                 raise ValueError("professor_id deve ser um inteiro positivo")
             query += " AND autor_id = ?"
