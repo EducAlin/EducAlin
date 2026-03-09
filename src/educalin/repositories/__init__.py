@@ -17,6 +17,8 @@ from .models import (
     TurmaModel,
 )
 from .usuario_repository import UsuarioRepository
+from .plano_acao_models import PlanoAcaoModel
+from .PlanoAcaoRepository import PlanoAcaoRepository
 
 __all__ = [
     # Base e configuração
@@ -34,7 +36,9 @@ __all__ = [
     'CoordenadorModel',
     'AlunoModel',
     'TurmaModel',
+    'PlanoAcaoModel',
     
     # Repositories
     'UsuarioRepository',
+    'PlanoAcaoRepository',
 ]
