@@ -14,18 +14,9 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from educalin.api.dependencies import get_current_user, require_role
+from educalin.api.dependencies import get_current_user, get_db, require_role
 from educalin.api.schemas import UsuarioSchema
-from educalin.repositories.base import get_connection
 from educalin.repositories.turma_repository import TurmaRepository
-
-def get_db():
-    """Dependência local de conexão para uso nas rotas de turmas"""
-    conn = get_connection()
-    try:
-        yield conn
-    finally:
-        conn.close()
 
 router = APIRouter(prefix="/turmas", tags=["turmas"])
 

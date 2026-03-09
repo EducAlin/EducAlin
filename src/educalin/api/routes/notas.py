@@ -11,18 +11,19 @@ relatório ao RelatorioTurma.
 
 from __future__ import annotations
 
+import enum
 import sqlite3
 from datetime import date
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
+from educalin.api.dependencies import get_db
 from educalin.repositories.avaliacao_repository import AvaliacaoRepository
 from educalin.repositories.avaliacao_models import AvaliacaoModel
 from educalin.repositories.turma_models import TurmaModel
 from educalin.repositories.usuario_models import UsuarioModel
-from educalin.repositories.base import get_connection
 from educalin.repositories.exceptions import NotaDuplicadaError, ValorInvalidoError
 from educalin.services.nota_service import NotaService
 from educalin.services.observer_publicador import ObserverPublicadorEventos
@@ -31,21 +32,20 @@ from educalin.services.relatorios.turma import RelatorioTurma
 
 router = APIRouter(tags=["notas"])
 
-FORMATOS_VALIDOS: frozenset[str] = frozenset({"txt"})
 
-
-def get_db():
+class FormatoRelatorio(str, enum.Enum):
     """
-    Dependência local de conexão para uso nas rotas de notas.
+    Formatos de saída suportados pelo endpoint de relatório de turma.
 
-    Yields:
-        sqlite3.Connection: Conexão ativa com o banco de dados.
+    Implementado como ``str`` Enum para que o FastAPI serialize o valor
+    diretamente como string na documentação OpenAPI e na validação do
+    query parameter, sem exigir conversão manual.
+
+    Members:
+        TXT: Formato texto plano (único formato atualmente suportado).
     """
-    conn = get_connection()
-    try:
-        yield conn
-    finally:
-        conn.close()
+
+    TXT = "txt"
 
 
 # Schemas Pydantic
@@ -301,12 +301,12 @@ def historico_aluno(
     response_model=RelatorioResponse,
     summary="Gerar relatório de desempenho da turma",
 )
-def relatorio_turma(
+def relatorio_turma(  # pylint: disable=W0613
     turma_id: int,
     formato: Annotated[
-        Literal["txt"],
+        FormatoRelatorio,
         Query(description="Formato de saída. Aceito: 'txt'"),
-    ] = "txt",
+    ] = FormatoRelatorio.TXT,
     conn: sqlite3.Connection = Depends(get_db),
 ):
     """

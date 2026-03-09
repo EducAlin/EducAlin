@@ -12,7 +12,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from educalin.api.main import app
-from educalin.api.routes.notas import get_db
+from educalin.api.dependencies import get_db
 from educalin.repositories.schemas import create_all_tables
 from educalin.repositories.usuario_models import ProfessorModel, AlunoModel
 from educalin.repositories.turma_models import TurmaModel
@@ -424,8 +424,7 @@ class TestRelatorioTurma:
         self, client, turma_id, aluno_id, avaliacao_id, conn
     ):
         """Relatório de turma com aluno matriculado e nota deve exibir dados reais."""
-        from educalin.repositories.turma_models import TurmaModel as TM
-        turma = TM.buscar_por_id(conn, turma_id)
+        turma = TurmaModel.buscar_por_id(conn, turma_id)
         turma.adicionar_aluno(conn, aluno_id)
 
         client.post(f"/avaliacoes/{avaliacao_id}/notas", json={
