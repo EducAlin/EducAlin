@@ -14,6 +14,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
+from educalin.api.dependencies import get_current_user, require_role
+from educalin.api.schemas import UsuarioSchema
 from educalin.repositories.base import get_connection
 from educalin.repositories.turma_repository import TurmaRepository
 
@@ -80,20 +82,22 @@ class DesempenhoResponse(BaseModel):
     response_model=list[TurmaResponse],
     summary="Lista de turmas do professor",
 )
-def listar_turmas(professor_id: int, conn: sqlite3.Connection = Depends(get_db)):
+def listar_turmas(
+    conn: sqlite3.Connection = Depends(get_db),
+    current_user: UsuarioSchema = Depends(require_role("professor", "coordenador")),
+):
     """
-    Retorna todas as turmas associadas ao professor informado.
+    Retorna todas as turmas associadas ao professor autenticado.
 
     Args:
-        professor_id: ID do professor cujas turmas serão listadas.
-            Passado como query parameter obrigatório.
         conn: Conexão com o banco de dados (injetada).
+        current_user: Usuário autenticado (professor ou coordenador).
 
     Returns:
         Lista de turmas. Vazia se o professor não tiver turmas.
     """
     repo = TurmaRepository(conn)
-    turmas = repo.listar_por_professor(professor_id)
+    turmas = repo.listar_por_professor(current_user.id)
     return [
         TurmaResponse(
             id=t.id,
@@ -112,14 +116,22 @@ def listar_turmas(professor_id: int, conn: sqlite3.Connection = Depends(get_db))
     status_code=status.HTTP_201_CREATED,
     summary="Criar nova turma",
 )
-def criar_turma(payload: TurmaCreate, conn: sqlite3.Connection = Depends(get_db)):
+def criar_turma(
+    payload: TurmaCreate,
+    conn: sqlite3.Connection = Depends(get_db),
+    current_user: UsuarioSchema = Depends(require_role("professor", "coordenador")),
+):
     """
     Cria uma nova turma a partir dos dados fornecidos.
+
+    O ``professor_id`` é opcional no payload; quando omitido, o ID do
+    usuário autenticado é utilizado automaticamente.
 
     Args:
         payload: Dados da nova turma (código, disciplina, semestre
             e opcionalmente professor_id).
         conn: Conexão com o banco de dados (injetada).
+        current_user: Usuário autenticado (professor ou coordenador).
 
     Returns:
         Dados da turma criada, incluindo o ID gerado.
@@ -130,8 +142,11 @@ def criar_turma(payload: TurmaCreate, conn: sqlite3.Connection = Depends(get_db)
         HTTPException 422: Se campos obrigatórios estiverem ausentes.
     """
     repo = TurmaRepository(conn)
+    dados = payload.model_dump()
+    if dados.get("professor_id") is None:
+        dados["professor_id"] = current_user.id
     try:
-        turma_id = repo.criar(payload.model_dump())
+        turma_id = repo.criar(dados)
     except ValueError as exc:
         msg = str(exc)
         if "não existe" in msg or "não encontrad" in msg:
@@ -155,13 +170,18 @@ def criar_turma(payload: TurmaCreate, conn: sqlite3.Connection = Depends(get_db)
     response_model=TurmaDetalheResponse,
     summary="Detalhes de uma turma",
 )
-def detalhe_turma(turma_id: int, conn: sqlite3.Connection = Depends(get_db)):
+def detalhe_turma(
+    turma_id: int,
+    conn: sqlite3.Connection = Depends(get_db),
+    current_user: UsuarioSchema = Depends(get_current_user),
+):
     """
     Retorna os dados completos de uma turma, incluindo a lista de alunos.
 
     Args:
         turma_id: ID da turma a ser consultada.
         conn: Conexão com o banco de dados (injetada).
+        current_user: Usuário autenticado (injetado).
 
     Returns:
         Dados da turma com a lista de alunos matriculados.
@@ -199,7 +219,8 @@ def detalhe_turma(turma_id: int, conn: sqlite3.Connection = Depends(get_db)):
 def adicionar_aluno(
     turma_id: int,
     payload: AdicionarAlunoPayload,
-    conn: sqlite3.Connection = Depends(get_db)
+    conn: sqlite3.Connection = Depends(get_db),
+    current_user: UsuarioSchema = Depends(get_current_user),
 ):
     """
     Matricula um aluno em uma turma.
@@ -208,6 +229,7 @@ def adicionar_aluno(
         turma_id: ID da turma.
         payload: Corpo com ``aluno_id`` do aluno a matricular.
         conn: Conexão com o banco de dados (injetada).
+        current_user: Usuário autenticado (injetado).
 
     Returns:
         Mensagem de confirmação.
@@ -243,6 +265,7 @@ def remover_aluno(
     turma_id: int,
     aluno_id: int,
     conn: sqlite3.Connection = Depends(get_db),
+    current_user: UsuarioSchema = Depends(get_current_user),
 ):
     """
     Remove a matrícula de um aluno em uma turma.
@@ -251,6 +274,7 @@ def remover_aluno(
         turma_id: ID da turma.
         aluno_id: ID do aluno a remover.
         conn: Conexão com o banco de dados (injetada).
+        current_user: Usuário autenticado (injetado).
 
     Returns:
         Mensagem de confirmação.
@@ -279,7 +303,11 @@ def remover_aluno(
     response_model=DesempenhoResponse,
     summary="Resumo de desempenho da turma",
 )
-def desempenho_turma(turma_id: int, conn: sqlite3.Connection = Depends(get_db)):
+def desempenho_turma(
+    turma_id: int,
+    conn: sqlite3.Connection = Depends(get_db),
+    current_user: UsuarioSchema = Depends(get_current_user),
+):
     """
     Retorna um resumo do desempenho da turma: total de alunos,
     média geral e taxa de aprovação.
@@ -288,9 +316,13 @@ def desempenho_turma(turma_id: int, conn: sqlite3.Connection = Depends(get_db)):
     as notas registradas via SQL, sem instanciar entidades de domínio,
     mantendo a camada de API desacoplada dos serviços de relatório.
 
+    Alunos sem notas são contabilizados com média 0.0 no cálculo da
+    média geral da turma.
+
     Args:
         turma_id: ID da turma.
         conn: Conexão com o banco de dados (injetada).
+        current_user: Usuário autenticado (injetado).
 
     Returns:
         Objeto com ``turma_id``, ``total_alunos``, ``media_geral``
@@ -310,13 +342,15 @@ def desempenho_turma(turma_id: int, conn: sqlite3.Connection = Depends(get_db)):
     cursor = conn.execute(
         """
         SELECT
-            COUNT(DISTINCT ta.aluno_id)                          AS total_alunos,
-            COALESCE(AVG(medias.media), 0.0)                     AS media_geral,
+            COUNT(DISTINCT ta.aluno_id)                                    AS total_alunos,
+            -- Inner COALESCE: alunos sem notas contam como média 0.0.
+            -- Outer COALESCE: retorna 0.0 quando não há alunos matriculados.
+            COALESCE(AVG(COALESCE(medias.media, 0.0)), 0.0)               AS media_geral,
             COALESCE(
-                100.0 * SUM(CASE WHEN medias.media >= 6.0 THEN 1 ELSE 0 END)
+                100.0 * SUM(CASE WHEN COALESCE(medias.media, 0.0) >= 6.0 THEN 1 ELSE 0 END)
                       / NULLIF(COUNT(DISTINCT ta.aluno_id), 0),
                 0.0
-            )                                                    AS taxa_aprovacao
+            )                                                              AS taxa_aprovacao
         FROM turma_alunos ta
         LEFT JOIN (
             SELECT n2.aluno_id, AVG(n2.valor) AS media
