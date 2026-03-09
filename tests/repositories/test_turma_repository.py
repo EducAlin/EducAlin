@@ -331,9 +331,10 @@ class TestTurmaRepositoryRemoverAluno:
         assert outro_aluno_id in ids
         assert aluno_id not in ids
 
-    def test_turma_inexistente_retorna_false(self, repo, aluno_id):
-        """turma_id que não existe deve retornar False sem erro"""
-        assert repo.remover_aluno(9999, aluno_id) is False
+    def test_turma_inexistente_levanta_value_error(self, repo, aluno_id):
+        """turma_id que não existe deve levantar ValueError"""
+        with pytest.raises(ValueError):
+            repo.remover_aluno(9999, aluno_id)
 
 
 class TestTurmaRepositoryListarAlunos:
@@ -369,3 +370,124 @@ class TestTurmaRepositoryListarAlunos:
     def test_turma_inexistente_retorna_lista_vazia(self, repo):
         """turma_id inexistente deve retornar lista vazia sem erro"""
         assert repo.listar_alunos(9999) == []
+
+
+class TestTurmaModelConectar:
+    """Testes do método TurmaModel.conectar() e da propriedade alunos."""
+
+    def test_conectar_retorna_a_propria_instancia(self, repo, turma_id, conn):
+        """conectar() deve retornar o próprio TurmaModel (fluent interface)"""
+        from educalin.repositories.turma_models import TurmaModel
+        turma = TurmaModel.buscar_por_id(conn, turma_id)
+        resultado = turma.conectar(conn)
+        assert resultado is turma
+
+    def test_alunos_sem_conexao_retorna_lista_vazia(self, repo, turma_id, conn):
+        """Propriedade alunos sem _conn injetado deve retornar lista vazia"""
+        from educalin.repositories.turma_models import TurmaModel
+        turma = TurmaModel.buscar_por_id(conn, turma_id)
+        assert turma.alunos == []
+
+    def test_alunos_com_conexao_turma_sem_alunos(self, repo, turma_id, conn):
+        """Turma sem alunos matriculados deve retornar lista vazia"""
+        from educalin.repositories.turma_models import TurmaModel
+        turma = TurmaModel.buscar_por_id(conn, turma_id)
+        turma.conectar(conn)
+        assert turma.alunos == []
+
+    def test_alunos_retorna_proxy_apos_matricula(self, repo, turma_id, aluno_id, conn):
+        """Após matricular aluno, alunos deve retornar lista com um _AlunoProxy"""
+        from educalin.repositories.turma_models import TurmaModel, _AlunoProxy
+        repo.adicionar_aluno(turma_id, aluno_id)
+        turma = TurmaModel.buscar_por_id(conn, turma_id)
+        turma.conectar(conn)
+        alunos = turma.alunos
+        assert len(alunos) == 1
+        assert isinstance(alunos[0], _AlunoProxy)
+
+    def test_alunos_proxy_tem_atributos_corretos(self, repo, turma_id, aluno_id, conn):
+        """_AlunoProxy deve expor nome e matricula do aluno"""
+        from educalin.repositories.turma_models import TurmaModel
+        repo.adicionar_aluno(turma_id, aluno_id)
+        turma = TurmaModel.buscar_por_id(conn, turma_id)
+        turma.conectar(conn)
+        proxy = turma.alunos[0]
+        assert proxy.nome == "Aluno Teste"
+        assert proxy.matricula == "MAT001"
+
+
+class TestAlunoProxyCalcularMedia:
+    """Testes de _AlunoProxy.calcular_media()."""
+
+    def _criar_avaliacao(self, conn, turma_id):
+        from datetime import date
+        conn.execute(
+            "INSERT INTO avaliacoes (titulo, data, valor_maximo, peso, turma_id) VALUES (?, ?, ?, ?, ?)",
+            ("Prova 1", date(2026, 4, 10).isoformat(), 10.0, 0.4, turma_id),
+        )
+        conn.commit()
+        return conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+    def test_sem_notas_retorna_none(self, repo, turma_id, aluno_id, conn):
+        """Aluno sem notas deve retornar None, não 0.0"""
+        from educalin.repositories.turma_models import TurmaModel
+        repo.adicionar_aluno(turma_id, aluno_id)
+        turma = TurmaModel.buscar_por_id(conn, turma_id)
+        turma.conectar(conn)
+        proxy = turma.alunos[0]
+        assert proxy.calcular_media() is None
+
+    def test_com_nota_retorna_media(self, repo, turma_id, aluno_id, conn):
+        """Aluno com uma nota deve retornar o valor da nota como média"""
+        from educalin.repositories.turma_models import TurmaModel
+        repo.adicionar_aluno(turma_id, aluno_id)
+        av_id = self._criar_avaliacao(conn, turma_id)
+        conn.execute(
+            "INSERT INTO notas (aluno_id, avaliacao_id, valor) VALUES (?, ?, ?)",
+            (aluno_id, av_id, 8.0),
+        )
+        conn.commit()
+        turma = TurmaModel.buscar_por_id(conn, turma_id)
+        turma.conectar(conn)
+        proxy = turma.alunos[0]
+        assert proxy.calcular_media() == 8.0
+
+
+class TestTurmaModelObterDesempenhoGeral:
+    """Testes de TurmaModel.obter_desempenho_geral()."""
+
+    def test_sem_conexao_retorna_zeros(self, repo, turma_id, conn):
+        """Sem _conn injetado deve retornar zeros"""
+        from educalin.repositories.turma_models import TurmaModel
+        turma = TurmaModel.buscar_por_id(conn, turma_id)
+        resultado = turma.obter_desempenho_geral()
+        assert resultado == {'media_geral': 0.0, 'total_alunos': 0, 'taxa_aprovacao': 0.0}
+
+    def test_sem_alunos_retorna_zeros(self, repo, turma_id, conn):
+        """Turma sem alunos deve retornar zeros mesmo com conexão"""
+        from educalin.repositories.turma_models import TurmaModel
+        turma = TurmaModel.buscar_por_id(conn, turma_id)
+        turma.conectar(conn)
+        resultado = turma.obter_desempenho_geral()
+        assert resultado == {'media_geral': 0.0, 'total_alunos': 0, 'taxa_aprovacao': 0.0}
+
+    def test_aluno_sem_notas_nao_afeta_media(self, repo, turma_id, aluno_id, conn):
+        """Aluno sem notas (calcular_media retorna None) não deve ser incluído na média"""
+        from educalin.repositories.turma_models import TurmaModel
+        repo.adicionar_aluno(turma_id, aluno_id)
+        turma = TurmaModel.buscar_por_id(conn, turma_id)
+        turma.conectar(conn)
+        resultado = turma.obter_desempenho_geral()
+        assert resultado['total_alunos'] == 1
+        assert resultado['media_geral'] == 0.0
+        assert resultado['taxa_aprovacao'] == 0.0
+
+    def test_contem_chaves_esperadas(self, repo, turma_id, conn):
+        """Resultado deve conter media_geral, total_alunos e taxa_aprovacao"""
+        from educalin.repositories.turma_models import TurmaModel
+        turma = TurmaModel.buscar_por_id(conn, turma_id)
+        turma.conectar(conn)
+        resultado = turma.obter_desempenho_geral()
+        assert 'media_geral' in resultado
+        assert 'total_alunos' in resultado
+        assert 'taxa_aprovacao' in resultado

@@ -690,7 +690,7 @@ class PlanoAcaoRepository:
         query = "SELECT COUNT(*) as total FROM planos_acao WHERE 1=1"
         params = []
         
-        if aluno_id:
+        if aluno_id is not None:
             if not isinstance(aluno_id, int) or aluno_id <= 0:
                 raise ValueError("aluno_id deve ser um inteiro positivo")
             query += " AND aluno_id = ?"

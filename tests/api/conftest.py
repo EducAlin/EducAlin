@@ -19,21 +19,21 @@ from educalin.repositories.schemas import create_all_tables
 def test_db():
     """
     Cria um banco de dados temporário para testes.
-    
+
     Scope 'session' garante que o banco seja criado uma vez por sessão de testes.
     """
     # Criar arquivo temporário para o banco
     fd, db_path = tempfile.mkstemp(suffix='.db')
     os.close(fd)
-    
+
     # Criar conexão e estrutura do banco com todas as tabelas necessárias
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     create_all_tables(conn)
     conn.close()
-    
+
     yield db_path
-    
+
     # Cleanup: remover arquivo temporário
     try:
         os.unlink(db_path)
@@ -45,7 +45,7 @@ def test_db():
 def db_connection(test_db, monkeypatch):
     """
     Fornece uma conexão com o banco de dados de teste.
-    
+
     Usa monkeypatch para substituir get_connection() durante os testes.
     """
     def mock_get_connection():
@@ -55,17 +55,18 @@ def db_connection(test_db, monkeypatch):
         # Habilitar foreign keys
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
-    
+
     # Substituir a função get_connection para usar o banco de teste
     monkeypatch.setattr("educalin.repositories.base.get_connection", mock_get_connection)
     monkeypatch.setattr("educalin.api.routes.auth.get_connection", mock_get_connection)
+    monkeypatch.setattr("educalin.api.routes.materiais.get_connection", mock_get_connection)
     monkeypatch.setattr("educalin.api.dependencies.get_connection", mock_get_connection)
     monkeypatch.setattr("educalin.api.routes.materiais.get_connection", mock_get_connection)
     monkeypatch.setattr("educalin.api.routes.planos.get_connection", mock_get_connection)
-    
+
     conn = mock_get_connection()
     yield conn
-    
+
     # Limpar dados após cada teste (ordem reversa de FK dependência)
     try:
         cursor = conn.cursor()
@@ -86,7 +87,7 @@ def db_connection(test_db, monkeypatch):
 def client(db_connection):
     """
     Fornece um cliente de teste do FastAPI.
-    
+
     O cliente usa o banco de dados de teste configurado.
     """
     with TestClient(app) as test_client:
@@ -97,7 +98,7 @@ def client(db_connection):
 def usuario_registrado(client):
     """
     Cria e retorna um usuário já registrado no sistema.
-    
+
     Útil para testes que precisam de um usuário existente.
     """
     usuario_data = {
@@ -107,12 +108,12 @@ def usuario_registrado(client):
         "tipo": "professor",
         "registro_funcional": "PROF123"
     }
-    
+
     response = client.post("/auth/register", json=usuario_data)
     if response.status_code != 201:
         print(f"ERROR registering user: {response.json()}")
     assert response.status_code == 201
-    
+
     return {
         "data": usuario_data,
         "response": response.json()
@@ -123,19 +124,19 @@ def usuario_registrado(client):
 def usuario_autenticado(client, usuario_registrado):
     """
     Retorna um usuário autenticado com token JWT.
-    
+
     Útil para testes que precisam de autenticação.
     """
     login_data = {
         "email": usuario_registrado["data"]["email"],
         "senha": usuario_registrado["data"]["senha"]
     }
-    
+
     response = client.post("/auth/login", json=login_data)
     assert response.status_code == 200
-    
+
     token_data = response.json()
-    
+
     return {
         "usuario": usuario_registrado["response"],
         "token": token_data["access_token"],

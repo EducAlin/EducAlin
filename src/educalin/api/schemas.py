@@ -4,7 +4,7 @@ Schemas Pydantic para validação de dados da API.
 Define modelos de dados para requisições e respostas da API REST.
 """
 
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 from typing import Literal, Optional
 from datetime import datetime
 
@@ -12,7 +12,7 @@ from datetime import datetime
 class LoginSchema(BaseModel):
     """
     Schema para autenticação de usuário.
-    
+
     Attributes:
         email: Email do usuário
         senha: Senha em texto plano
@@ -33,7 +33,7 @@ class LoginSchema(BaseModel):
 class RegisterSchema(BaseModel):
     """
     Schema para registro de novo usuário.
-    
+
     Attributes:
         nome: Nome completo do usuário
         email: Email único do usuário
@@ -66,7 +66,7 @@ class RegisterSchema(BaseModel):
         description="Tipo de usuário",
         json_schema_extra={"example": "professor"}
     )
-    
+
     # Campos específicos por tipo
     registro_funcional: Optional[str] = Field(
         None,
@@ -83,7 +83,7 @@ class RegisterSchema(BaseModel):
         description="Matrícula (obrigatória para aluno)",
         json_schema_extra={"example": "2024001"}
     )
-    
+
     @field_validator('nome')
     @classmethod
     def validate_nome(cls, v: str) -> str:
@@ -92,7 +92,7 @@ class RegisterSchema(BaseModel):
         if not v:
             raise ValueError("Nome não pode ser vazio")
         return v
-    
+
     @field_validator('senha')
     @classmethod
     def validate_senha(cls, v: str) -> str:
@@ -102,7 +102,7 @@ class RegisterSchema(BaseModel):
         if v.isspace():
             raise ValueError("Senha não pode conter apenas espaços")
         return v
-    
+
     @model_validator(mode='after')
     def validate_campos_por_tipo(self) -> 'RegisterSchema':
         """Valida campos específicos por tipo após inicialização."""
@@ -118,7 +118,7 @@ class RegisterSchema(BaseModel):
 class TokenSchema(BaseModel):
     """
     Schema para resposta de autenticação com token JWT.
-    
+
     Attributes:
         access_token: Token JWT de acesso
         token_type: Tipo do token (sempre "bearer")
@@ -138,7 +138,7 @@ class TokenSchema(BaseModel):
 class UsuarioSchema(BaseModel):
     """
     Schema para representação de usuário na API.
-    
+
     Attributes:
         id: ID do usuário
         nome: Nome completo
@@ -170,7 +170,7 @@ class UsuarioSchema(BaseModel):
         description="Tipo de usuário",
         json_schema_extra={"example": "professor"}
     )
-    
+
     # Campos específicos opcionais
     registro_funcional: Optional[str] = Field(
         None,
@@ -187,7 +187,7 @@ class UsuarioSchema(BaseModel):
         description="Matrícula (apenas alunos)",
         json_schema_extra={"example": "2024001"}
     )
-    
+
     criado_em: Optional[datetime] = Field(
         None,
         description="Data de criação do usuário",
@@ -198,14 +198,14 @@ class UsuarioSchema(BaseModel):
         description="Data de última atualização",
         json_schema_extra={"example": "2024-01-01T10:00:00"}
     )
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class UsuarioUpdateSchema(BaseModel):
     """
     Schema para atualização de dados de usuário.
-    
+
     Todos os campos são opcionais.
     """
     nome: Optional[str] = Field(
@@ -226,7 +226,7 @@ class UsuarioUpdateSchema(BaseModel):
         description="Nova senha (mínimo 8 caracteres)",
         json_schema_extra={"example": "novasenha123"}
     )
-    
+
     @field_validator('nome')
     @classmethod
     def validate_nome(cls, v: Optional[str]) -> Optional[str]:
@@ -236,7 +236,7 @@ class UsuarioUpdateSchema(BaseModel):
             if not v:
                 raise ValueError("Nome não pode ser vazio")
         return v
-    
+
     @field_validator('senha')
     @classmethod
     def validate_senha(cls, v: Optional[str]) -> Optional[str]:
@@ -252,7 +252,7 @@ class UsuarioUpdateSchema(BaseModel):
 class RecuperarSenhaSchema(BaseModel):
     """
     Schema para solicitação de recuperação de senha.
-    
+
     Attributes:
         email: Email do usuário que deseja recuperar a senha
     """
@@ -266,7 +266,7 @@ class RecuperarSenhaSchema(BaseModel):
 class ErrorSchema(BaseModel):
     """
     Schema para respostas de erro.
-    
+
     Attributes:
         detail: Mensagem de erro detalhada
     """
@@ -283,10 +283,10 @@ class ErrorSchema(BaseModel):
 class MaterialResponseSchema(BaseModel):
     """
     Schema para resposta de um material individual.
-    
+
     Retorna os dados de um material específico, incluindo
     informações polimórficas baseadas no tipo.
-    
+
     Attributes:
         id: ID único do material
         tipo_material: Tipo do material (pdf, video, link)
@@ -336,7 +336,7 @@ class MaterialResponseSchema(BaseModel):
         description="Data de upload do material",
         json_schema_extra={"example": "2024-01-01T10:00:00"}
     )
-    
+
     # Campos específicos por tipo (podem ser None)
     num_paginas: Optional[int] = Field(
         None,
@@ -368,9 +368,9 @@ class MaterialResponseSchema(BaseModel):
 class MaterialListSchema(BaseModel):
     """
     Schema para listagem de materiais.
-    
+
     Retorna um conjunto de materiais com paginação.
-    
+
     Attributes:
         total: Quantidade total de materiais
         materiais: Lista de materiais
@@ -390,7 +390,7 @@ class MaterialListSchema(BaseModel):
 class MaterialUploadSchema(BaseModel):
     """
     Schema para requisição de upload de material.
-    
+
     Attributes:
         titulo: Título do material
         descricao: Descrição do material
@@ -419,7 +419,7 @@ class MaterialUploadSchema(BaseModel):
         description="Tópico ou área de estudo",
         json_schema_extra={"example": "Programação"}
     )
-    
+
     # Campos específicos por tipo (opcionais no schema, validados posteriormente)
     num_paginas: Optional[int] = Field(
         None,
@@ -439,7 +439,7 @@ class MaterialUploadSchema(BaseModel):
         description="Codec do vídeo (obrigatório para vídeo)",
         json_schema_extra={"example": "h264"}
     )
-    
+
     @field_validator('titulo', 'descricao')
     @classmethod
     def validate_titulo_descricao(cls, v: str) -> str:
@@ -449,7 +449,7 @@ class MaterialUploadSchema(BaseModel):
             if not v:
                 raise ValueError("Campo não pode ser vazio")
         return v
-    
+
     @field_validator('topico')
     @classmethod
     def validate_topico(cls, v: Optional[str]) -> Optional[str]:
@@ -459,7 +459,7 @@ class MaterialUploadSchema(BaseModel):
             if not v:
                 raise ValueError("Tópico não pode ser vazio")
         return v
-    
+
     @field_validator('codec')
     @classmethod
     def validate_codec(cls, v: Optional[str]) -> Optional[str]:
@@ -477,7 +477,7 @@ class MaterialUploadSchema(BaseModel):
 class PlanoAcaoCreateSchema(BaseModel):
     """
     Schema para criação de um novo Plano de Ação.
-    
+
     Attributes:
         objetivo: Objetivo/descrição do plano
         prazo_dias: Número de dias até a data limite
@@ -503,7 +503,7 @@ class PlanoAcaoCreateSchema(BaseModel):
         description="Observações adicionais",
         json_schema_extra={"example": "Foco em álgebra básica"}
     )
-    
+
     @field_validator('objetivo')
     @classmethod
     def validate_objetivo(cls, v: str) -> str:
@@ -512,7 +512,7 @@ class PlanoAcaoCreateSchema(BaseModel):
         if not v:
             raise ValueError("Objetivo não pode ser vazio")
         return v
-    
+
     @field_validator('observacoes')
     @classmethod
     def validate_observacoes(cls, v: Optional[str]) -> Optional[str]:
@@ -520,14 +520,14 @@ class PlanoAcaoCreateSchema(BaseModel):
         if v:
             v = v.strip()
             if not v:
-                raise ValueError("Observações não podem ser vazio")
+                raise ValueError("Observações não podem ser vazias")
         return v
 
 
 class PlanoAcaoMaterialSchema(BaseModel):
     """
     Schema para adicionar/remover material de um Plano de Ação.
-    
+
     Attributes:
         material_id: ID do material a adicionar
     """
@@ -542,7 +542,7 @@ class PlanoAcaoMaterialSchema(BaseModel):
 class PlanoAcaoStatusSchema(BaseModel):
     """
     Schema para atualizar o status de um Plano de Ação.
-    
+
     Attributes:
         status: Novo status (rascunho, enviado, em_andamento, concluido, cancelado)
     """
@@ -556,7 +556,7 @@ class PlanoAcaoStatusSchema(BaseModel):
 class PlanoAcaoResponseSchema(BaseModel):
     """
     Schema para resposta de um Plano de Ação.
-    
+
     Attributes:
         id: ID único do plano
         aluno_id: ID do aluno
@@ -612,7 +612,7 @@ class PlanoAcaoResponseSchema(BaseModel):
 class PlanoAcaoListSchema(BaseModel):
     """
     Schema para listagem de Planos de Ação.
-    
+
     Attributes:
         total: Quantidade total de planos
         planos: Lista de planos
