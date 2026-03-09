@@ -79,14 +79,13 @@ def conn():
     # Tabela de plano_materiais (composição)
     conn.execute("""
         CREATE TABLE plano_materiais (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
             plano_id INTEGER NOT NULL,
             material_id INTEGER NOT NULL,
             data_adicao TIMESTAMP NOT NULL,
             
+            PRIMARY KEY (plano_id, material_id),
             FOREIGN KEY (plano_id) REFERENCES planos_acao(id) ON DELETE CASCADE,
-            FOREIGN KEY (material_id) REFERENCES materiais(id) ON DELETE CASCADE,
-            UNIQUE(plano_id, material_id)
+            FOREIGN KEY (material_id) REFERENCES materiais(id) ON DELETE CASCADE
         )
     """)
     

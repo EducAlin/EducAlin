@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-for-jwt-operations-only"
 
 from educalin.api.main import app
+from educalin.repositories.schemas import create_all_tables
 
 
 @pytest.fixture(scope="session")
@@ -25,42 +26,10 @@ def test_db():
     fd, db_path = tempfile.mkstemp(suffix='.db')
     os.close(fd)
     
-    # Criar conexão e estrutura do banco
+    # Criar conexão e estrutura do banco com todas as tabelas necessárias
     conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    
-    # Criar tabela de usuarios
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tipo_usuario TEXT NOT NULL,
-            nome TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            senha_hash TEXT NOT NULL,
-            registro_funcional TEXT,
-            codigo_coordenacao TEXT,
-            matricula TEXT,
-            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    
-    # Criar tabelas adicionais que possam ser necessárias
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS turmas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            codigo TEXT UNIQUE NOT NULL,
-            ano INTEGER NOT NULL,
-            semestre INTEGER NOT NULL,
-            professor_id INTEGER,
-            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (professor_id) REFERENCES usuarios (id)
-        )
-    """)
-    
-    conn.commit()
+    conn.row_factory = sqlite3.Row
+    create_all_tables(conn)
     conn.close()
     
     yield db_path
@@ -91,14 +60,21 @@ def db_connection(test_db, monkeypatch):
     monkeypatch.setattr("educalin.repositories.base.get_connection", mock_get_connection)
     monkeypatch.setattr("educalin.api.routes.auth.get_connection", mock_get_connection)
     monkeypatch.setattr("educalin.api.dependencies.get_connection", mock_get_connection)
+    monkeypatch.setattr("educalin.api.routes.materiais.get_connection", mock_get_connection)
+    monkeypatch.setattr("educalin.api.routes.planos.get_connection", mock_get_connection)
     
     conn = mock_get_connection()
     yield conn
     
-    # Limpar dados após cada teste
+    # Limpar dados após cada teste (ordem reversa de FK dependência)
     try:
         cursor = conn.cursor()
+        cursor.execute("PRAGMA foreign_keys = OFF")
+        cursor.execute("DELETE FROM plano_materiais")
+        cursor.execute("DELETE FROM planos_acao")
+        cursor.execute("DELETE FROM materiais")
         cursor.execute("DELETE FROM usuarios")
+        cursor.execute("PRAGMA foreign_keys = ON")
         conn.commit()
     except Exception:
         pass

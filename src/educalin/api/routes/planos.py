@@ -2,7 +2,7 @@
 Rotas de criação e gestão de Planos de Ação da API FastAPI.
 
 Este módulo implementa endpoints para:
-- Criação de novos planos de ação (com sugestões automáticas)
+- Criação de novos planos de ação
 - Visualização de detalhes de um plano
 - Adição de materiais a planos (composição)
 - Atualização de status do plano
@@ -24,8 +24,6 @@ from ..schemas import (
 from ..dependencies import get_current_user
 from ...repositories.PlanoAcaoRepository import PlanoAcaoRepository
 from ...repositories.base import get_connection
-from ...services.analisadordesempenho import AnalisadorDesempenho
-from ...services.analisenotasbaixas import AnaliseNotasBaixas
 
 
 # Criar router para rotas de planos de ação
@@ -104,7 +102,7 @@ def _verificar_propriedade_plano(
     response_model=PlanoAcaoResponseSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Criar novo Plano de Ação",
-    description="Cria um novo plano de ação com sugestões automáticas baseadas no desempenho do aluno.",
+    description="Cria um novo plano de ação para um aluno.",
     responses={
         201: {"description": "Plano de ação criado com sucesso"},
         400: {"description": "Dados inválidos"},
@@ -120,9 +118,7 @@ def criar_plano(
     """
     Cria um novo Plano de Ação para um aluno.
     
-    O plano é criado com status 'rascunho'. Usa AnalisadorDesempenho
-    (Strategy Pattern) para gerar sugestões automáticas baseadas 
-    nas dificuldades identificadas do aluno.
+    O plano é criado com status 'rascunho'.
     
     **Permissões:**
     - Professores e coordenadores podem criar planos para qualquer aluno
