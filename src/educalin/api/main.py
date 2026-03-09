@@ -8,13 +8,26 @@ Este módulo configura a aplicação FastAPI, incluindo:
 - Documentação da API
 """
 
+
+import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import os
 
-from .routes import auth, materiais
-from ..repositories.base import init_db
+from dotenv import load_dotenv
+load_dotenv()
+
+from educalin.repositories.base import init_db
+from .routes import auth, turmas, materiais
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Inicializa o banco de dados na startup da aplicação."""
+    init_db()
+    yield
 
 
 # Criar aplicação FastAPI
@@ -24,7 +37,8 @@ app = FastAPI(
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
+    lifespan=lifespan
 )
 
 
@@ -46,12 +60,7 @@ app.add_middleware(
 # Registrar routers
 app.include_router(auth.router)
 app.include_router(materiais.router)
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Inicializa o banco de dados na startup da aplicação."""
-    init_db()
+app.include_router(turmas.router)
 
 
 # Rota raiz
@@ -59,7 +68,8 @@ async def startup_event():
 async def root():
     """
     Endpoint raiz da API.
-    
+
+
     Returns:
         Informações básicas sobre a API
     """
@@ -76,7 +86,8 @@ async def root():
 async def health_check():
     """
     Verifica o status da API.
-    
+
+
     Returns:
         Status da aplicação
     """

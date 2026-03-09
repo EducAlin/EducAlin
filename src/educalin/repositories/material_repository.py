@@ -296,6 +296,8 @@ class MaterialRepository:
             raise ValueError("topico deve ser uma string não-vazia")
         
         topico = topico.strip()
+        if not topico:
+            raise ValueError("topico deve ser uma string não-vazia")
         
         cursor = self.conn.execute(
             """

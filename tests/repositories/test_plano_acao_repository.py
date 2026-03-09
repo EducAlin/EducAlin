@@ -81,7 +81,7 @@ def conn():
         CREATE TABLE plano_materiais (
             plano_id INTEGER NOT NULL,
             material_id INTEGER NOT NULL,
-            data_adicao TIMESTAMP NOT NULL,
+            data_adicao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             
             PRIMARY KEY (plano_id, material_id),
             FOREIGN KEY (plano_id) REFERENCES planos_acao(id) ON DELETE CASCADE,

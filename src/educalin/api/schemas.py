@@ -12,7 +12,7 @@ from datetime import datetime
 class LoginSchema(BaseModel):
     """
     Schema para autenticação de usuário.
-    
+
     Attributes:
         email: Email do usuário
         senha: Senha em texto plano
@@ -33,7 +33,7 @@ class LoginSchema(BaseModel):
 class RegisterSchema(BaseModel):
     """
     Schema para registro de novo usuário.
-    
+
     Attributes:
         nome: Nome completo do usuário
         email: Email único do usuário
@@ -66,7 +66,7 @@ class RegisterSchema(BaseModel):
         description="Tipo de usuário",
         json_schema_extra={"example": "professor"}
     )
-    
+
     # Campos específicos por tipo
     registro_funcional: Optional[str] = Field(
         None,
@@ -83,7 +83,7 @@ class RegisterSchema(BaseModel):
         description="Matrícula (obrigatória para aluno)",
         json_schema_extra={"example": "2024001"}
     )
-    
+
     @field_validator('nome')
     @classmethod
     def validate_nome(cls, v: str) -> str:
@@ -92,7 +92,7 @@ class RegisterSchema(BaseModel):
         if not v:
             raise ValueError("Nome não pode ser vazio")
         return v
-    
+
     @field_validator('senha')
     @classmethod
     def validate_senha(cls, v: str) -> str:
@@ -102,7 +102,7 @@ class RegisterSchema(BaseModel):
         if v.isspace():
             raise ValueError("Senha não pode conter apenas espaços")
         return v
-    
+
     @model_validator(mode='after')
     def validate_campos_por_tipo(self) -> 'RegisterSchema':
         """Valida campos específicos por tipo após inicialização."""
@@ -118,7 +118,7 @@ class RegisterSchema(BaseModel):
 class TokenSchema(BaseModel):
     """
     Schema para resposta de autenticação com token JWT.
-    
+
     Attributes:
         access_token: Token JWT de acesso
         token_type: Tipo do token (sempre "bearer")
@@ -138,7 +138,7 @@ class TokenSchema(BaseModel):
 class UsuarioSchema(BaseModel):
     """
     Schema para representação de usuário na API.
-    
+
     Attributes:
         id: ID do usuário
         nome: Nome completo
@@ -170,7 +170,7 @@ class UsuarioSchema(BaseModel):
         description="Tipo de usuário",
         json_schema_extra={"example": "professor"}
     )
-    
+
     # Campos específicos opcionais
     registro_funcional: Optional[str] = Field(
         None,
@@ -187,7 +187,7 @@ class UsuarioSchema(BaseModel):
         description="Matrícula (apenas alunos)",
         json_schema_extra={"example": "2024001"}
     )
-    
+
     criado_em: Optional[datetime] = Field(
         None,
         description="Data de criação do usuário",
@@ -198,14 +198,14 @@ class UsuarioSchema(BaseModel):
         description="Data de última atualização",
         json_schema_extra={"example": "2024-01-01T10:00:00"}
     )
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class UsuarioUpdateSchema(BaseModel):
     """
     Schema para atualização de dados de usuário.
-    
+
     Todos os campos são opcionais.
     """
     nome: Optional[str] = Field(
@@ -226,7 +226,7 @@ class UsuarioUpdateSchema(BaseModel):
         description="Nova senha (mínimo 8 caracteres)",
         json_schema_extra={"example": "novasenha123"}
     )
-    
+
     @field_validator('nome')
     @classmethod
     def validate_nome(cls, v: Optional[str]) -> Optional[str]:
@@ -236,7 +236,7 @@ class UsuarioUpdateSchema(BaseModel):
             if not v:
                 raise ValueError("Nome não pode ser vazio")
         return v
-    
+
     @field_validator('senha')
     @classmethod
     def validate_senha(cls, v: Optional[str]) -> Optional[str]:
@@ -252,7 +252,7 @@ class UsuarioUpdateSchema(BaseModel):
 class RecuperarSenhaSchema(BaseModel):
     """
     Schema para solicitação de recuperação de senha.
-    
+
     Attributes:
         email: Email do usuário que deseja recuperar a senha
     """
@@ -266,7 +266,7 @@ class RecuperarSenhaSchema(BaseModel):
 class ErrorSchema(BaseModel):
     """
     Schema para respostas de erro.
-    
+
     Attributes:
         detail: Mensagem de erro detalhada
     """
