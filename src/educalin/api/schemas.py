@@ -275,3 +275,197 @@ class ErrorSchema(BaseModel):
         description="Mensagem de erro",
         json_schema_extra={"example": "Erro ao processar requisição"}
     )
+
+
+# ========================= SCHEMAS DE MATERIAIS =========================
+
+
+class MaterialResponseSchema(BaseModel):
+    """
+    Schema para resposta de um material individual.
+    
+    Retorna os dados de um material específico, incluindo
+    informações polimórficas baseadas no tipo.
+    
+    Attributes:
+        id: ID único do material
+        tipo_material: Tipo do material (pdf, video, link)
+        titulo: Título do material
+        descricao: Descrição do material
+        autor_id: ID do professor (autor)
+        topico: Tópico/área de estudo
+        data_upload: Data de upload do material
+        num_paginas: Número de páginas (apenas para PDF)
+        duracao_segundos: Duração em segundos (apenas para vídeo)
+        codec: Codec do vídeo (apenas para vídeo)
+        url: URL do material (apenas para link)
+        tipo_conteudo: Tipo de conteúdo (apenas para link)
+    """
+    id: int = Field(
+        ...,
+        description="ID único do material",
+        json_schema_extra={"example": 1}
+    )
+    tipo_material: Literal["pdf", "video", "link"] = Field(
+        ...,
+        description="Tipo de material",
+        json_schema_extra={"example": "pdf"}
+    )
+    titulo: str = Field(
+        ...,
+        description="Título do material",
+        json_schema_extra={"example": "Introdução à POO"}
+    )
+    descricao: str = Field(
+        ...,
+        description="Descrição do material",
+        json_schema_extra={"example": "Conceitos fundamentais de Programação Orientada a Objetos"}
+    )
+    autor_id: int = Field(
+        ...,
+        description="ID do professor autor",
+        json_schema_extra={"example": 1}
+    )
+    topico: Optional[str] = Field(
+        None,
+        description="Tópico ou área de estudo",
+        json_schema_extra={"example": "Programação"}
+    )
+    data_upload: datetime = Field(
+        ...,
+        description="Data de upload do material",
+        json_schema_extra={"example": "2024-01-01T10:00:00"}
+    )
+    
+    # Campos específicos por tipo (podem ser None)
+    num_paginas: Optional[int] = Field(
+        None,
+        description="Número de páginas (apenas PDF)",
+        json_schema_extra={"example": 50}
+    )
+    duracao_segundos: Optional[int] = Field(
+        None,
+        description="Duração em segundos (apenas vídeo)",
+        json_schema_extra={"example": 3600}
+    )
+    codec: Optional[str] = Field(
+        None,
+        description="Codec do vídeo (apenas vídeo)",
+        json_schema_extra={"example": "h264"}
+    )
+    url: Optional[str] = Field(
+        None,
+        description="URL do material (apenas link)",
+        json_schema_extra={"example": "https://example.com/material"}
+    )
+    tipo_conteudo: Optional[str] = Field(
+        None,
+        description="Tipo de conteúdo (apenas link)",
+        json_schema_extra={"example": "artigo"}
+    )
+
+
+class MaterialListSchema(BaseModel):
+    """
+    Schema para listagem de materiais.
+    
+    Retorna um conjunto de materiais com paginação.
+    
+    Attributes:
+        total: Quantidade total de materiais
+        materiais: Lista de materiais
+    """
+    total: int = Field(
+        ...,
+        description="Quantidade total de materiais",
+        json_schema_extra={"example": 5}
+    )
+    materiais: list[MaterialResponseSchema] = Field(
+        ...,
+        description="Lista de materiais",
+        json_schema_extra={"example": []}
+    )
+
+
+class MaterialUploadSchema(BaseModel):
+    """
+    Schema para requisição de upload de material.
+    
+    Attributes:
+        titulo: Título do material
+        descricao: Descrição do material
+        topico: Tópico ou área de estudo
+        num_paginas: Número de páginas (obrigatório apenas para PDF)
+        duracao_segundos: Duração em segundos (obrigatório para vídeo)
+        codec: Codec do vídeo (obrigatório para vídeo)
+    """
+    titulo: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        description="Título do material",
+        json_schema_extra={"example": "Introdução à POO"}
+    )
+    descricao: str = Field(
+        ...,
+        min_length=1,
+        max_length=1000,
+        description="Descrição do material",
+        json_schema_extra={"example": "Conceitos fundamentais de Programação Orientada a Objetos"}
+    )
+    topico: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Tópico ou área de estudo",
+        json_schema_extra={"example": "Programação"}
+    )
+    
+    # Campos específicos por tipo (opcionais no schema, validados posteriormente)
+    num_paginas: Optional[int] = Field(
+        None,
+        ge=1,
+        description="Número de páginas (obrigatório para PDF)",
+        json_schema_extra={"example": 50}
+    )
+    duracao_segundos: Optional[int] = Field(
+        None,
+        ge=1,
+        description="Duração em segundos (obrigatório para vídeo)",
+        json_schema_extra={"example": 3600}
+    )
+    codec: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="Codec do vídeo (obrigatório para vídeo)",
+        json_schema_extra={"example": "h264"}
+    )
+    
+    @field_validator('titulo', 'descricao')
+    @classmethod
+    def validate_titulo_descricao(cls, v: str) -> str:
+        """Valida que título/descrição não sejam vazios após strip."""
+        if v:
+            v = v.strip()
+            if not v:
+                raise ValueError("Campo não pode ser vazio")
+        return v
+    
+    @field_validator('topico')
+    @classmethod
+    def validate_topico(cls, v: Optional[str]) -> Optional[str]:
+        """Valida tópico se fornecido."""
+        if v:
+            v = v.strip()
+            if not v:
+                raise ValueError("Tópico não pode ser vazio")
+        return v
+    
+    @field_validator('codec')
+    @classmethod
+    def validate_codec(cls, v: Optional[str]) -> Optional[str]:
+        """Valida codec se fornecido."""
+        if v:
+            v = v.strip()
+            if not v:
+                raise ValueError("Codec não pode ser vazio")
+        return v
