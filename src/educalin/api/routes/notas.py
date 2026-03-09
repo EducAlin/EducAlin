@@ -24,6 +24,9 @@ from educalin.repositories.turma_models import TurmaModel
 from educalin.repositories.usuario_models import UsuarioModel
 from educalin.repositories.base import get_connection
 from educalin.repositories.exceptions import NotaDuplicadaError, ValorInvalidoError
+from educalin.services.nota_service import NotaService
+from educalin.services.observer_publicador import ObserverPublicadorEventos
+from educalin.services.notificador import NotificadorEmail
 from educalin.services.relatorios.turma import RelatorioTurma
 
 router = APIRouter(tags=["notas"])
@@ -214,12 +217,15 @@ def registrar_nota(
         )
 
     repo = AvaliacaoRepository(conn)
+    publicador = ObserverPublicadorEventos([NotificadorEmail(aluno.email)])
+    service = NotaService(repo, publicador)
+
     try:
-        nota_id = repo.registrar_nota({
-            'aluno_id': payload.aluno_id,
-            'avaliacao_id': avaliacao_id,
-            'valor': payload.valor,
-        })
+        nota_id = service.registrar_nota(
+            avaliacao_id=avaliacao_id,
+            aluno_id=payload.aluno_id,
+            valor=payload.valor,
+        )
     except NotaDuplicadaError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail=str(exc)
