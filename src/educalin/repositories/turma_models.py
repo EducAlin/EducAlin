@@ -271,6 +271,30 @@ class TurmaModel:
         )
         return cursor.fetchone()['total']
 
+    # Interface de injeção de conexão
+
+    def conectar(self, conn: sqlite3.Connection) -> "TurmaModel":
+        """
+        Injeta a conexão SQLite necessária para operações que dependem
+        do banco (``alunos``, ``obter_desempenho_geral``).
+
+        Método público que substitui o acesso direto ao atributo privado
+        ``_conn`` a partir de camadas externas.
+
+        Args:
+            conn: Conexão SQLite ativa.
+
+        Returns:
+            A própria instância (fluent interface), permitindo encadeamento:
+            ``RelatorioTurma(turma.conectar(conn))``.
+
+        Examples:
+            >>> relatorio = RelatorioTurma(turma.conectar(conn))
+            >>> conteudo = relatorio.gerar()
+        """
+        self._conn = conn
+        return self
+
     # Interface para RelatorioTurma (Template Method)
 
     @property
