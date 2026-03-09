@@ -35,6 +35,7 @@ class MaterialModel(BaseModel):
         codec: Optional[str] = None,  # Video
         url: Optional[str] = None,  # Link
         tipo_conteudo: Optional[str] = None,  # Link
+        topico: Optional[str] = None,  # Tópico/área do material
     ):
         self.id = id
         self.tipo_material = tipo_material
@@ -47,6 +48,7 @@ class MaterialModel(BaseModel):
         self.codec = codec
         self.url = url
         self.tipo_conteudo = tipo_conteudo
+        self.topico = topico
     
     @staticmethod
     def _criar_instancia_polimórfica(row: sqlite3.Row) -> 'MaterialModel':
@@ -65,6 +67,7 @@ class MaterialModel(BaseModel):
                 autor_id=row['autor_id'],
                 data_upload=datetime.fromisoformat(row['data_upload']),
                 num_paginas=row['num_paginas'],
+                topico=row['topico'],
             )
         elif tipo == 'video':
             return MaterialVideoModel(
@@ -76,6 +79,7 @@ class MaterialModel(BaseModel):
                 data_upload=datetime.fromisoformat(row['data_upload']),
                 duracao_segundos=row['duracao_segundos'],
                 codec=row['codec'],
+                topico=row['topico'],
             )
         elif tipo == 'link':
             return MaterialLinkModel(
@@ -87,6 +91,7 @@ class MaterialModel(BaseModel):
                 data_upload=datetime.fromisoformat(row['data_upload']),
                 url=row['url'],
                 tipo_conteudo=row['tipo_conteudo'],
+                topico=row['topico'],
             )
         else:
             # Fallback para MaterialModel genérico
@@ -97,6 +102,7 @@ class MaterialModel(BaseModel):
                 descricao=row['descricao'],
                 autor_id=row['autor_id'],
                 data_upload=datetime.fromisoformat(row['data_upload']),
+                topico=row['topico'],
             )
     
     @classmethod
@@ -157,6 +163,7 @@ class MaterialPDFModel(MaterialModel):
         autor_id: int,
         data_upload: datetime,
         num_paginas: int,
+        topico: Optional[str] = None,
     ):
         super().__init__(
             id=id,
@@ -166,6 +173,7 @@ class MaterialPDFModel(MaterialModel):
             autor_id=autor_id,
             data_upload=data_upload,
             num_paginas=num_paginas,
+            topico=topico,
         )
     
     @classmethod
@@ -208,6 +216,7 @@ class MaterialVideoModel(MaterialModel):
         data_upload: datetime,
         duracao_segundos: int,
         codec: str,
+        topico: Optional[str] = None,
     ):
         super().__init__(
             id=id,
@@ -218,6 +227,7 @@ class MaterialVideoModel(MaterialModel):
             data_upload=data_upload,
             duracao_segundos=duracao_segundos,
             codec=codec,
+            topico=topico,
         )
     
     @classmethod
@@ -261,6 +271,7 @@ class MaterialLinkModel(MaterialModel):
         data_upload: datetime,
         url: str,
         tipo_conteudo: str,
+        topico: Optional[str] = None,
     ):
         super().__init__(
             id=id,
@@ -271,6 +282,7 @@ class MaterialLinkModel(MaterialModel):
             data_upload=data_upload,
             url=url,
             tipo_conteudo=tipo_conteudo,
+            topico=topico,
         )
     
     @classmethod
