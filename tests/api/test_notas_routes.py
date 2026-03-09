@@ -7,6 +7,7 @@ injetado via override de dependência.
 # pylint: disable=redefined-outer-name, unused-argument, too-many-positional-arguments
 import sqlite3
 from datetime import date
+from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
@@ -16,6 +17,7 @@ from educalin.repositories.schemas import create_all_tables
 from educalin.repositories.usuario_models import ProfessorModel, AlunoModel
 from educalin.repositories.turma_models import TurmaModel
 from educalin.repositories.avaliacao_models import AvaliacaoModel
+from educalin.services.nota_service import PublicadorEventos
 
 
 @pytest.fixture
@@ -439,3 +441,63 @@ class TestRelatorioTurma:
         assert "Total de Alunos" in conteudo
         # Média gerada deve aparecer formatada
         assert "8.50" in conteudo
+
+
+# POST /avaliacoes/{id}/notas — Observer
+class TestRegistrarNotaObserver:
+    """Testa que o registro de nota dispara o publicador de eventos (Observer)."""
+
+    def test_registrar_nota_dispara_publicador(
+        self, client, avaliacao_id, aluno_id
+    ):
+        """O publicador deve ser chamado uma vez após a nota ser registrada."""
+        with patch(
+            "educalin.api.routes.notas.ObserverPublicadorEventos"
+        ) as mock_publicador_cls:
+            mock_publicador = MagicMock(spec=PublicadorEventos)
+            mock_publicador_cls.return_value = mock_publicador
+
+            response = client.post(f"/avaliacoes/{avaliacao_id}/notas", json={
+                "aluno_id": aluno_id,
+                "valor": 7.5,
+            })
+
+        assert response.status_code == 201
+        mock_publicador.publicar_nota_registrada.assert_called_once()
+
+    def test_evento_contem_dados_corretos(self, client, avaliacao_id, aluno_id):
+        """O evento disparado deve conter avaliacao_id, aluno_id e valor corretos."""
+        with patch(
+            "educalin.api.routes.notas.ObserverPublicadorEventos"
+        ) as mock_publicador_cls:
+            mock_publicador = MagicMock(spec=PublicadorEventos)
+            mock_publicador_cls.return_value = mock_publicador
+
+            client.post(f"/avaliacoes/{avaliacao_id}/notas", json={
+                "aluno_id": aluno_id,
+                "valor": 9.0,
+            })
+
+        evento = mock_publicador.publicar_nota_registrada.call_args[0][0]
+        assert evento["evento"] == "nota_registrada"
+        assert evento["avaliacao_id"] == avaliacao_id
+        assert evento["aluno_id"] == aluno_id
+        assert evento["valor"] == 9.0
+
+    def test_nota_invalida_nao_dispara_publicador(
+        self, client, avaliacao_id, aluno_id
+    ):
+        """Se a nota for inválida (valor > máximo), o publicador não deve ser chamado."""
+        with patch(
+            "educalin.api.routes.notas.ObserverPublicadorEventos"
+        ) as mock_publicador_cls:
+            mock_publicador = MagicMock(spec=PublicadorEventos)
+            mock_publicador_cls.return_value = mock_publicador
+
+            response = client.post(f"/avaliacoes/{avaliacao_id}/notas", json={
+                "aluno_id": aluno_id,
+                "valor": 999.0,  # excede valor_maximo=10.0
+            })
+
+        assert response.status_code == 422
+        mock_publicador.publicar_nota_registrada.assert_not_called()
