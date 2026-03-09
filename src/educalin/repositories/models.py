@@ -59,6 +59,10 @@ from .meta_models import MetaModel
 # Importa modelos de plano de ação
 from .plano_acao_models import PlanoAcaoModel
 
+# Importa repositórios
+from .usuario_repository import UsuarioRepository
+from .material_repository import MaterialRepository
+
 
 # Exporta tudo para facilitar imports
 __all__ = [
@@ -99,5 +103,9 @@ __all__ = [
     
     # Planos de Ação
     'PlanoAcaoModel',
+    
+    # Repositórios
+    'UsuarioRepository',
+    'MaterialRepository',
 ]
 

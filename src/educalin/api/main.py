@@ -20,8 +20,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from educalin.repositories.base import init_db
-from .routes import auth, turmas, notas
-
+from .routes import auth, turmas, notas, materiais
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -59,6 +58,7 @@ app.add_middleware(
 
 # Registrar routers
 app.include_router(auth.router)
+app.include_router(materiais.router)
 app.include_router(turmas.router)
 app.include_router(notas.router)
 
