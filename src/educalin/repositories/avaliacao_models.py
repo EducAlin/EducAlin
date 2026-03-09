@@ -109,6 +109,7 @@ class AvaliacaoModel(BaseModel):
             valor_maximo=row['valor_maximo'],
             peso=row['peso'],
             turma_id=row['turma_id'],
+            topico=row['topico'],
             criada_em=datetime.fromisoformat(row['criada_em'])
         )
 
