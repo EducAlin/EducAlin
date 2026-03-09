@@ -373,7 +373,7 @@ class PlanoAcaoRepository:
         
         # Verificar se material já está no plano
         cursor = self.conn.execute(
-            "SELECT id FROM plano_materiais WHERE plano_id = ? AND material_id = ?",
+            "SELECT 1 FROM plano_materiais WHERE plano_id = ? AND material_id = ?",
             (plano_id, material_id)
         )
         if cursor.fetchone():

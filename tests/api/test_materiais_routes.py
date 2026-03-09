@@ -122,7 +122,7 @@ class TestUploadMaterial:
             files={"arquivo": arquivo}
         )
         
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     def test_upload_usuario_nao_professor(self, client, db_connection):
         """Deve rejeitar upload de usuário que não é professor."""

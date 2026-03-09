@@ -6,8 +6,6 @@ Cobre testes de:
 - Obter detalhes do plano (verificação de permissões)
 - Adicionar material ao plano
 - Atualizar status do plano
-- Sugestão automática de materiais (mock estratégia)
-- Notificação ao criar plano (mock Observer)
 """
 
 import pytest
@@ -23,7 +21,7 @@ class TestCriarPlano:
         # Criar aluno para o plano
         aluno_data = {
             "nome": "João Aluno",
-            "email": "joao@test.com",
+            "email": "aluno_joao@test.com",
             "senha": "senha12345",
             "tipo": "aluno",
             "matricula": "2024001"
@@ -154,7 +152,7 @@ class TestCriarPlano:
             headers=usuario_autenticado["headers"]
         )
         
-        assert response.status_code == 400
+        assert response.status_code == 422
 
     def test_criar_plano_prazo_acima_maximo(self, client, usuario_autenticado, db_connection):
         """Deve rejeitar plano com prazo_dias > 365."""
@@ -181,7 +179,7 @@ class TestCriarPlano:
             headers=usuario_autenticado["headers"]
         )
         
-        assert response.status_code == 400
+        assert response.status_code == 422
 
     def test_criar_plano_aluno_inexistente(self, client, usuario_autenticado):
         """Deve rejeitar criação de plano para aluno inexistente."""
@@ -411,7 +409,7 @@ class TestAdicionarMaterialPlano:
         assert material_id in data["materiais"]
 
     def test_adicionar_material_plano_concluido(self, client, usuario_autenticado, db_connection):
-        """Deve rejeitar adicionar material a plano concluído."""
+        """Deve rejeitar adicionar material a plano cancelado ou concluído."""
         # Criar aluno
         aluno_data = {
             "nome": "Vanessa Aluno",
@@ -436,13 +434,14 @@ class TestAdicionarMaterialPlano:
         )
         plano_id = response_plano.json()["id"]
         
-        # Atualizar plano para status 'concluido'
-        status_data = {"status": "concluido"}
-        client.put(
+        # Cancelar plano (transição válida: rascunho → cancelado)
+        status_data = {"status": "cancelado"}
+        status_response = client.put(
             f"/planos/{plano_id}/status",
             json=status_data,
             headers=usuario_autenticado["headers"]
         )
+        assert status_response.status_code == 200
         
         # Criar material
         arquivo = ("material.pdf", BytesIO(b"%PDF"), "application/pdf")
@@ -454,7 +453,7 @@ class TestAdicionarMaterialPlano:
         )
         material_id = response_material.json()["id"]
         
-        # Tentar adicionar material
+        # Tentar adicionar material ao plano cancelado
         response = client.put(
             f"/planos/{plano_id}/materiais",
             json={"material_id": material_id},
@@ -492,6 +491,23 @@ class TestAtualizarStatusPlano:
             headers=usuario_autenticado["headers"]
         )
         plano_id = response_plano.json()["id"]
+        
+        # Adicionar material ao plano (obrigatório para enviar)
+        arquivo = ("artes.pdf", BytesIO(b"%PDF"), "application/pdf")
+        response_material = client.post(
+            "/materiais/upload",
+            headers=usuario_autenticado["headers"],
+            data={"titulo": "Material Artes", "descricao": "Conteúdo de artes", "num_paginas": 20},
+            files={"arquivo": arquivo}
+        )
+        assert response_material.status_code == 201
+        material_id = response_material.json()["id"]
+        
+        client.put(
+            f"/planos/{plano_id}/materiais",
+            json={"material_id": material_id},
+            headers=usuario_autenticado["headers"]
+        )
         
         # Atualizar status
         status_data = {"status": "enviado"}

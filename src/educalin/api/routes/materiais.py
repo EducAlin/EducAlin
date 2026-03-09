@@ -10,7 +10,7 @@ Este módulo implementa endpoints para:
 
 import os
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, status
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, status
 from fastapi.responses import JSONResponse
 from typing import Optional
 from datetime import datetime
@@ -186,12 +186,12 @@ def _salvar_arquivo_simulado(arquivo: UploadFile, extensao: str) -> tuple[str, i
 )
 async def upload_material(
     arquivo: UploadFile = File(..., description="Arquivo a fazer upload"),
-    titulo: str = None,
-    descricao: str = None,
-    topico: Optional[str] = None,
-    num_paginas: Optional[int] = None,
-    duracao_segundos: Optional[int] = None,
-    codec: Optional[str] = None,
+    titulo: str = Form(...),
+    descricao: str = Form(...),
+    topico: Optional[str] = Form(None),
+    num_paginas: Optional[int] = Form(None),
+    duracao_segundos: Optional[int] = Form(None),
+    codec: Optional[str] = Form(None),
     current_user: UsuarioSchema = Depends(get_current_user)
 ) -> MaterialResponseSchema:
     """
@@ -495,7 +495,7 @@ def obter_material(
     "/{material_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Deletar um material",
-    description="Remove um material de estudo (apenas o professor autor pode deletar).",
+    description="Remove um material de estudo (o professor autor ou um coordenador pode deletar).",
     responses={
         204: {"description": "Material deletado com sucesso"},
         401: {"description": "Usuário não autenticado"},
@@ -510,7 +510,7 @@ def deletar_material(
     """
     Deleta um material de estudo.
     
-    Apenas o professor que criou o material pode deletá-lo.
+    O professor que criou o material ou um coordenador pode deletá-lo.
     
     Args:
         material_id: ID do material a deletar
@@ -518,7 +518,7 @@ def deletar_material(
     
     Raises:
         HTTPException 401: Se usuário não autenticado
-        HTTPException 403: Se não for o autor do material
+        HTTPException 403: Se não for o autor do material nem coordenador
         HTTPException 404: Se material não existe
     """
     if material_id <= 0:
