@@ -205,7 +205,8 @@ class MaterialRepository:
         
         except sqlite3.IntegrityError as e:
             self.conn.rollback()
-            if 'autor_id' in str(e):
+            erro = str(e).lower()
+            if 'foreign key constraint failed' in erro or 'autor_id' in erro:
                 raise ValueError(f"Autor com ID {autor_id} não existe")
             else:
                 raise ValueError(f"Erro de integridade: {e}")
@@ -295,6 +296,8 @@ class MaterialRepository:
             raise ValueError("topico deve ser uma string não-vazia")
         
         topico = topico.strip()
+        if not topico:
+            raise ValueError("topico deve ser uma string não-vazia")
         
         cursor = self.conn.execute(
             """

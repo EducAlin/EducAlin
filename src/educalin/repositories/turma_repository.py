@@ -45,7 +45,7 @@ class TurmaRepository:
 
         Args:
             conn: Conexão SQLite ativa. Deve ter ``row_factory = sqlite3.Row``
-                e ``PRAGMA foreign_keys = ON`` habilitado para garantir 
+                e ``PRAGMA foreign_keys = ON`` habilitado para garantir
                 integridade referencial e acesso por nome de coluna.
 
         Raises:
@@ -113,7 +113,7 @@ class TurmaRepository:
 
         Args:
             turma_id: Identificador da turma
-        
+
         Returns:
             Instância de ``TurmaModel`` se encontrado, ``None`` caso contrário
 
@@ -133,7 +133,7 @@ class TurmaRepository:
 
         Args:
             professor_id: ID do professor cujas turmas devem ser listadas
-        
+
         Returns:
             Lista de instâncias de ``TurmaModel``, possivelmente vazia.
             As turmas são ordenadas por código (ordem do modelo).
@@ -183,17 +183,19 @@ class TurmaRepository:
         """
         Remove a matrícula de um aluno em uma turma.
 
-        Se a turma não existir, retorna ``False`` sem lançar erro -
-        o estado desejado (aluno não matriculado) já está satisfeito.
-        O mesmo vale se o aluno não estiver matriculado.
+        Lança ``ValueError`` se a turma não existir, diferenciando esse
+        caso de "aluno não matriculado" (que retorna ``False``).
 
         Args:
             turma_id: ID da turma
             aluno_id: ID do aluno a ser removido.
 
         Returns:
-            ``True`` se a matrícula foi removida
-            ``False`` se o aluno não estava matriculado ou a turma não existe
+            ``True`` se a matrícula foi removida com sucesso.
+            ``False`` se o aluno não estava matriculado na turma.
+
+        Raises:
+            ValueError: Se a turma não for encontrada.
 
         Examples:
             >>> repo.remover_aluno(turma_id=1, aluno_id=5)
@@ -203,7 +205,7 @@ class TurmaRepository:
         """
         turma = TurmaModel.buscar_por_id(self._conn, turma_id)
         if turma is None:
-            return False
+            raise ValueError(f"Turma com id {turma_id} não encontrada")
         return turma.remover_aluno(self._conn, aluno_id)
 
     def listar_alunos(self, turma_id: int) -> list[dict]:

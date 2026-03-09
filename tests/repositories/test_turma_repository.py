@@ -331,9 +331,10 @@ class TestTurmaRepositoryRemoverAluno:
         assert outro_aluno_id in ids
         assert aluno_id not in ids
 
-    def test_turma_inexistente_retorna_false(self, repo, aluno_id):
-        """turma_id que não existe deve retornar False sem erro"""
-        assert repo.remover_aluno(9999, aluno_id) is False
+    def test_turma_inexistente_levanta_value_error(self, repo, aluno_id):
+        """turma_id que não existe deve levantar ValueError"""
+        with pytest.raises(ValueError):
+            repo.remover_aluno(9999, aluno_id)
 
 
 class TestTurmaRepositoryListarAlunos:
