@@ -11,16 +11,18 @@ Este módulo configura a aplicação FastAPI, incluindo:
 
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from dotenv import load_dotenv
 load_dotenv()
 
 from educalin.repositories.base import init_db
-from .routes import auth, turmas, notas, materiais, planos
+from .routes import auth, turmas, notas, materiais, planos, views
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -55,13 +57,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def _find_project_root() -> Path:
+    """Return the project root by locating the nearest ``pyproject.toml``."""
+    here = Path(__file__).resolve()
+    for candidate in [here, *here.parents]:
+        if (candidate / "pyproject.toml").exists():
+            return candidate
+    raise RuntimeError("Could not find project root (pyproject.toml not found)")
+
+
+_STATIC_DIR = _find_project_root() / "static"
+app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
 # Registrar routers
 app.include_router(auth.router)
 app.include_router(materiais.router)
 app.include_router(turmas.router)
+app.include_router(notas.router)
 app.include_router(planos.router)
 app.include_router(planos.alunos_router)
+app.include_router(views.router)
 
 # Rota raiz
 @app.get("/", tags=["Info"])
