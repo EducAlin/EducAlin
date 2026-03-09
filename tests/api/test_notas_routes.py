@@ -170,6 +170,26 @@ class TestCriarAvaliacao:
         })
         assert response.status_code == 422
 
+    def test_peso_zero_valido(self, client, turma_id):
+        """Peso igual a 0.0 é válido (ge=0) e deve retornar 201."""
+        response = client.post(f"/turmas/{turma_id}/avaliacoes", json={
+            "titulo": "Atividade Opcional",
+            "data": "2026-06-01",
+            "valor_maximo": 5.0,
+            "peso": 0.0,
+        })
+        assert response.status_code == 201
+
+    def test_valor_maximo_zero_retorna_422(self, client, turma_id):
+        """valor_maximo=0 deve ser rejeitado com 422 (gt=0)."""
+        response = client.post(f"/turmas/{turma_id}/avaliacoes", json={
+            "titulo": "Prova Invalida",
+            "data": "2026-06-01",
+            "valor_maximo": 0.0,
+            "peso": 0.4,
+        })
+        assert response.status_code == 422
+
     def test_com_topico_opcional(self, client, turma_id):
         """Campo topico é opcional e deve ser aceito."""
         response = client.post(f"/turmas/{turma_id}/avaliacoes", json={
@@ -256,6 +276,14 @@ class TestRegistrarNota:
         })
         assert response.status_code == 404
 
+    def test_professor_como_aluno_retorna_404(self, client, avaliacao_id, professor_id):
+        """Usuário do tipo 'professor' não deve ser aceito como aluno."""
+        response = client.post(f"/avaliacoes/{avaliacao_id}/notas", json={
+            "aluno_id": professor_id,
+            "valor": 7.5,
+        })
+        assert response.status_code == 404
+
     def test_valor_zero_valido(self, client, avaliacao_id, aluno_id):
         """Nota zero deve ser permitida."""
         response = client.post(f"/avaliacoes/{avaliacao_id}/notas", json={
@@ -331,6 +359,16 @@ class TestHistoricoAluno:
         response = client.get("/alunos/99999/notas")
         assert response.status_code == 404
 
+    def test_turma_inexistente_como_filtro_retorna_lista_vazia(
+        self, client, aluno_id, avaliacao_id
+    ):
+        """turma_id inexistente como query param deve retornar lista vazia."""
+        client.post(f"/avaliacoes/{avaliacao_id}/notas", json={
+            "aluno_id": aluno_id, "valor": 8.0,
+        })
+        notas = client.get(f"/alunos/{aluno_id}/notas?turma_id=99999").json()
+        assert notas == []
+
 
 # GET /turmas/{id}/relatorio
 class TestRelatorioTurma:
@@ -371,3 +409,33 @@ class TestRelatorioTurma:
         """Formatos não suportados (ex: xls) devem retornar 422."""
         response = client.get(f"/turmas/{turma_id}/relatorio?formato=xls")
         assert response.status_code == 422
+
+    def test_relatorio_turma_sem_alunos_retorna_200(self, client, turma_id):
+        """Turma sem alunos matriculados deve gerar relatório válido com conteúdo."""
+        response = client.get(f"/turmas/{turma_id}/relatorio")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data['conteudo'], str)
+        assert len(data['conteudo']) > 0
+
+    def test_relatorio_com_aluno_e_nota_exibe_dados_reais(
+        self, client, turma_id, aluno_id, avaliacao_id, conn
+    ):
+        """Relatório de turma com aluno matriculado e nota deve exibir dados reais."""
+        from educalin.repositories.turma_models import TurmaModel as TM
+        turma = TM.buscar_por_id(conn, turma_id)
+        turma.adicionar_aluno(conn, aluno_id)
+
+        client.post(f"/avaliacoes/{avaliacao_id}/notas", json={
+            "aluno_id": aluno_id, "valor": 8.5,
+        })
+
+        response = client.get(f"/turmas/{turma_id}/relatorio")
+        assert response.status_code == 200
+        conteudo = response.json()['conteudo']
+
+        # O relatório deve conter o código da turma e o aluno matriculado
+        assert "POO-2026.1" in conteudo
+        assert "Total de Alunos" in conteudo
+        # Média gerada deve aparecer formatada
+        assert "8.50" in conteudo

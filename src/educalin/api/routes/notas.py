@@ -13,21 +13,22 @@ from __future__ import annotations
 
 import sqlite3
 from datetime import date
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from educalin.repositories.avaliacao_repository import AvaliacaoRepository
 from educalin.repositories.avaliacao_models import AvaliacaoModel
 from educalin.repositories.turma_models import TurmaModel
 from educalin.repositories.usuario_models import UsuarioModel
 from educalin.repositories.base import get_connection
+from educalin.repositories.exceptions import NotaDuplicadaError, ValorInvalidoError
 from educalin.services.relatorios.turma import RelatorioTurma
 
 router = APIRouter(tags=["notas"])
 
-FORMATOS_VALIDOS = ("txt",)
+FORMATOS_VALIDOS: frozenset[str] = frozenset({"txt"})
 
 
 def get_db():
@@ -52,7 +53,7 @@ class AvaliacaoCreate(BaseModel):
     data: date
     valor_maximo: float = Field(..., gt=0)
     peso: float = Field(..., ge=0, le=1)
-    topico: Optional[str] = None
+    topico: str | None = None
 
 
 class AvaliacaoResponse(BaseModel):
@@ -64,7 +65,7 @@ class AvaliacaoResponse(BaseModel):
     valor_maximo: float
     peso: float
     turma_id: int
-    topico: Optional[str] = None
+    topico: str | None = None
 
 
 class NotaCreate(BaseModel):
@@ -78,12 +79,6 @@ class NotaCreate(BaseModel):
 
     aluno_id: int
     valor: float = Field(..., ge=0)
-
-
-class NotaCreateComAvaliacao(NotaCreate):
-    """Payload com avaliacao_id explícito, usado internamente."""
-
-    avaliacao_id: int
 
 
 class NotaResponse(BaseModel):
@@ -158,7 +153,7 @@ def criar_avaliacao(
         valor_maximo=avaliacao.valor_maximo,
         peso=avaliacao.peso,
         turma_id=avaliacao.turma_id,
-        topico=getattr(avaliacao, 'topico', None),
+        topico=avaliacao.topico,
     )
 
 
@@ -225,12 +220,13 @@ def registrar_nota(
             'avaliacao_id': avaliacao_id,
             'valor': payload.valor,
         })
-    except ValueError as exc:
-        msg = str(exc)
-        if "já existe" in msg.lower():
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=msg)
+    except NotaDuplicadaError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=msg
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
+    except ValorInvalidoError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
         ) from exc
 
     return NotaResponse(
@@ -248,7 +244,7 @@ def registrar_nota(
 )
 def historico_aluno(
     aluno_id: int,
-    turma_id: Optional[int] = Query(default=None),
+    turma_id: int | None = Query(default=None),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     """
@@ -281,7 +277,7 @@ def historico_aluno(
     if turma_id is not None:
         notas = repo.buscar_notas_aluno(aluno_id, turma_id)
     else:
-        notas = _buscar_todas_notas_aluno(conn, aluno_id)
+        notas = repo.buscar_todas_notas_aluno(aluno_id)
 
     return [
         NotaResponse(
@@ -302,7 +298,7 @@ def historico_aluno(
 def relatorio_turma(
     turma_id: int,
     formato: Annotated[
-        str,
+        Literal["txt"],
         Query(description="Formato de saída. Aceito: 'txt'"),
     ] = "txt",
     conn: sqlite3.Connection = Depends(get_db),
@@ -326,14 +322,7 @@ def relatorio_turma(
 
     Raises:
         HTTPException 404: Se a turma não for encontrada.
-        HTTPException 422: Se o formato solicitado não for suportado.
     """
-    if formato not in FORMATOS_VALIDOS:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Formato '{formato}' não suportado. Use: {FORMATOS_VALIDOS}",
-        )
-
     turma = TurmaModel.buscar_por_id(conn, turma_id)
     if turma is None:
         raise HTTPException(
@@ -341,41 +330,9 @@ def relatorio_turma(
             detail=f"Turma {turma_id} não encontrada",
         )
 
-    # Injeta a conexão na turma para que obter_desempenho_geral()
-    # e a iteração sobre alunos funcionem com dados reais do banco.
-    turma._conn = conn
-
-    relatorio = RelatorioTurma(turma)
+    # Injeta a conexão via método público para que alunos e
+    # obter_desempenho_geral() funcionem com dados reais do banco.
+    relatorio = RelatorioTurma(turma.conectar(conn))
     conteudo = relatorio.gerar()
 
     return RelatorioResponse(turma_id=turma_id, conteudo=conteudo)
-
-
-# Helpers privados
-def _buscar_todas_notas_aluno(conn: sqlite3.Connection, aluno_id: int) -> list[dict]:
-    """
-    Busca todas as notas de um aluno em todas as turmas.
-
-    Consulta auxiliar usada quando ``turma_id`` não é fornecido
-    no endpoint de histórico. Não está no ``AvaliacaoRepository``
-    pois não pertence ao escopo da issue #61.
-
-    Args:
-        conn: Conexão SQLite ativa.
-        aluno_id: ID do aluno.
-
-    Returns:
-        Lista de dicts com ``id``, ``aluno_id``, ``avaliacao_id``,
-        ``valor`` e ``data_registro``, ordenados por data da avaliação.
-    """
-    cursor = conn.execute(
-        """
-        SELECT n.id, n.aluno_id, n.avaliacao_id, n.valor, n.data_registro
-        FROM notas n
-        JOIN avaliacoes a ON n.avaliacao_id = a.id
-        WHERE n.aluno_id = ?
-        ORDER BY a.data ASC
-        """,
-        (aluno_id,),
-    )
-    return [dict(row) for row in cursor.fetchall()]
