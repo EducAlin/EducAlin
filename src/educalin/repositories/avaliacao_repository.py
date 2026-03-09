@@ -11,6 +11,7 @@ import sqlite3
 from datetime import date
 
 from .avaliacao_models import AvaliacaoModel
+from .exceptions import ValorInvalidoError
 from .nota_models import NotaModel
 
 
@@ -101,10 +102,12 @@ class AvaliacaoRepository:
             ID (int) da nota criada.
 
         Raises:
-            ValueError: Se campos obrigatórios estiverem ausentes, se o valor
-                for negativo ou superior ao ``valor_maximo`` da avaliação,
-                se o aluno ou a avaliação não existirem, ou se já existir
-                nota para este aluno nesta avaliação.
+            ValorInvalidoError: Se o valor for negativo ou superior ao
+                ``valor_maximo`` da avaliação.
+            NotaDuplicadaError: Se já existir nota para este aluno
+                nesta avaliação.
+            ValueError: Se campos obrigatórios estiverem ausentes ou
+                com formato inválido.
 
         Examples:
             >>> nota_id = repo.registrar_nota({
@@ -307,9 +310,9 @@ class AvaliacaoRepository:
         Valida os campos obrigatórios do dicionário de nota.
 
         Raises:
-            ValueError: Se algum campo obrigatório estiver ausente ou inválido,
-                se ``valor`` for negativo, ou se ``aluno_id``/``avaliacao_id``
-                não forem inteiros positivos.
+            ValorInvalidoError: Se ``valor`` for negativo.
+            ValueError: Se algum campo obrigatório estiver ausente ou se
+                ``aluno_id``/``avaliacao_id`` não forem inteiros positivos.
         """
         for campo in ('aluno_id', 'avaliacao_id', 'valor'):
             if campo not in nota_data or nota_data[campo] is None:
@@ -322,7 +325,7 @@ class AvaliacaoRepository:
 
         valor = nota_data['valor']
         if not isinstance(valor, (int, float)) or valor < 0:
-            raise ValueError("'valor' deve ser um número não-negativo")
+            raise ValorInvalidoError("'valor' deve ser um número não-negativo")
 
     def _garantir_turma_existe(self, turma_id: int) -> None:
         """
