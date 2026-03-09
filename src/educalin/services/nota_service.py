@@ -10,11 +10,34 @@ depende da abstração, não de implementações concretas de notificação.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import TYPE_CHECKING
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
     from educalin.repositories.avaliacao_repository import AvaliacaoRepository
+
+
+class EventoNotaRegistrada(TypedDict):
+    """
+    Schema canônico do evento ``nota_registrada``.
+
+    Usado por ``NotaService`` ao publicar e pelos observers ao consumir,
+    garantindo que produtor e consumidores compartilhem o mesmo contrato
+    de dados sem acoplamento implícito por strings.
+
+    Keys:
+        evento: Identificador do tipo de evento. Sempre ``"nota_registrada"``.
+        avaliacao_id: ID da avaliação à qual a nota pertence.
+        aluno_id: ID do aluno que recebeu a nota.
+        valor: Valor numérico da nota registrada.
+        timestamp: Momento UTC do registro.
+    """
+
+    evento: str
+    avaliacao_id: int
+    aluno_id: int
+    valor: float
+    timestamp: datetime
 
 
 class PublicadorEventos(ABC):
@@ -129,12 +152,13 @@ class NotaService:
         })
 
         if self._publicador is not None:
-            self._publicador.publicar_nota_registrada({
+            evento: EventoNotaRegistrada = {
                 "evento": "nota_registrada",
                 "avaliacao_id": avaliacao_id,
                 "aluno_id": aluno_id,
                 "valor": valor,
-                "timestamp": datetime.now(),
-            })
+                "timestamp": datetime.now(tz=timezone.utc),
+            }
+            self._publicador.publicar_nota_registrada(evento)
 
         return nota_id

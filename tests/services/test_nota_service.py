@@ -6,7 +6,7 @@ notificação, garantindo que cada unidade seja testada individualmente.
 """
 # pylint: disable=redefined-outer-name
 from datetime import datetime
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -154,11 +154,10 @@ class TestObserverPublicadorEventos:
         obs_ok = MagicMock()
         publicador = ObserverPublicadorEventos([obs_falha, obs_ok])
 
-        # A falha é propagada (responsabilidade do observer concreto capturá-la)
-        # — mas se o observer concreto (ex: NotificadorEmail) swallow the error,
-        #   o próximo observer continua. Aqui testamos o comportamento padrão:
-        # ObserverPublicadorEventos não captura — propaga a exceção do primeiro.
-        with pytest.raises(RuntimeError):
-            publicador.publicar_nota_registrada({"evento": "nota_registrada"})
-        # obs_ok não é chamado pois a exceção interrompeu a iteração
-        obs_ok.atualizar.assert_not_called()
+        # ObserverPublicadorEventos captura a exceção individualmente via logging
+        # e continua iterando — obs_ok DEVE ser chamado mesmo com obs_falha falhando.
+        evento = {"evento": "nota_registrada"}
+        publicador.publicar_nota_registrada(evento)
+
+        obs_falha.atualizar.assert_called_once_with(evento)
+        obs_ok.atualizar.assert_called_once_with(evento)

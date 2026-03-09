@@ -8,12 +8,15 @@ mantendo o serviço de aplicação desacoplado dos canais de notificação.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from educalin.services.nota_service import PublicadorEventos
 
 if TYPE_CHECKING:
     from educalin.domain.turma import Observer
+
+logger = logging.getLogger(__name__)
 
 
 class ObserverPublicadorEventos(PublicadorEventos):
@@ -24,8 +27,9 @@ class ObserverPublicadorEventos(PublicadorEventos):
     ``publicar_nota_registrada()`` para o método ``atualizar()`` de cada
     ``Observer`` registrado (ex.: ``NotificadorEmail``, ``NotificadorPush``).
 
-    Falhas individuais de um observer não interrompem os demais —
-    cada ``Observer`` é responsável pelo seu próprio tratamento de erro.
+    Falhas individuais de um observer são registradas via logging e **não**
+    interrompem os demais — o publicador garante que todos os observers
+    recebam o evento independentemente de falhas individuais.
 
     Attributes:
         _observers: Lista de observers que receberão o evento.
@@ -57,10 +61,10 @@ class ObserverPublicadorEventos(PublicadorEventos):
         """
         Despacha o evento ``nota_registrada`` para todos os observers.
 
-        Itera sobre os observers e chama ``atualizar(evento)`` em cada um.
-        A iteração continua mesmo que um observer falhe, pois cada
-        implementação concreta de ``Observer`` é responsável por capturar
-        suas próprias exceções.
+        Itera sobre todos os observers chamando ``atualizar(evento)`` em
+        cada um. Falhas individuais são capturadas e registradas via
+        ``logging.error``, garantindo que os demais observers continuem
+        sendo notificados mesmo em caso de erro parcial.
 
         Args:
             evento: Dicionário com os dados do evento, conforme definido
@@ -72,8 +76,17 @@ class ObserverPublicadorEventos(PublicadorEventos):
             ...     "avaliacao_id": 1,
             ...     "aluno_id": 5,
             ...     "valor": 8.5,
-            ...     "timestamp": datetime.now(),
+            ...     "timestamp": datetime.now(tz=timezone.utc),
             ... })
         """
         for observer in self._observers:
-            observer.atualizar(evento)
+            try:
+                observer.atualizar(evento)
+            except Exception as exc:  # noqa: BLE001  # pylint: disable=broad-exception-caught
+                logger.error(
+                    "Observer %s falhou ao processar evento '%s': %s",
+                    type(observer).__name__,
+                    evento.get("evento"),
+                    exc,
+                    exc_info=True,
+                )
