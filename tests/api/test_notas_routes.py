@@ -5,19 +5,23 @@ Usa TestClient do FastAPI com banco SQLite em memória,
 injetado via override de dependência.
 """
 # pylint: disable=redefined-outer-name, unused-argument, too-many-positional-arguments
+import os
 import sqlite3
 from datetime import date
 from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from educalin.api.main import app
-from educalin.api.dependencies import get_db
-from educalin.repositories.schemas import create_all_tables
-from educalin.repositories.usuario_models import ProfessorModel, AlunoModel
-from educalin.repositories.turma_models import TurmaModel
-from educalin.repositories.avaliacao_models import AvaliacaoModel
-from educalin.services.nota_service import PublicadorEventos
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-testing-only")
+
+from educalin.api.main import app  # noqa: E402
+from educalin.api.dependencies import get_current_user, get_db  # noqa: E402
+from educalin.api.schemas import UsuarioSchema  # noqa: E402
+from educalin.repositories.schemas import create_all_tables  # noqa: E402
+from educalin.repositories.usuario_models import ProfessorModel, AlunoModel  # noqa: E402
+from educalin.repositories.turma_models import TurmaModel  # noqa: E402
+from educalin.repositories.avaliacao_models import AvaliacaoModel  # noqa: E402
+from educalin.services.nota_service import PublicadorEventos  # noqa: E402
 
 
 @pytest.fixture
@@ -32,19 +36,36 @@ def conn():
 
 
 @pytest.fixture
-def client(conn):
-    """TestClient com banco em memória injetado."""
-    def override_get_db():
-        yield conn
-
-    app.dependency_overrides[get_db] = override_get_db
-    yield TestClient(app)
-    app.dependency_overrides.clear()
-
-@pytest.fixture
 def professor_id(conn):
     """Cria um professor para os testes."""
     return ProfessorModel.criar(conn, "Dr. Exemplo", "prof@edu.com", "senha123", "PROF001")
+
+
+@pytest.fixture
+def client(conn, professor_id):
+    """TestClient com banco em memória injetado e autenticação mockada como professor."""
+    def override_get_db():
+        yield conn
+
+    def override_get_current_user():
+        row = conn.execute(
+            "SELECT id, nome, email, tipo_usuario, registro_funcional FROM usuarios WHERE id = ?",
+            (professor_id,),
+        ).fetchone()
+        return UsuarioSchema(
+            id=row["id"],
+            nome=row["nome"],
+            email=row["email"],
+            tipo_usuario=row["tipo_usuario"],
+            registro_funcional=row["registro_funcional"],
+        )
+
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    try:
+        yield TestClient(app)
+    finally:
+        app.dependency_overrides.clear()
 
 @pytest.fixture
 def aluno_id(conn):
