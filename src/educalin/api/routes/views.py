@@ -12,15 +12,27 @@ Estas rotas servem apenas os templates HTML.
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 router = APIRouter(tags=["views"])
 
-templates = Jinja2Templates(directory="templates")
+
+def _find_project_root() -> Path:
+    """Return the project root by locating the nearest ``pyproject.toml``."""
+    here = Path(__file__).resolve()
+    for candidate in [here, *here.parents]:
+        if (candidate / "pyproject.toml").exists():
+            return candidate
+    raise RuntimeError("Could not find project root (pyproject.toml not found)")
+
+
+_TEMPLATES_DIR = _find_project_root() / "templates"
+templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 
 def _base_ctx(request: Request, **kwargs) -> dict:
@@ -45,17 +57,6 @@ def _base_ctx(request: Request, **kwargs) -> dict:
 
 
 # Páginas públicas
-
-@router.get("/", response_class=RedirectResponse, include_in_schema=False)
-def root_redirect():
-    """
-    Redireciona a raiz para a página de login.
-
-    Returns:
-        Redirecionamento 302 para ``/login``.
-    """
-    return RedirectResponse(url="/login", status_code=302)
-
 
 @router.get("/login", response_class=HTMLResponse, include_in_schema=False)
 def login_page(
@@ -128,39 +129,10 @@ def dashboard_page(request: Request):
     ``current_user`` no contexto.
 
     Returns:
-        HTMLResponse com mensagem de boas-vindas temporária.
+        HTMLResponse com o template ``dashboard.html`` renderizado.
     """
     # TODO: validar JWT do cookie/session e popular current_user
-    html = """
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <title>Dashboard — EducAlin</title>
-        <link rel="stylesheet"
-              href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-        <link rel="stylesheet" href="/static/css/style.css">
-    </head>
-    <body>
-        <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;
-                    background:var(--cream)">
-            <div style="text-align:center;max-width:480px;padding:2rem">
-                <div class="auth-logo" style="justify-content:center;margin-bottom:1rem">
-                    <span class="brand-dot"></span>EducAlin
-                </div>
-                <h2 style="font-family:var(--font-display);color:var(--petroleum)">
-                    Login realizado com sucesso!
-                </h2>
-                <p style="color:var(--slate);margin:1rem 0 1.5rem">
-                    Dashboard em construção. O token JWT está armazenado
-                    em <code>sessionStorage</code>.
-                </p>
-                <a href="/login" class="btn-edu-primary" style="display:inline-block;width:auto;padding:.65rem 1.5rem">
-                    Voltar ao Login
-                </a>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html)
+    return templates.TemplateResponse(
+        "dashboard.html",
+        _base_ctx(request),
+    )

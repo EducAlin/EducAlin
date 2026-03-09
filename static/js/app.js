@@ -19,10 +19,12 @@
  * @param {'danger'|'success'|'info'} type - Tipo visual do alerta.
  */
 function showAlert(container, message, type = 'danger') {
-  container.innerHTML = `
-    <div class="alert-edu alert-edu-${type}" role="alert">
-      ${message}
-    </div>`;
+  const div = document.createElement('div');
+  div.className = `alert-edu alert-edu-${type}`;
+  div.setAttribute('role', 'alert');
+  div.textContent = message;
+  container.innerHTML = '';
+  container.appendChild(div);
 }
 
 /**
@@ -83,7 +85,9 @@ if (loginForm) {
         return;
       }
 
-      // Armazena o token e redireciona para o dashboard
+      // TODO: migrar para cookie HttpOnly/SameSite assim que o backend
+      // implementar Set-Cookie no endpoint /auth/login, eliminando a
+      // exposição do token a scripts da página (XSS mitigation).
       sessionStorage.setItem('edu_token', data.access_token);
       sessionStorage.setItem('edu_token_type', data.token_type);
       showAlert(alertBox, 'Login realizado com sucesso! Redirecionando…', 'success');

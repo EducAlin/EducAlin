@@ -11,6 +11,7 @@ Este módulo configura a aplicação FastAPI, incluindo:
 
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -56,7 +57,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+def _find_project_root() -> Path:
+    """Return the project root by locating the nearest ``pyproject.toml``."""
+    here = Path(__file__).resolve()
+    for candidate in [here, *here.parents]:
+        if (candidate / "pyproject.toml").exists():
+            return candidate
+    raise RuntimeError("Could not find project root (pyproject.toml not found)")
+
+
+_STATIC_DIR = _find_project_root() / "static"
+app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
 # Registrar routers
 app.include_router(auth.router)
