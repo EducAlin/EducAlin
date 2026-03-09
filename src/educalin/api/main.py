@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from educalin.repositories.base import init_db
-from .routes import auth, turmas, notas, materiais, planos, views
+from .routes import auth, turmas, notas, materiais, planos, views, mensagens
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -76,6 +76,7 @@ app.include_router(turmas.router)
 app.include_router(notas.router)
 app.include_router(planos.router)
 app.include_router(planos.alunos_router)
+app.include_router(mensagens.router)
 app.include_router(views.router)
 
 # Rota raiz

@@ -294,6 +294,43 @@ def create_planos_acao_tables(conn: sqlite3.Connection):
     print("[OK] Tabelas 'planos_acao' e 'plano_materiais' criadas com sucesso!")
 
 
+def create_mensagens_table(conn: sqlite3.Connection):
+    """
+    Cria a tabela de mensagens para comunicação professor-aluno (US10).
+    
+    Args:
+        conn: Conexão ativa com o banco de dados
+    """
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS mensagens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            remetente_id INTEGER NOT NULL,
+            destinatario_id INTEGER NOT NULL,
+            conteudo TEXT NOT NULL,
+            lida INTEGER DEFAULT 0,
+            data_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            data_leitura TIMESTAMP,
+            
+            FOREIGN KEY (remetente_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+            FOREIGN KEY (destinatario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+            
+            CHECK (remetente_id != destinatario_id),
+            CHECK (lida IN (0, 1))
+        )
+    """)
+    
+    # Índices para performance de consultas
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_remetente ON mensagens(remetente_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_destinatario ON mensagens(destinatario_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_lida ON mensagens(lida)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_data ON mensagens(data_envio)")
+    
+    conn.commit()
+    print("[OK] Tabela 'mensagens' criada com sucesso!")
+
+
 def create_all_tables(conn: sqlite3.Connection):
     """
     Cria todas as tabelas do sistema na ordem correta.
@@ -311,5 +348,6 @@ def create_all_tables(conn: sqlite3.Connection):
     create_notas_table(conn)
     create_metas_table(conn)
     create_planos_acao_tables(conn)
+    create_mensagens_table(conn)
 
     print("[OK] Todas as tabelas foram criadas com sucesso!")
