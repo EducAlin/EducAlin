@@ -115,6 +115,7 @@ def create_materiais_table(conn: sqlite3.Connection):
             titulo TEXT NOT NULL,
             descricao TEXT NOT NULL,
             autor_id INTEGER NOT NULL,
+            topico TEXT DEFAULT NULL,
             data_upload TIMESTAMP NOT NULL,
             
             -- Campos específicos (podem ser NULL dependendo do tipo)
@@ -133,6 +134,7 @@ def create_materiais_table(conn: sqlite3.Connection):
     # Índices para performance
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_materiais_tipo ON materiais(tipo_material)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_materiais_autor ON materiais(autor_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_materiais_topico ON materiais(topico)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_materiais_data ON materiais(data_upload)")
     
     conn.commit()
