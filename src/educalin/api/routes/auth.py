@@ -8,11 +8,11 @@ Este módulo implementa endpoints para:
 - Recuperação de senha
 """
 
+from typing import Dict
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import HTTPAuthorizationCredentials
-from typing import Dict
 
-from ..schemas import (
+from educalin.api.schemas import (
     RegisterSchema,
     LoginSchema,
     TokenSchema,
@@ -20,7 +20,7 @@ from ..schemas import (
     RecuperarSenhaSchema,
     ErrorSchema
 )
-from ..dependencies import get_current_user, security, _blacklisted_tokens
+from educalin.api.dependencies import get_current_user, security, _blacklisted_tokens
 from educalin.repositories.usuario_repository import UsuarioRepository
 from educalin.repositories.base import get_connection
 from educalin.utils.security import criar_token_jwt
