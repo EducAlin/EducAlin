@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from educalin.repositories.base import init_db
-from .routes import auth, turmas, materiais
+from .routes import auth, turmas, materiais, planos
 
 
 @asynccontextmanager
@@ -61,7 +61,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(materiais.router)
 app.include_router(turmas.router)
-
+app.include_router(planos.router)
+app.include_router(planos.alunos_router)
 
 # Rota raiz
 @app.get("/", tags=["Info"])
