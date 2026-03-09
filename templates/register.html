@@ -46,7 +46,7 @@
             class="form-control-edu form-select-edu"
             required
           >
-            <option value="" disabled selected>Selecione seu perfil…</option>
+            <option value="" disabled {% if not prefill_tipo %}selected{% endif %}>Selecione seu perfil…</option>
             <option value="professor"   {% if prefill_tipo == 'professor'   %}selected{% endif %}>Professor</option>
             <option value="coordenador" {% if prefill_tipo == 'coordenador' %}selected{% endif %}>Coordenador</option>
             <option value="aluno"       {% if prefill_tipo == 'aluno'       %}selected{% endif %}>Aluno</option>
