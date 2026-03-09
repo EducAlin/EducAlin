@@ -7,6 +7,8 @@ possibilitando análise e recomendação de materiais por area de conhecimento.
 
 from yoyo import step
 
+__depends__ = ['003_create_materiais_table']
+
 steps = [
     step(
         """
@@ -22,6 +24,7 @@ steps = [
         """
         CREATE INDEX IF NOT EXISTS idx_materiais_topico 
         ON materiais(topico)
-        """
+        """,
+        "DROP INDEX IF EXISTS idx_materiais_topico"
     )
 ]
