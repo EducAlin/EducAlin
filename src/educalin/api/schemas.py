@@ -469,3 +469,161 @@ class MaterialUploadSchema(BaseModel):
             if not v:
                 raise ValueError("Codec não pode ser vazio")
         return v
+
+
+# ========================= SCHEMAS DE PLANOS DE AÇÃO =========================
+
+
+class PlanoAcaoCreateSchema(BaseModel):
+    """
+    Schema para criação de um novo Plano de Ação.
+    
+    Attributes:
+        objetivo: Objetivo/descrição do plano
+        prazo_dias: Número de dias até a data limite
+        observacoes: Observações adicionais (opcional)
+    """
+    objetivo: str = Field(
+        ...,
+        min_length=1,
+        max_length=1000,
+        description="Objetivo ou descrição do plano",
+        json_schema_extra={"example": "Melhorar desempenho em Matemática"}
+    )
+    prazo_dias: int = Field(
+        ...,
+        ge=1,
+        le=365,
+        description="Prazo em dias (1-365)",
+        json_schema_extra={"example": 30}
+    )
+    observacoes: Optional[str] = Field(
+        None,
+        max_length=1000,
+        description="Observações adicionais",
+        json_schema_extra={"example": "Foco em álgebra básica"}
+    )
+    
+    @field_validator('objetivo')
+    @classmethod
+    def validate_objetivo(cls, v: str) -> str:
+        """Valida que o objetivo não seja vazio após strip."""
+        v = v.strip()
+        if not v:
+            raise ValueError("Objetivo não pode ser vazio")
+        return v
+    
+    @field_validator('observacoes')
+    @classmethod
+    def validate_observacoes(cls, v: Optional[str]) -> Optional[str]:
+        """Valida observações se fornecidas."""
+        if v:
+            v = v.strip()
+            if not v:
+                raise ValueError("Observações não podem ser vazio")
+        return v
+
+
+class PlanoAcaoMaterialSchema(BaseModel):
+    """
+    Schema para adicionar/remover material de um Plano de Ação.
+    
+    Attributes:
+        material_id: ID do material a adicionar
+    """
+    material_id: int = Field(
+        ...,
+        ge=1,
+        description="ID do material",
+        json_schema_extra={"example": 1}
+    )
+
+
+class PlanoAcaoStatusSchema(BaseModel):
+    """
+    Schema para atualizar o status de um Plano de Ação.
+    
+    Attributes:
+        status: Novo status (rascunho, enviado, em_andamento, concluido, cancelado)
+    """
+    status: Literal["rascunho", "enviado", "em_andamento", "concluido", "cancelado"] = Field(
+        ...,
+        description="Novo status do plano",
+        json_schema_extra={"example": "enviado"}
+    )
+
+
+class PlanoAcaoResponseSchema(BaseModel):
+    """
+    Schema para resposta de um Plano de Ação.
+    
+    Attributes:
+        id: ID único do plano
+        aluno_id: ID do aluno
+        objetivo: Objetivo do plano
+        status: Status atual
+        data_criacao: Data de criação
+        data_limite: Data limite/prazo
+        observacoes: Observações adicionais
+        materiais: IDs dos materiais adicionados
+    """
+    id: int = Field(
+        ...,
+        description="ID único do plano",
+        json_schema_extra={"example": 1}
+    )
+    aluno_id: int = Field(
+        ...,
+        description="ID do aluno destinatário",
+        json_schema_extra={"example": 1}
+    )
+    objetivo: str = Field(
+        ...,
+        description="Objetivo do plano",
+        json_schema_extra={"example": "Melhorar desempenho em Matemática"}
+    )
+    status: Literal["rascunho", "enviado", "em_andamento", "concluido", "cancelado"] = Field(
+        ...,
+        description="Status atual do plano",
+        json_schema_extra={"example": "enviado"}
+    )
+    data_criacao: datetime = Field(
+        ...,
+        description="Data de criação do plano",
+        json_schema_extra={"example": "2024-01-01T10:00:00"}
+    )
+    data_limite: datetime = Field(
+        ...,
+        description="Data limite para conclusão",
+        json_schema_extra={"example": "2024-02-01T10:00:00"}
+    )
+    observacoes: Optional[str] = Field(
+        None,
+        description="Observações adicionais",
+        json_schema_extra={"example": "Foco em álgebra básica"}
+    )
+    materiais: list[int] = Field(
+        default_factory=list,
+        description="IDs dos materiais adicionados ao plano",
+        json_schema_extra={"example": [1, 2, 3]}
+    )
+
+
+class PlanoAcaoListSchema(BaseModel):
+    """
+    Schema para listagem de Planos de Ação.
+    
+    Attributes:
+        total: Quantidade total de planos
+        planos: Lista de planos
+    """
+    total: int = Field(
+        ...,
+        description="Quantidade total de planos",
+        json_schema_extra={"example": 5}
+    )
+    planos: list[PlanoAcaoResponseSchema] = Field(
+        ...,
+        description="Lista de planos",
+        json_schema_extra={"example": []}
+    )
