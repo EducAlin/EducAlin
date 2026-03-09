@@ -11,7 +11,9 @@ import sqlite3
 import pytest
 from fastapi.testclient import TestClient
 
-os.environ.setdefault("JWT_SECRET_KEY", "test-secret-turmas")
+# Garante que JWT_SECRET_KEY está disponível antes de importar os módulos da API.
+# Esta chave é apenas para testes; normalmente já definida por tests/conftest.py.
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-testing-only")
 
 from educalin.api.main import app  # noqa: E402
 from educalin.api.dependencies import get_current_user  # noqa: E402

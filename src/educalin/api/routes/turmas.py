@@ -343,6 +343,8 @@ def desempenho_turma(
         """
         SELECT
             COUNT(DISTINCT ta.aluno_id)                                    AS total_alunos,
+            -- Inner COALESCE: alunos sem notas contam como média 0.0.
+            -- Outer COALESCE: retorna 0.0 quando não há alunos matriculados.
             COALESCE(AVG(COALESCE(medias.media, 0.0)), 0.0)               AS media_geral,
             COALESCE(
                 100.0 * SUM(CASE WHEN COALESCE(medias.media, 0.0) >= 6.0 THEN 1 ELSE 0 END)
