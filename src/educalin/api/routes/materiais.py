@@ -10,7 +10,7 @@ Este módulo implementa endpoints para:
 
 import os
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, status
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, status, Form
 from fastapi.responses import JSONResponse
 from typing import Optional
 from datetime import datetime
@@ -186,12 +186,12 @@ def _salvar_arquivo_simulado(arquivo: UploadFile, extensao: str) -> tuple[str, i
 )
 async def upload_material(
     arquivo: UploadFile = File(..., description="Arquivo a fazer upload"),
-    titulo: str = None,
-    descricao: str = None,
-    topico: Optional[str] = None,
-    num_paginas: Optional[int] = None,
-    duracao_segundos: Optional[int] = None,
-    codec: Optional[str] = None,
+    titulo: str = Form(..., description="Título do material"),
+    descricao: str = Form(..., description="Descrição do material"),
+    topico: Optional[str] = Form(None, description="Tópico/área de estudo"),
+    num_paginas: Optional[int] = Form(None, description="Número de páginas (obrigatório para PDF)"),
+    duracao_segundos: Optional[int] = Form(None, description="Duração em segundos (obrigatório para vídeo)"),
+    codec: Optional[str] = Form(None, description="Codec do vídeo (obrigatório para vídeo)"),
     current_user: UsuarioSchema = Depends(get_current_user)
 ) -> MaterialResponseSchema:
     """
@@ -229,13 +229,6 @@ async def upload_material(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Apenas professores podem fazer upload de materiais"
-        )
-    
-    # Validar campos obrigatórios
-    if not titulo or not descricao:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Campo obrigatório: titulo e descricao são necessários"
         )
     
     try:

@@ -520,7 +520,7 @@ class PlanoAcaoCreateSchema(BaseModel):
         if v:
             v = v.strip()
             if not v:
-                raise ValueError("Observações não podem ser vazio")
+                raise ValueError("Observações não podem ser vazias")
         return v
 
 

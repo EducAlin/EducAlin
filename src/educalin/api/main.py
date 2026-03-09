@@ -47,6 +47,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(materiais.router)
 app.include_router(planos.router)
+app.include_router(planos.alunos_router)
 
 
 @app.on_event("startup")
