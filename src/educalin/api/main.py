@@ -15,12 +15,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from dotenv import load_dotenv
 load_dotenv()
 
 from educalin.repositories.base import init_db
-from .routes import auth, turmas, notas, materiais, planos
+from .routes import auth, turmas, notas, materiais, planos, views
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -55,13 +56,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Registrar routers
 app.include_router(auth.router)
 app.include_router(materiais.router)
 app.include_router(turmas.router)
+app.include_router(notas.router)
 app.include_router(planos.router)
 app.include_router(planos.alunos_router)
+app.include_router(views.router)
 
 # Rota raiz
 @app.get("/", tags=["Info"])

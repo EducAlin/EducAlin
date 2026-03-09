@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Cadastrar{% endblock %}
+
+{% set show_navbar = false %}
+{% set show_footer = false %}
+
+{% block content %}
+<div class="auth-page">
+
+  {# ── Painel esquerdo: formulário ── #}
+  <div class="auth-form-side" style="justify-content: flex-start; padding-top: 3rem; overflow-y: auto;">
+    <div class="auth-form-wrap">
+
+      {# Logo #}
+      <img
+        src="{{ url_for('static', path='Logo_Horizontal.svg')}}"
+        alt="EducAlin"
+        class="logo-auth"
+      >
+      <p class="auth-tagline">Sistema de Gestão Educacional</p>
+
+      <div class="accent-bar"></div>
+      <h1 class="auth-title">Criar conta</h1>
+      <p class="auth-subtitle">
+        Preencha os dados para acessar a plataforma.
+      </p>
+
+      {# Alertas do servidor #}
+      {% if error %}
+        <div class="alert-edu alert-edu-danger" role="alert">{{ error }}</div>
+      {% endif %}
+
+      {# Container de alertas via JS #}
+      <div id="register-alert"></div>
+
+      {# Formulário #}
+      <form id="register-form" novalidate>
+
+        {# Tipo de usuário #}
+        <div class="form-group-edu">
+          <label class="form-label-edu" for="tipo">Perfil de acesso</label>
+          <select
+            id="tipo"
+            name="tipo"
+            class="form-control-edu form-select-edu"
+            required
+          >
+            <option value="" disabled selected>Selecione seu perfil…</option>
+            <option value="professor"   {% if prefill_tipo == 'professor'   %}selected{% endif %}>Professor</option>
+            <option value="coordenador" {% if prefill_tipo == 'coordenador' %}selected{% endif %}>Coordenador</option>
+            <option value="aluno"       {% if prefill_tipo == 'aluno'       %}selected{% endif %}>Aluno</option>
+          </select>
+        </div>
+
+        {# Nome completo #}
+        <div class="form-group-edu">
+          <label class="form-label-edu" for="nome">Nome completo</label>
+          <input
+            type="text"
+            id="nome"
+            name="nome"
+            class="form-control-edu"
+            placeholder="Seu nome completo"
+            autocomplete="name"
+            required
+            value="{{ prefill_nome | default('') }}"
+          />
+        </div>
+
+        {# E-mail #}
+        <div class="form-group-edu">
+          <label class="form-label-edu" for="email">E-mail</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="form-control-edu"
+            placeholder="seu@email.com"
+            autocomplete="email"
+            required
+            value="{{ prefill_email | default('') }}"
+          />
+        </div>
+
+        {# Senha #}
+        <div class="form-group-edu">
+          <label class="form-label-edu" for="senha">Senha</label>
+          <input
+            type="password"
+            id="senha"
+            name="senha"
+            class="form-control-edu"
+            placeholder="Mínimo 8 caracteres"
+            autocomplete="new-password"
+            required
+          />
+          <span class="form-hint">Mínimo de 8 caracteres.</span>
+        </div>
+
+        {# ── Campo condicional: Professor ── #}
+        <div id="field-professor" class="conditional-field">
+          <div class="form-group-edu">
+            <label class="form-label-edu" for="registro_funcional">
+              Registro funcional
+            </label>
+            <input
+              type="text"
+              id="registro_funcional"
+              name="registro_funcional"
+              class="form-control-edu"
+              placeholder="Ex.: PROF001"
+            />
+          </div>
+        </div>
+
+        {# ── Campo condicional: Coordenador ── #}
+        <div id="field-coordenador" class="conditional-field">
+          <div class="form-group-edu">
+            <label class="form-label-edu" for="codigo_coordenacao">
+              Código de coordenação
+            </label>
+            <input
+              type="text"
+              id="codigo_coordenacao"
+              name="codigo_coordenacao"
+              class="form-control-edu"
+              placeholder="Ex.: COORD001"
+            />
+          </div>
+        </div>
+
+        {# ── Campo condicional: Aluno ── #}
+        <div id="field-aluno" class="conditional-field">
+          <div class="form-group-edu">
+            <label class="form-label-edu" for="matricula">
+              Matrícula
+            </label>
+            <input
+              type="text"
+              id="matricula"
+              name="matricula"
+              class="form-control-edu"
+              placeholder="Ex.: 2024001"
+            />
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <button type="submit" class="btn-edu-primary">
+            Criar conta
+          </button>
+        </div>
+
+      </form>
+
+      <p class="auth-footer-text" style="margin-top:1.25rem">
+        Já tem uma conta?
+        <a href="/login" class="link-edu">Entrar</a>
+      </p>
+
+    </div>
+  </div>
+
+  {# ── Painel direito: hero ── #}
+  <div class="auth-hero">
+    <div class="auth-hero-content">
+
+      <img
+        src="{{ url_for('static', path='Logo_Horizontal.svg')}}"
+        alt="EducAlin"
+        class="logo-hero"
+      >
+
+      <p class="auth-hero-eyebrow">Comece agora</p>
+
+      <h2 class="auth-hero-title">
+        Para cada papel,<br>uma <em>experiência</em><br>sob medida.
+      </h2>
+
+      <p class="auth-hero-desc">
+        Professores gerenciam turmas e avaliam alunos.
+        Coordenadores têm visão comparativa de todas as turmas.
+        Alunos acompanham suas notas e planos de ação em tempo real.
+      </p>
+
+      <div class="auth-hero-stats">
+        <div>
+          <span class="auth-stat-number">3</span>
+          <p class="auth-stat-label">Perfis de acesso distintos</p>
+        </div>
+        <div>
+          <span class="auth-stat-number">∞</span>
+          <p class="auth-stat-label">Turmas e avaliações</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Entrar{% endblock %}
+
+{# Desativa a navbar padrão — a página de login tem layout próprio #}
+{% set show_navbar = false %}
+{% set show_footer = false %}
+
+{% block content %}
+<div class="auth-page">
+
+  {# ── Painel esquerdo: formulário ── #}
+  <div class="auth-form-side">
+    <div class="auth-form-wrap">
+
+      {# Logo #}
+      <img
+        src="{{ url_for('static', path='Logo_Horizontal.svg') }}"
+        alt="EducAlin"
+        class="logo-auth"
+      />
+      <p class="auth-tagline">Sistema de Gestão Educacional</p>
+
+      {# Cabeçalho do formulário #}
+      <div class="accent-bar"></div>
+      <h1 class="auth-title">Bem-vindo de volta</h1>
+      <p class="auth-subtitle">
+        Entre com suas credenciais para acessar o sistema.
+      </p>
+
+      {# Alertas do servidor (flash messages via Jinja2) #}
+      {% if error %}
+        <div class="alert-edu alert-edu-danger" role="alert">{{ error }}</div>
+      {% endif %}
+      {% if success %}
+        <div class="alert-edu alert-edu-success" role="alert">{{ success }}</div>
+      {% endif %}
+
+      {# Container de alertas via JS #}
+      <div id="login-alert"></div>
+
+      {# Formulário #}
+      <form id="login-form" novalidate>
+
+        <div class="form-group-edu">
+          <label class="form-label-edu" for="email">E-mail institucional</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="form-control-edu"
+            placeholder="seu@email.com"
+            autocomplete="email"
+            required
+            value="{{ prefill_email | default('') }}"
+          />
+        </div>
+
+        <div class="form-group-edu">
+          <label class="form-label-edu" for="senha">
+            Senha
+            <a href="/recuperar-senha" class="link-edu ms-auto" style="float:right;font-weight:400">
+              Esqueceu?
+            </a>
+          </label>
+          <input
+            type="password"
+            id="senha"
+            name="senha"
+            class="form-control-edu"
+            placeholder="••••••••"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+
+        <div class="mt-3">
+          <button type="submit" class="btn-edu-primary">
+            Entrar
+          </button>
+        </div>
+
+      </form>
+
+      <div class="divider-edu">ou</div>
+
+      <p class="auth-footer-text">
+        Não tem uma conta?
+        <a href="/register" class="link-edu">Cadastre-se</a>
+      </p>
+
+    </div>
+  </div>
+
+  {# ── Painel direito: hero ── #}
+  <div class="auth-hero">
+    <div class="auth-hero-content">
+
+      <img
+        src="{{ url_for('static', path='Logo_Horizontal.svg') }}"
+        alt="EducAlin"
+        class="logo-hero"
+      />
+
+      <p class="auth-hero-eyebrow">Plataforma Educacional</p>
+
+      <h2 class="auth-hero-title">
+        Gerencie turmas,<br>notas e <em>resultados</em><br>em um só lugar.
+      </h2>
+
+      <p class="auth-hero-desc">
+        Do registro de avaliações à geração de relatórios completos,
+        o EducAlin reúne tudo que professores e coordenadores precisam
+        para acompanhar o desempenho dos alunos.
+      </p>
+
+      <div class="auth-hero-stats">
+        <div>
+          <span class="auth-stat-number">100%</span>
+          <p class="auth-stat-label">Web — acesse de qualquer lugar</p>
+        </div>
+        <div>
+          <span class="auth-stat-number">3×</span>
+          <p class="auth-stat-label">Papéis: professor, coord., aluno</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
