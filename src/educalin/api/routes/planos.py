@@ -2,7 +2,7 @@
 Rotas de criação e gestão de Planos de Ação da API FastAPI.
 
 Este módulo implementa endpoints para:
-- Criação de novos planos de ação (com sugestões automáticas)
+- Criação de novos planos de ação
 - Visualização de detalhes de um plano
 - Adição de materiais a planos (composição)
 - Atualização de status do plano
@@ -10,7 +10,7 @@ Este módulo implementa endpoints para:
 """
 
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status as http_status
 
 from ..schemas import (
     PlanoAcaoCreateSchema,
@@ -24,8 +24,6 @@ from ..schemas import (
 from ..dependencies import get_current_user
 from ...repositories.PlanoAcaoRepository import PlanoAcaoRepository
 from ...repositories.base import get_connection
-from ...services.analisadordesempenho import AnalisadorDesempenho
-from ...services.analisenotasbaixas import AnaliseNotasBaixas
 
 
 # Criar router para rotas de planos de ação
@@ -36,6 +34,17 @@ router = APIRouter(
         401: {"model": ErrorSchema, "description": "Não autorizado"},
         400: {"model": ErrorSchema, "description": "Requisição inválida"},
         404: {"model": ErrorSchema, "description": "Plano não encontrado"},
+    }
+)
+
+# Router separado para rotas de alunos relacionadas a planos
+alunos_router = APIRouter(
+    prefix="/alunos",
+    tags=["Planos de Ação"],
+    responses={
+        401: {"model": ErrorSchema, "description": "Não autorizado"},
+        400: {"model": ErrorSchema, "description": "Requisição inválida"},
+        404: {"model": ErrorSchema, "description": "Aluno não encontrado"},
     }
 )
 
@@ -87,14 +96,14 @@ def _verificar_propriedade_plano(
     
     if not plano:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail=f"Plano com ID {plano_id} não encontrado"
         )
     
     # Alunos só podem ver seus próprios planos
     if current_user.tipo_usuario == "aluno" and plano.aluno_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Acesso negado a este plano"
         )
 
@@ -102,9 +111,9 @@ def _verificar_propriedade_plano(
 @router.post(
     "",
     response_model=PlanoAcaoResponseSchema,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
     summary="Criar novo Plano de Ação",
-    description="Cria um novo plano de ação com sugestões automáticas baseadas no desempenho do aluno.",
+    description="Cria um novo plano de ação para o aluno.",
     responses={
         201: {"description": "Plano de ação criado com sucesso"},
         400: {"description": "Dados inválidos"},
@@ -120,9 +129,7 @@ def criar_plano(
     """
     Cria um novo Plano de Ação para um aluno.
     
-    O plano é criado com status 'rascunho'. Usa AnalisadorDesempenho
-    (Strategy Pattern) para gerar sugestões automáticas baseadas 
-    nas dificuldades identificadas do aluno.
+    O plano é criado com status 'rascunho'.
     
     **Permissões:**
     - Professores e coordenadores podem criar planos para qualquer aluno
@@ -144,13 +151,13 @@ def criar_plano(
     # Validar permissões
     if current_user.tipo_usuario == "aluno" and aluno_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Alunos só podem criar planos para si mesmos"
         )
     
     if aluno_id <= 0:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail="ID do aluno deve ser um número positivo"
         )
     
@@ -171,7 +178,7 @@ def criar_plano(
             
             if not plano:
                 raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Erro ao criar plano de ação"
                 )
             
@@ -187,12 +194,12 @@ def criar_plano(
         raise
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao criar plano de ação: {str(e)}"
         )
 
@@ -234,7 +241,7 @@ def obter_plano(
     """
     if plano_id <= 0:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail="ID do plano deve ser um número positivo"
         )
     
@@ -259,7 +266,7 @@ def obter_plano(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao buscar plano: {str(e)}"
         )
 
@@ -303,13 +310,13 @@ def adicionar_material_plano(
     """
     if plano_id <= 0:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail="ID do plano deve ser um número positivo"
         )
     
     if material_data.material_id <= 0:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail="ID do material deve ser um número positivo"
         )
     
@@ -325,7 +332,7 @@ def adicionar_material_plano(
             # Validar status (não pode adicionar a planos finalizados)
             if plano.status in ['concluido', 'cancelado']:
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
+                    status_code=http_status.HTTP_403_FORBIDDEN,
                     detail=f"Não é possível adicionar materiais a um plano {plano.status}"
                 )
             
@@ -345,12 +352,12 @@ def adicionar_material_plano(
         raise
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao adicionar material: {str(e)}"
         )
 
@@ -398,7 +405,7 @@ def atualizar_status_plano(
     """
     if plano_id <= 0:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail="ID do plano deve ser um número positivo"
         )
     
@@ -427,18 +434,18 @@ def atualizar_status_plano(
         raise
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao atualizar status: {str(e)}"
         )
 
 
-@router.get(
-    "/aluno/{aluno_id}",
+@alunos_router.get(
+    "/{aluno_id}/planos",
     response_model=PlanoAcaoListSchema,
     summary="Listar Planos de Ação de um aluno",
     description="Lista todos os planos de ação de um aluno específico.",
@@ -451,7 +458,7 @@ def atualizar_status_plano(
 )
 def listar_planos_aluno(
     aluno_id: int,
-    status: Optional[str] = None,
+    filtro_status: Optional[str] = None,
     current_user: UsuarioSchema = Depends(get_current_user)
 ) -> PlanoAcaoListSchema:
     """
@@ -466,7 +473,7 @@ def listar_planos_aluno(
     
     Args:
         aluno_id: ID do aluno
-        status: (opcional) Filtrar por status
+        filtro_status: (opcional) Filtrar por status
         current_user: Usuário autenticado (via Bearer Token)
     
     Returns:
@@ -480,13 +487,13 @@ def listar_planos_aluno(
     # Validar permissões
     if current_user.tipo_usuario == "aluno" and aluno_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Alunos só podem ver seus próprios planos"
         )
     
     if aluno_id <= 0:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail="ID do aluno deve ser um número positivo"
         )
     
@@ -496,7 +503,7 @@ def listar_planos_aluno(
             repo = PlanoAcaoRepository(conn)
             
             # Listar planos do aluno
-            planos = repo.listar_por_aluno(aluno_id, status=status)
+            planos = repo.listar_por_aluno(aluno_id, status=filtro_status)
             
             # Converter para schemas de resposta
             planos_response = []
@@ -514,11 +521,11 @@ def listar_planos_aluno(
     
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao listar planos: {str(e)}"
         )
