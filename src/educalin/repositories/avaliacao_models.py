@@ -13,7 +13,7 @@ from .base_model import BaseModel
 class AvaliacaoModel(BaseModel):
     """
     Modelo de Avaliação.
-    
+
     Relacionamentos:
     - turma_id -> turmas(id)
     - Relacionamento 1:N com NotaModel
@@ -52,7 +52,7 @@ class AvaliacaoModel(BaseModel):
     ) -> int:
         """
         Cria uma nova avaliação.
-        
+
         Args:
             conn: Conexão SQLite
             titulo: Título da avaliação
@@ -61,10 +61,10 @@ class AvaliacaoModel(BaseModel):
             peso: Peso da avaliação (0 a 1)
             turma_id: ID da turma
             topico: Tópico da avaliação (opcional)
-        
+
         Returns:
             int: ID da avaliação criada
-        
+
         Raises:
             ValueError: Se os dados forem inválidos
         """
@@ -137,7 +137,7 @@ class AvaliacaoModel(BaseModel):
     def atualizar(self, conn: sqlite3.Connection, **campos) -> None:
         """
         Atualiza campos da avaliação.
-        
+
         Args:
             conn: Conexão SQLite
             **campos: Campos a atualizar (titulo, data, valor_maximo, peso)
