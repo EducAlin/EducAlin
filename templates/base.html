@@ -51,24 +51,19 @@
         {% if current_user %}
           {# Usuário autenticado #}
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            {% if current_user.tipo_usuario == 'professor' %}
             <li class="nav-item">
               <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}"
-                 href="/dashboard">Dashboard</a>
+                 href="/dashboard/professor">Dashboard</a>
             </li>
+            {% elif current_user.tipo_usuario == 'aluno' %}
             <li class="nav-item">
-              <a class="nav-link {% if active_page == 'turmas' %}active{% endif %}"
-                 href="/turmas">Turmas</a>
+              <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}"
+                 href="/dashboard/aluno">Dashboard</a>
             </li>
-            {% if current_user.tipo_usuario in ('professor', 'coordenador') %}
+            {% else %}
             <li class="nav-item">
-              <a class="nav-link {% if active_page == 'materiais' %}active{% endif %}"
-                 href="/materiais">Materiais</a>
-            </li>
-            {% endif %}
-            {% if current_user.tipo_usuario == 'aluno' %}
-            <li class="nav-item">
-              <a class="nav-link {% if active_page == 'notas' %}active{% endif %}"
-                 href="/alunos/{{ current_user.id }}/notas">Minhas Notas</a>
+              <span class="nav-link disabled">Dashboard (em breve)</span>
             </li>
             {% endif %}
           </ul>
@@ -76,8 +71,8 @@
           <ul class="navbar-nav ms-auto align-items-center gap-2">
             <li class="nav-item">
               <span class="nav-link" style="color:var(--slate-lt);font-size:.82rem">
-                {{ current_user.nome }}
-                <span class="badge-edu badge-edu-amber ms-1">
+                <span id="navbar-user-name">{{ current_user.nome }}</span>
+                <span class="badge-edu badge-edu-amber ms-1" id="navbar-user-type">
                   {{ current_user.tipo_usuario | capitalize }}
                 </span>
               </span>
@@ -125,6 +120,34 @@
 
   {# Scripts locais #}
   <script src="{{ url_for('static', path='js/app.js') }}"></script>
+  
+  <script>
+  // Atualizar dados do usuário na navbar dinamicamente
+  window.addEventListener('DOMContentLoaded', function() {
+    const usuarioStr = sessionStorage.getItem('edu_usuario');
+    
+    if (usuarioStr) {
+      try {
+        const usuario = JSON.parse(usuarioStr);
+        
+        // Atualizar nome
+        const nomeElement = document.getElementById('navbar-user-name');
+        if (nomeElement && usuario.nome) {
+          nomeElement.textContent = usuario.nome;
+        }
+        
+        // Atualizar tipo de usuário
+        const tipoElement = document.getElementById('navbar-user-type');
+        if (tipoElement && usuario.tipo_usuario) {
+          const tipoCapitalizado = usuario.tipo_usuario.charAt(0).toUpperCase() + usuario.tipo_usuario.slice(1);
+          tipoElement.textContent = tipoCapitalizado;
+        }
+      } catch (e) {
+        console.error('Erro ao atualizar navbar:', e);
+      }
+    }
+  });
+  </script>
 
   {% block extra_scripts %}{% endblock %}
 

@@ -9,7 +9,7 @@ Este módulo implementa endpoints para:
 """
 
 from typing import Dict
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Response
 from fastapi.security import HTTPAuthorizationCredentials
 
 from educalin.api.schemas import (
@@ -122,14 +122,13 @@ def register(dados: RegisterSchema) -> UsuarioSchema:
         401: {"description": "Email ou senha inválidos"},
     }
 )
-def login(dados: LoginSchema) -> TokenSchema:
+def login(dados: LoginSchema, response: Response) -> TokenSchema:
     """
     Autentica um usuário e retorna um token JWT.
 
-    O token deve ser incluído nas requisições subsequentes no header:
-    ```
-    Authorization: Bearer <token>
-    ```
+    O token é retornado tanto no corpo da resposta quanto em um cookie HttpOnly.
+    Isso permite usar o token em requisições via JavaScript (sessionStorage) e
+    também em navegação normal do browser (cookie).
 
     Returns:
         Token JWT válido por 24 horas
@@ -154,10 +153,26 @@ def login(dados: LoginSchema) -> TokenSchema:
             usuario_id=usuario.id,
             perfil=usuario.tipo_usuario
         )
+        
+        # Setar cookie HttpOnly com o token (válido por 24 horas)
+        response.set_cookie(
+            key="access_token",
+            value=token,
+            httponly=True,  # Não acessível via JavaScript (XSS protection)
+            max_age=86400,  # 24 horas em segundos
+            samesite="lax",  # CSRF protection
+            secure=False  # TODO: mudar para True em produção com HTTPS
+        )
 
         return TokenSchema(
             access_token=token,
-            token_type="bearer"
+            token_type="bearer",
+            usuario={
+                "id": usuario.id,
+                "nome": usuario.nome,
+                "email": usuario.email,
+                "tipo_usuario": usuario.tipo_usuario
+            }
         )
 
     finally:

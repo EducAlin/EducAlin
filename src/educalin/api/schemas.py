@@ -122,6 +122,7 @@ class TokenSchema(BaseModel):
     Attributes:
         access_token: Token JWT de acesso
         token_type: Tipo do token (sempre "bearer")
+        usuario: Informações básicas do usuário autenticado
     """
     access_token: str = Field(
         ...,
@@ -132,6 +133,11 @@ class TokenSchema(BaseModel):
         default="bearer",
         description="Tipo do token",
         json_schema_extra={"example": "bearer"}
+    )
+    usuario: Optional[dict] = Field(
+        None,
+        description="Informações do usuário autenticado",
+        json_schema_extra={"example": {"id": 1, "nome": "João Silva", "tipo_usuario": "professor"}}
     )
 
 
