@@ -234,7 +234,7 @@ class TestCriar:
     
     def test_criar_autor_inexistente(self, repo):
         """Deve falhar ao criar material com autor que não existe."""
-        with pytest.raises(ValueError, match="Erro de integridade"):
+        with pytest.raises(ValueError, match="Autor com ID 999 não existe"):
             repo.criar({
                 'tipo_material': 'pdf',
                 'titulo': 'Título',

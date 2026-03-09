@@ -8,15 +8,13 @@ Este módulo implementa endpoints para:
 - Exclusão de materiais
 """
 
-import os
+import uuid
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, status
 from typing import Optional
 from datetime import datetime
 
 from ..schemas import (
-    MaterialUploadSchema,
     MaterialResponseSchema,
     MaterialListSchema,
     UsuarioSchema,
@@ -119,25 +117,12 @@ def _validar_mime_type(extensao: str, content_type: str) -> bool:
     return any(mime in content_type for mime in mime_validos.get(extensao, []))
 
 
-def _obter_caminho_upload(nome_arquivo: str) -> Path:
-    """
-    Obtém o caminho onde o arquivo será armazenado.
-    
-    Args:
-        nome_arquivo: Nome do arquivo
-    
-    Returns:
-        Path: Caminho do arquivo
-    """
-    # Em produção, usar storage cloud ou diretório configurado
-    # Por agora, simulamos armazenamento local
-    caminho = STORAGE_PATH / nome_arquivo
-    return caminho
-
-
 def _salvar_arquivo_simulado(arquivo: UploadFile, extensao: str) -> tuple[str, int]:
     """
     Simula salvamento de arquivo e valida tamanho.
+    
+    Lê o conteúdo em chunks para verificar se o arquivo excede o limite de 50 MB.
+    Usa UUID para gerar um nome único e seguro para o arquivo.
     
     Args:
         arquivo: UploadFile do FastAPI
@@ -149,24 +134,22 @@ def _salvar_arquivo_simulado(arquivo: UploadFile, extensao: str) -> tuple[str, i
     Raises:
         ValueError: Se arquivo exceder tamanho máximo
     """
-    # Gerar nome único para o arquivo
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    nome_salvo = f"{timestamp}_{arquivo.filename}"
+    # Usar apenas o nome base do arquivo para evitar path traversal
+    nome_base = Path(arquivo.filename).name
+    nome_salvo = f"{uuid.uuid4().hex}_{nome_base}"
     
-    # Em desenvolvimento, simulamos o armazenamento
-    # Em produção, seria feito upload para S3, blob storage, etc.
+    CHUNK_SIZE = 1024 * 1024  # 1 MB por chunk
     tamanho_lido = 0
-    CHUNK_SIZE = 1024 * 1024  # 1 MB
     
-    # Nota: Não lemos realmente o arquivo nesta versão simplificada
-    # Em produção, faria:
-    # for chunk in arquivo.file:
-    #     tamanho_lido += len(chunk)
-    #     if tamanho_lido > MAX_FILE_SIZE:
-    #         raise ValueError(f"Arquivo excede tamanho máximo de 50 MB")
-    
-    # Para esta versão, retornamos um tamanho simulado
-    tamanho_lido = 1024 * 100  # 100 KB simulado
+    while True:
+        chunk = arquivo.file.read(CHUNK_SIZE)
+        if not chunk:
+            break
+        tamanho_lido += len(chunk)
+        if tamanho_lido > MAX_FILE_SIZE:
+            raise ValueError(
+                f"Arquivo excede tamanho máximo de 50 MB ({tamanho_lido / (1024*1024):.1f} MB lidos)"
+            )
     
     return nome_salvo, tamanho_lido
 
@@ -186,12 +169,12 @@ def _salvar_arquivo_simulado(arquivo: UploadFile, extensao: str) -> tuple[str, i
 )
 async def upload_material(
     arquivo: UploadFile = File(..., description="Arquivo a fazer upload"),
-    titulo: str = None,
-    descricao: str = None,
-    topico: Optional[str] = None,
-    num_paginas: Optional[int] = None,
-    duracao_segundos: Optional[int] = None,
-    codec: Optional[str] = None,
+    titulo: str = Form(..., description="Título do material"),
+    descricao: str = Form(..., description="Descrição do material"),
+    topico: Optional[str] = Form(None, description="Tópico/área de estudo"),
+    num_paginas: Optional[int] = Form(None, description="Número de páginas (obrigatório para PDF)"),
+    duracao_segundos: Optional[int] = Form(None, description="Duração em segundos (obrigatório para vídeo)"),
+    codec: Optional[str] = Form(None, description="Codec do vídeo (obrigatório para vídeo)"),
     current_user: UsuarioSchema = Depends(get_current_user)
 ) -> MaterialResponseSchema:
     """
@@ -231,23 +214,12 @@ async def upload_material(
             detail="Apenas professores podem fazer upload de materiais"
         )
     
-    # Validar campos obrigatórios
-    if not titulo or not descricao:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Campo obrigatório: titulo e descricao são necessários"
-        )
-    
     try:
         # Validar arquivo
         extensao, _ = _validar_arquivo(arquivo, SUPPORTED_EXTENSIONS)
         
-        # Salvar arquivo (simulado)
+        # Salvar arquivo (lê em chunks para validar tamanho de 50 MB)
         nome_salvo, tamanho = _salvar_arquivo_simulado(arquivo, extensao)
-        
-        # Validar tamanho
-        if tamanho > MAX_FILE_SIZE:
-            raise ValueError(f"Arquivo excede tamanho máximo de 50 MB ({tamanho / (1024*1024):.1f} MB)")
         
         # Preparar dados do material
         material_data = {
@@ -345,7 +317,7 @@ def listar_materiais(
     Opcionalmente, pode filtrar por tipo de material.
     
     Args:
-        tipo: (opcional) Filtrar por tipo: 'pdf', 'video'
+        tipo: (opcional) Filtrar por tipo: 'pdf', 'video' ou 'link'
         current_user: Usuário autenticado (via Bearer Token)
     
     Returns:
@@ -495,7 +467,7 @@ def obter_material(
     "/{material_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Deletar um material",
-    description="Remove um material de estudo (apenas o professor autor pode deletar).",
+    description="Remove um material de estudo (apenas o professor autor ou coordenador pode deletar).",
     responses={
         204: {"description": "Material deletado com sucesso"},
         401: {"description": "Usuário não autenticado"},
@@ -510,7 +482,7 @@ def deletar_material(
     """
     Deleta um material de estudo.
     
-    Apenas o professor que criou o material pode deletá-lo.
+    Apenas o professor que criou o material ou um coordenador pode deletá-lo.
     
     Args:
         material_id: ID do material a deletar

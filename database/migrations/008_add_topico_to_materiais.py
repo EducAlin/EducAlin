@@ -22,6 +22,9 @@ steps = [
         """
         CREATE INDEX IF NOT EXISTS idx_materiais_topico 
         ON materiais(topico)
+        """,
+        """
+        DROP INDEX IF EXISTS idx_materiais_topico
         """
     )
 ]

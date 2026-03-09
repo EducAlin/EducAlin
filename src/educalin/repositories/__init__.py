@@ -18,7 +18,7 @@ from .models import (
 )
 from .usuario_repository import UsuarioRepository
 from .plano_acao_models import PlanoAcaoModel
-from .PlanoAcaoRepository import PlanoAcaoRepository
+from .plano_acao_repository import PlanoAcaoRepository
 
 __all__ = [
     # Base e configuração
