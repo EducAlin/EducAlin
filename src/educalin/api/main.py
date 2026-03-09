@@ -8,13 +8,16 @@ Este módulo configura a aplicação FastAPI, incluindo:
 - Documentação da API
 """
 
+import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import os
+
+from dotenv import load_dotenv
+load_dotenv()
 
 from .routes import auth
-from ..repositories.base import init_db
+from educalin.repositories.base import init_db
 
 
 # Criar aplicação FastAPI
@@ -58,7 +61,7 @@ async def startup_event():
 async def root():
     """
     Endpoint raiz da API.
-    
+
     Returns:
         Informações básicas sobre a API
     """
@@ -75,7 +78,7 @@ async def root():
 async def health_check():
     """
     Verifica o status da API.
-    
+
     Returns:
         Status da aplicação
     """

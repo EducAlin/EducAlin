@@ -23,19 +23,6 @@ ALGORITHM = "HS256"
 TOKEN_EXPIRATION_HOURS = 24
 
 
-def _obter_secret_key() -> str:
-    """Retorna a chave secreta JWT, emitindo aviso se usar o valor padrão."""
-    chave = os.getenv("JWT_SECRET_KEY")
-    if not chave:
-        warnings.warn(
-            "JWT_SECRET_KEY não configurada. Usando chave padrão insegura. "
-            "Defina a variável de ambiente JWT_SECRET_KEY em produção.",
-            stacklevel=2,
-        )
-        return _FALLBACK_SECRET_KEY
-    return chave
-
-
 def hash_senha(senha: str) -> str:
     """
     Gera um hash bcrypt para a senha fornecida.
@@ -97,15 +84,15 @@ def criar_token_jwt(usuario_id: int, perfil: str) -> str:
         True
     """
     expiracao = datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRATION_HOURS)
-    
+
     payload = {
         "usuario_id": usuario_id,
         "perfil": perfil,
         "exp": expiracao,
         "iat": datetime.now(timezone.utc)
     }
-    
-    token = jwt.encode(payload, _obter_secret_key(), algorithm=ALGORITHM)
+
+    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     return token
 
 
@@ -129,7 +116,7 @@ def decodificar_token_jwt(token: str) -> Optional[Dict]:
         1
     """
     try:
-        payload = jwt.decode(token, _obter_secret_key(), algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except jwt.ExpiredSignatureError:
         # Token expirado
