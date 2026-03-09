@@ -8,7 +8,7 @@ import pytest
 import sqlite3
 from datetime import datetime, timedelta
 
-from educalin.repositories.PlanoAcaoRepository import PlanoAcaoRepository
+from educalin.repositories.plano_acao_repository import PlanoAcaoRepository
 from educalin.repositories.plano_acao_models import PlanoAcaoModel
 from educalin.repositories.usuario_repository import UsuarioRepository
 from educalin.repositories.material_repository import MaterialRepository
@@ -530,8 +530,18 @@ class TestContextManager:
             assert repo is not None
             assert repo.conn is not None
     
-    def test_context_manager_sem_conexao(self):
-        """Deve criar e fechar conexão automaticamente."""
+    def test_context_manager_sem_conexao(self, monkeypatch):
+        """Deve criar e fechar conexão automaticamente usando in-memory DB."""
+        def mock_get_connection():
+            conn = sqlite3.connect(':memory:')
+            conn.row_factory = sqlite3.Row
+            return conn
+        
+        monkeypatch.setattr(
+            'educalin.repositories.plano_acao_repository.get_connection',
+            mock_get_connection
+        )
+        
         with PlanoAcaoRepository() as repo:
             assert repo is not None
             assert repo.conn is not None

@@ -8,6 +8,7 @@ import sqlite3
 from pathlib import Path
 from typing import Optional
 from contextlib import contextmanager
+from .schemas import create_all_tables
 
 # Diretório do banco de dados
 DB_DIR = Path(__file__).parent.parent.parent.parent / "database"
@@ -68,7 +69,6 @@ def init_db():
     Esta função deve ser chamada uma vez na inicialização da aplicação.
     Importa e executa todos os schemas dos modelos.
     """
-    from .schemas import create_all_tables
 
     with get_db() as conn:
         create_all_tables(conn)
