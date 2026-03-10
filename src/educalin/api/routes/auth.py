@@ -153,7 +153,7 @@ def login(dados: LoginSchema, response: Response) -> TokenSchema:
             usuario_id=usuario.id,
             perfil=usuario.tipo_usuario
         )
-        
+
         # Setar cookie HttpOnly com o token (válido por 24 horas)
         response.set_cookie(
             key="access_token",
@@ -161,7 +161,8 @@ def login(dados: LoginSchema, response: Response) -> TokenSchema:
             httponly=True,  # Não acessível via JavaScript (XSS protection)
             max_age=86400,  # 24 horas em segundos
             samesite="lax",  # CSRF protection
-            secure=False  # TODO: mudar para True em produção com HTTPS
+            secure=False,  # TODO: mudar para True em produção com HTTPS
+            path='/'  # Cookie disponível em todas as rotas
         )
 
         return TokenSchema(

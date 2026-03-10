@@ -47,12 +47,12 @@ app = FastAPI(
 _raw_origins = os.getenv("ALLOWED_ORIGINS", "")
 allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 if not allowed_origins:
-    allowed_origins = ["http://localhost:3000"]
+    allowed_origins = ["http://localhost:3000", "http://localhost:8000"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  #TODO especificar origens permitidas em produção
-    allow_credentials=False,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -70,6 +70,7 @@ _STATIC_DIR = _find_project_root() / "static"
 app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
 # Registrar routers
+app.include_router(views.router)
 app.include_router(auth.router)
 app.include_router(materiais.router)
 app.include_router(turmas.router)
@@ -77,7 +78,6 @@ app.include_router(notas.router)
 app.include_router(planos.router)
 app.include_router(planos.alunos_router)
 app.include_router(mensagens.router)
-app.include_router(views.router)
 
 # Rota raiz
 @app.get("/", tags=["Info"])

@@ -76,6 +76,7 @@ if (loginForm) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, senha }),
+        credentials: 'include'
       });
 
       const data = await res.json();
@@ -90,18 +91,18 @@ if (loginForm) {
       // exposição do token a scripts da página (XSS mitigation).
       sessionStorage.setItem('edu_token', data.access_token);
       sessionStorage.setItem('edu_token_type', data.token_type);
-      
+
       // Armazenar informações do usuário
       if (data.usuario) {
         sessionStorage.setItem('edu_usuario', JSON.stringify(data.usuario));
       }
-      
+
       showAlert(alertBox, 'Login realizado com sucesso! Redirecionando…', 'success');
 
       // Redirecionar para o dashboard específico do tipo de usuário
       setTimeout(() => {
         const tipoUsuario = data.usuario?.tipo_usuario;
-        
+
         if (tipoUsuario === 'professor') {
           window.location.href = '/dashboard/professor';
         } else if (tipoUsuario === 'coordenador') {

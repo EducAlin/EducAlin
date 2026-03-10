@@ -222,7 +222,7 @@
     <div class="col-12">
       <div class="form-registro-nota">
         <h3>Registrar Nota Rápida</h3>
-        
+
         <div id="nota-alert" class="alert alert-success" style="display: none;">
           Nota registrada com sucesso!
         </div>
@@ -286,7 +286,7 @@
       {% if turmas|length == 0 %}
       <div style="text-align: center; padding: 3rem; color: var(--slate, #64748b);">
         <p style="font-size: 1.1rem;">Você ainda não possui turmas cadastradas.</p>
-        <a href="/turmas" class="btn-action btn-primary-action" style="margin-top: 1rem;">
+        <a href="/turmas/criar" class="btn-action btn-primary-action" style="margin-top: 1rem;">
           Criar primeira turma
         </a>
       </div>
@@ -295,11 +295,11 @@
         <div class="card-turma">
           <h3>{{ turma.codigo }} - {{ turma.disciplina }}</h3>
           <div class="info">
-            <strong>Semestre:</strong> {{ turma.semestre }} | 
-            <strong>Alunos:</strong> 
+            <strong>Semestre:</strong> {{ turma.semestre }} |
+            <strong>Alunos:</strong>
             <span class="badge-info">{{ turma.total_alunos }} matriculados</span>
           </div>
-          
+
           <div class="actions">
             <button onclick="verDetalhesTurma({{ turma.id }})" class="btn-action btn-primary-action">
               Ver Detalhes
@@ -332,11 +332,11 @@
         Nova Mensagem
       </button>
     </div>
-    
+
     <div id="contatos-recentes" style="margin-top: 1rem;">
       <p style="color: var(--slate); text-align: center;">Carregando conversas...</p>
     </div>
-    
+
     <div id="mensagens-nao-lidas" style="margin-top: 1rem; padding: 0.75rem; background: #fef9c3; border-left: 4px solid #eab308; border-radius: 6px; display: none;">
       <strong style="color: #854d0e;">📬 Você tem <span id="count-nao-lidas">0</span> mensagem(ns) não lida(s)</strong>
     </div>
@@ -348,17 +348,17 @@
   <div style="background: white; padding: 2rem; border-radius: 12px; border: 2px solid var(--petroleum-lt, #e8f2f4);">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
       <h2 style="color: var(--petroleum, #1a5f7a); font-size: 1.5rem; font-weight: 600; margin: 0;">
-        Upload de Materiais 
+        Upload de Materiais
       </h2>
       <button onclick="abrirUploadMaterial()" class="btn-primary-action" style="padding: 0.625rem 1.25rem; background: #8b5cf6;">
         Novo Material
       </button>
     </div>
-    
+
     <p style="color: var(--slate); font-size: 0.95rem; margin-bottom: 1rem;">
       Envie materiais de estudo (PDFs, vídeos, áudios) para que seus alunos possam acessá-los 24/7.
     </p>
-    
+
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
       <div style="padding: 1.25rem; background: #f8fafc; border-radius: 8px; text-align: center;">
         <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
@@ -414,11 +414,11 @@
   <div class="modal-content">
     <button class="btn-close" onclick="fecharModal('modal-plano')">&times;</button>
     <h3>Criar Plano de Ação</h3>
-    
+
     <div id="plano-alert" class="alert alert-success" style="display: none;">
       Plano de ação criado com sucesso!
     </div>
-    
+
     <form id="form-plano" onsubmit="submitPlanoAcao(event)">
       <div class="form-group">
         <label for="plano-aluno">Aluno</label>
@@ -450,11 +450,11 @@
   <div class="modal-content">
     <button class="btn-close" onclick="fecharModal('modal-detalhes')">&times;</button>
     <h3>Detalhes da Turma</h3>
-    
+
     <div id="detalhes-loading" style="text-align: center; padding: 20px;">
       Carregando detalhes...
     </div>
-    
+
     <div id="detalhes-content" style="display: none;">
       <div class="info-section">
         <h4>Informações Gerais</h4>
@@ -463,7 +463,7 @@
         <p><strong>Total de Alunos:</strong> <span id="det-total-alunos"></span></p>
         <p><strong>Média da Turma:</strong> <span id="det-media-turma"></span></p>
       </div>
-      
+
       <div class="info-section">
         <h4>Lista de Alunos</h4>
         <div id="lista-alunos-detalhes"></div>
@@ -477,30 +477,30 @@
   <div class="modal-content" style="max-width: 600px;">
     <button class="btn-close" onclick="fecharModal('modal-nova-mensagem')">&times;</button>
     <h3>Nova Mensagem <small style="color: var(--slate);"></small></h3>
-    
+
     <form id="form-mensagem" onsubmit="enviarMensagem(event)" style="margin-top: 1.5rem;">
       <div style="margin-bottom: 1.25rem;">
         <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
           Destinatário (Aluno):
         </label>
-        <select 
-          id="destinatario-id" 
-          name="destinatario_id" 
-          required 
+        <select
+          id="destinatario-id"
+          name="destinatario_id"
+          required
           style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
         >
           <option value="">Selecione um aluno...</option>
         </select>
       </div>
-      
+
       <div style="margin-bottom: 1.25rem;">
         <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
           Mensagem:
         </label>
-        <textarea 
-          id="conteudo-mensagem" 
-          name="conteudo" 
-          required 
+        <textarea
+          id="conteudo-mensagem"
+          name="conteudo"
+          required
           rows="6"
           maxlength="5000"
           placeholder="Digite sua mensagem aqui..."
@@ -510,20 +510,20 @@
           <span id="char-count">0</span> / 5000 caracteres
         </small>
       </div>
-      
+
       <div id="mensagem-alert" style="display: none; padding: 0.75rem; margin-bottom: 1rem; border-radius: 6px;"></div>
-      
+
       <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
-        <button 
-          type="button" 
-          onclick="fecharModal('modal-nova-mensagem')" 
+        <button
+          type="button"
+          onclick="fecharModal('modal-nova-mensagem')"
           style="padding: 0.625rem 1.25rem; border: 2px solid var(--slate); background: white; color: var(--slate); border-radius: 6px; cursor: pointer; font-weight: 500;"
         >
           Cancelar
         </button>
-        <button 
-          type="submit" 
-          class="btn-primary-action" 
+        <button
+          type="submit"
+          class="btn-primary-action"
           style="padding: 0.625rem 1.5rem; border: none;"
         >
           Enviar Mensagem
@@ -538,15 +538,15 @@
   <div class="modal-content" style="max-width: 700px;">
     <button class="btn-close" onclick="fecharModal('modal-conversa')">&times;</button>
     <h3>Conversa com <span id="conversa-nome-aluno"></span></h3>
-    
+
     <div id="conversa-mensagens" style="max-height: 400px; overflow-y: auto; padding: 1rem; background: #f8fafc; border-radius: 6px; margin-top: 1rem;">
       <p style="text-align: center; color: var(--slate);">Carregando mensagens...</p>
     </div>
-    
+
     <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 2px solid #e2e8f0;">
-      <button 
-        onclick="responderMensagem()" 
-        class="btn-primary-action" 
+      <button
+        onclick="responderMensagem()"
+        class="btn-primary-action"
         style="padding: 0.5rem 1rem;"
       >
         Responder
@@ -563,21 +563,21 @@
     <p style="color: var(--slate); font-size: 0.9rem; margin-bottom: 0.5rem;">
       Para o aluno: <strong id="sugestao-aluno-nome"></strong>
     </p>
-    
+
     <div id="sugestao-loading" style="text-align: center; padding: 2rem; color: var(--slate);">
       Analisando desempenho e buscando materiais...
     </div>
-    
+
     <div id="sugestao-content" style="display: none;">
       <div id="topicos-dificuldade" style="margin-bottom: 1.5rem; padding: 1rem; background: #fef9c3; border-left: 4px solid #eab308; border-radius: 6px;">
         <strong style="color: #854d0e;">⚠️ Tópicos com dificuldade:</strong>
         <div id="lista-topicos-dificuldade" style="margin-top: 0.5rem; color: #854d0e;"></div>
       </div>
-      
+
       <div id="materiais-sugeridos-lista">
         <!-- Lista de materiais será inserida aqui -->
       </div>
-      
+
       <div id="sem-sugestoes" style="display: none; padding: 1.5rem; text-align: center; color: var(--slate); background: #f8fafc; border-radius: 8px;">
         <p>✅ Ótimo! O aluno não apresenta dificuldades significativas nas últimas 3 avaliações.</p>
         <p style="font-size: 0.9rem; margin-top: 0.5rem;">Média em todos os tópicos ≥ 6.0</p>
@@ -591,31 +591,31 @@
   <div class="modal-content" style="max-width: 600px;">
     <button class="btn-close" onclick="fecharModal('modal-upload')">&times;</button>
     <h3>Upload de Material <small style="color: var(--slate);"></small></h3>
-    
+
     <form id="form-upload-material" onsubmit="uploadMaterial(event)" enctype="multipart/form-data" style="margin-top: 1.5rem;">
       <div style="margin-bottom: 1.25rem;">
         <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
           Turma:
         </label>
-        <select 
-          id="upload-turma-id" 
-          name="turma_id" 
-          required 
+        <select
+          id="upload-turma-id"
+          name="turma_id"
+          required
           style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
         >
           <option value="">Selecione uma turma...</option>
         </select>
       </div>
-      
+
       <div style="margin-bottom: 1.25rem;">
         <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
           Arquivo:
         </label>
-        <input 
-          type="file" 
-          id="upload-arquivo" 
-          name="arquivo" 
-          accept=".pdf,.mp4,.mp3,.avi,.mkv,.mov,.webm" 
+        <input
+          type="file"
+          id="upload-arquivo"
+          name="arquivo"
+          accept=".pdf,.mp4,.mp3,.avi,.mkv,.mov,.webm"
           required
           style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
         />
@@ -623,67 +623,67 @@
           Formatos: PDF, MP4, MP3, AVI, MKV, MOV, WEBM (máx. 50MB)
         </small>
       </div>
-      
+
       <div style="margin-bottom: 1.25rem;">
         <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
           Título:
         </label>
-        <input 
-          type="text" 
-          id="upload-titulo" 
-          name="titulo" 
-          required 
+        <input
+          type="text"
+          id="upload-titulo"
+          name="titulo"
+          required
           placeholder="Ex: Apostila de Álgebra Linear"
           style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
         />
       </div>
-      
+
       <div style="margin-bottom: 1.25rem;">
         <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
           Descrição:
         </label>
-        <textarea 
-          id="upload-descricao" 
-          name="descricao" 
-          required 
+        <textarea
+          id="upload-descricao"
+          name="descricao"
+          required
           rows="3"
           placeholder="Descreva o conteúdo do material..."
           style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem; font-family: inherit; resize: vertical;"
         ></textarea>
       </div>
-      
+
       <div style="margin-bottom: 1.25rem;">
         <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
           Tópico (opcional):
         </label>
-        <input 
-          type="text" 
-          id="upload-topico" 
-          name="topico" 
+        <input
+          type="text"
+          id="upload-topico"
+          name="topico"
           placeholder="Ex: Módulo 1, Capítulo 3"
           style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
         />
       </div>
-      
+
       <div id="upload-alert" style="display: none; padding: 0.75rem; margin-bottom: 1rem; border-radius: 6px;"></div>
-      
+
       <div id="upload-progress" style="display: none; margin-bottom: 1rem;">
         <div style="background: #e2e8f0; border-radius: 8px; height: 8px; overflow: hidden;">
           <div id="upload-progress-bar" style="background: var(--petroleum); height: 100%; width: 0%; transition: width 0.3s;"></div>
         </div>
         <p style="text-align: center; font-size: 0.85rem; color: var(--slate); margin-top: 0.5rem;">Enviando...</p>
       </div>
-      
+
       <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
-        <button 
-          type="button" 
-          onclick="fecharModal('modal-upload')" 
+        <button
+          type="button"
+          onclick="fecharModal('modal-upload')"
           style="padding: 0.625rem 1.25rem; border: 2px solid var(--slate); background: white; color: var(--slate); border-radius: 6px; cursor: pointer; font-weight: 500;"
         >
           Cancelar
         </button>
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           id="btn-upload-submit"
           style="padding: 0.625rem 1.5rem; background: #8b5cf6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;"
         >
@@ -703,26 +703,26 @@ let turmaAtualPlano = null;
 function getAuthHeaders() {
   const token = sessionStorage.getItem('edu_token');
   const headers = {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
   };
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   return headers;
 }
 
 // Função para registrar nota
 async function registrarNota(event) {
   event.preventDefault();
-  
+
   const form = event.target;
   const formData = new FormData(form);
   const avaliacaoId = formData.get('avaliacao_id');
   const alunoId = formData.get('aluno_id');
   const valor = formData.get('valor');
-  
+
   try {
     const response = await fetch(`/avaliacoes/${avaliacaoId}/notas`, {
       method: 'POST',
@@ -732,14 +732,14 @@ async function registrarNota(event) {
         valor: parseFloat(valor)
       })
     });
-    
+
     if (response.ok) {
       document.getElementById('nota-alert').style.display = 'block';
       document.getElementById('nota-error').style.display = 'none';
       form.reset();
       document.getElementById('avaliacao-select').disabled = true;
       document.getElementById('aluno-select').disabled = true;
-      
+
       setTimeout(() => {
         document.getElementById('nota-alert').style.display = 'none';
       }, 3000);
@@ -761,7 +761,7 @@ async function carregarAvaliacoes() {
   const turmaId = document.getElementById('turma-select').value;
   const avaliacaoSelect = document.getElementById('avaliacao-select');
   const alunoSelect = document.getElementById('aluno-select');
-  
+
   if (!turmaId) {
     avaliacaoSelect.disabled = true;
     alunoSelect.disabled = true;
@@ -769,7 +769,7 @@ async function carregarAvaliacoes() {
     alunoSelect.innerHTML = '<option value="">Primeiro selecione uma turma...</option>';
     return;
   }
-  
+
   try {
     // Carregar avaliações
     const respAvaliacoes = await fetch(`/turmas/${turmaId}/avaliacoes`, {
@@ -786,7 +786,7 @@ async function carregarAvaliacoes() {
       });
       avaliacaoSelect.disabled = false;
     }
-    
+
     // Carregar alunos
     const respTurma = await fetch(`/turmas/${turmaId}`, {
       headers: getAuthHeaders()
@@ -810,7 +810,7 @@ async function carregarAvaliacoes() {
 // Função para criar plano de ação
 async function criarPlanoAcao(turmaId) {
   turmaAtualPlano = turmaId;
-  
+
   // Carregar alunos da turma
   try {
     const response = await fetch(`/turmas/${turmaId}`, {
@@ -826,7 +826,7 @@ async function criarPlanoAcao(turmaId) {
         option.textContent = aluno.nome;
         alunoSelect.appendChild(option);
       });
-      
+
       document.getElementById('modal-plano').classList.add('active');
     } else {
       const error = await response.json();
@@ -841,49 +841,49 @@ async function criarPlanoAcao(turmaId) {
 // Função para submeter plano de ação
 async function submitPlanoAcao(event) {
   event.preventDefault();
-  
+
   const form = event.target;
   const formData = new FormData(form);
-  
+
   const alunoId = parseInt(formData.get('aluno_id'));
   const objetivo = formData.get('objetivo');
   const dataLimite = formData.get('data_limite');
   const observacoes = formData.get('observacoes') || null;
-  
+
   // Calcular prazo_dias (diferença entre data_limite e hoje)
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
   const limite = new Date(dataLimite);
   limite.setHours(0, 0, 0, 0);
   const prazoDias = Math.ceil((limite - hoje) / (1000 * 60 * 60 * 24));
-  
+
   if (prazoDias < 1) {
     alert('A data limite deve ser no futuro!');
     return;
   }
-  
+
   if (prazoDias > 365) {
     alert('O prazo não pode ser maior que 365 dias!');
     return;
   }
-  
+
   const planoData = {
     objetivo: objetivo,
     prazo_dias: prazoDias,
     observacoes: observacoes
   };
-  
+
   try {
     const response = await fetch(`/planos?aluno_id=${alunoId}`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(planoData)
     });
-    
+
     if (response.ok) {
       document.getElementById('plano-alert').style.display = 'block';
       form.reset();
-      
+
       setTimeout(() => {
         fecharModal('modal-plano');
         document.getElementById('plano-alert').style.display = 'none';
@@ -903,7 +903,7 @@ async function submitPlanoAcao(event) {
 async function verRelatorio(turmaId) {
   document.getElementById('modal-relatorio').classList.add('active');
   document.getElementById('relatorio-content').textContent = 'Carregando relatório...';
-  
+
   try {
     const response = await fetch(`/turmas/${turmaId}/relatorio?formato=txt`, {
       headers: getAuthHeaders()
@@ -919,25 +919,25 @@ async function verRelatorio(turmaId) {
   }
 }
 
-// Função para ver análise de tópicos 
+// Função para ver análise de tópicos
 async function verAnaliseTopicos(turmaId) {
   document.getElementById('modal-topicos').classList.add('active');
   document.getElementById('topicos-content').innerHTML = '<p style="text-align: center; color: var(--slate);">Carregando análise...</p>';
-  
+
   try {
     const response = await fetch(`/turmas/${turmaId}/topicos/analise`, {
       headers: getAuthHeaders()
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       const topicos = data.topicos;
-      
+
       if (topicos.length === 0) {
         document.getElementById('topicos-content').innerHTML = '<p style="text-align: center; color: var(--slate);">Nenhuma avaliação com tópico registrado ainda.</p>';
         return;
       }
-      
+
       // Construir tabela com análise de tópicos
       let html = '<table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">';
       html += '<thead><tr style="background: var(--blue, #3b82f6); color: white;">';
@@ -947,7 +947,7 @@ async function verAnaliseTopicos(turmaId) {
       html += '<th style="padding: 0.75rem; text-align: center;">Alunos C/ Dificuldade</th>';
       html += '<th style="padding: 0.75rem; text-align: center;">% Dificuldade</th>';
       html += '</tr></thead><tbody>';
-      
+
       topicos.forEach((item, idx) => {
         // Color coding baseado no percentual de dificuldade
         let bgColor = '#dcfce7'; // verde (baixa dificuldade)
@@ -959,7 +959,7 @@ async function verAnaliseTopicos(turmaId) {
           bgColor = '#fef9c3'; // amarelo (média dificuldade)
           textColor = '#854d0e';
         }
-        
+
         const rowStyle = `background: ${idx % 2 === 0 ? '#f8fafc' : 'white'};`;
         html += `<tr style="${rowStyle}">`;
         html += `<td style="padding: 0.75rem; font-weight: 500;">${item.topico || 'Sem tópico'}</td>`;
@@ -973,9 +973,9 @@ async function verAnaliseTopicos(turmaId) {
                  </td>`;
         html += '</tr>';
       });
-      
+
       html += '</tbody></table>';
-      
+
       // Adicionar legenda
       html += '<div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">';
       html += '<p style="font-size: 0.85rem; color: var(--slate); margin-bottom: 0.5rem;"><strong>Legenda:</strong></p>';
@@ -986,9 +986,9 @@ async function verAnaliseTopicos(turmaId) {
       html += '</div>';
       html += '<p style="font-size: 0.8rem; color: var(--slate); margin-top: 0.75rem;">Dificuldade = % de alunos com média &lt; 6.0 no tópico</p>';
       html += '</div>';
-      
+
       document.getElementById('topicos-content').innerHTML = html;
-      
+
     } else {
       document.getElementById('topicos-content').innerHTML = '<p style="text-align: center; color: #e11d48;">Erro ao carregar análise. Tente novamente.</p>';
     }
@@ -1003,34 +1003,34 @@ async function verDetalhesTurma(turmaId) {
   document.getElementById('modal-detalhes').classList.add('active');
   document.getElementById('detalhes-loading').style.display = 'block';
   document.getElementById('detalhes-content').style.display = 'none';
-  
+
   try {
     // Buscar detalhes da turma e desempenho em paralelo
     const [detalheResponse, desempenhoResponse] = await Promise.all([
       fetch(`/turmas/${turmaId}`, { headers: getAuthHeaders() }),
       fetch(`/turmas/${turmaId}/desempenho`, { headers: getAuthHeaders() })
     ]);
-    
+
     if (detalheResponse.ok && desempenhoResponse.ok) {
       const turma = await detalheResponse.json();
       const desempenho = await desempenhoResponse.json();
-      
+
       // Preencher informações gerais
       document.getElementById('det-nome').textContent = turma.codigo;
       document.getElementById('det-disciplina').textContent = turma.disciplina;
       document.getElementById('det-total-alunos').textContent = desempenho.total_alunos;
       document.getElementById('det-media-turma').textContent = desempenho.media_geral.toFixed(2);
-      
+
       // Preencher lista de alunos
       const listaAlunosDiv = document.getElementById('lista-alunos-detalhes');
       listaAlunosDiv.innerHTML = '';
-      
+
       if (turma.alunos && turma.alunos.length > 0) {
         turma.alunos.forEach(aluno => {
           const alunoDiv = document.createElement('div');
           alunoDiv.className = 'aluno-item';
           alunoDiv.style.cssText = 'padding: 12px; margin: 8px 0; background: #f8f9fa; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;';
-          
+
           alunoDiv.innerHTML = `
             <div>
               <strong style="font-size: 1rem; color: var(--petroleum);">${aluno.nome}</strong>
@@ -1038,8 +1038,8 @@ async function verDetalhesTurma(turmaId) {
               <small style="color: var(--slate);">Email: ${aluno.email || 'N/A'}</small>
               ${aluno.matricula ? `<br><small style="color: var(--slate);">Matrícula: ${aluno.matricula}</small>` : ''}
             </div>
-            <button 
-              onclick="sugerirMateriais(${aluno.id}, '${aluno.nome}')" 
+            <button
+              onclick="sugerirMateriais(${aluno.id}, '${aluno.nome}')"
               style="padding: 0.5rem 1rem; background: #16a34a; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; white-space: nowrap;"
               onmouseover="this.style.background='#15803d'"
               onmouseout="this.style.background='#16a34a'"
@@ -1047,13 +1047,13 @@ async function verDetalhesTurma(turmaId) {
               Sugerir Materiais
             </button>
           `;
-          
+
           listaAlunosDiv.appendChild(alunoDiv);
         });
       } else {
         listaAlunosDiv.innerHTML = '<p>Nenhum aluno matriculado.</p>';
       }
-      
+
       // Mostrar conteúdo
       document.getElementById('detalhes-loading').style.display = 'none';
       document.getElementById('detalhes-content').style.display = 'block';
@@ -1087,7 +1087,7 @@ async function carregarAlunosParaMensagem() {
   try {
     // Buscar todos os alunos das turmas do professor
     const alunosSet = new Set();
-    
+
     for (const turma of turmasData) {
       const response = await fetch(`/turmas/${turma.id}`, {
         headers: getAuthHeaders()
@@ -1101,7 +1101,7 @@ async function carregarAlunosParaMensagem() {
         }
       }
     }
-    
+
     alunosDisponiveis = Array.from(alunosSet).map(s => JSON.parse(s));
     atualizarSeletorAlunos();
   } catch (error) {
@@ -1112,7 +1112,7 @@ async function carregarAlunosParaMensagem() {
 function atualizarSeletorAlunos() {
   const select = document.getElementById('destinatario-id');
   select.innerHTML = '<option value="">Selecione um aluno...</option>';
-  
+
   alunosDisponiveis.forEach(aluno => {
     const option = document.createElement('option');
     option.value = aluno.id;
@@ -1125,7 +1125,7 @@ function abrirNovaMensagem() {
   if (alunosDisponiveis.length === 0) {
     carregarAlunosParaMensagem();
   }
-  
+
   document.getElementById('form-mensagem').reset();
   document.getElementById('mensagem-alert').style.display = 'none';
   document.getElementById('char-count').textContent = '0';
@@ -1140,7 +1140,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('char-count').textContent = e.target.value.length;
     });
   }
-  
+
   // Carregar contatos e mensagens não lidas
   carregarContatosRecentes();
   carregarMensagensNaoLidas();
@@ -1149,15 +1149,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function enviarMensagem(event) {
   event.preventDefault();
-  
+
   const destinatarioId = parseInt(document.getElementById('destinatario-id').value);
   const conteudo = document.getElementById('conteudo-mensagem').value.trim();
-  
+
   if (!destinatarioId || !conteudo) {
     mostrarAlertaMensagem('Por favor, preencha todos os campos', 'error');
     return;
   }
-  
+
   try {
     const response = await fetch('/mensagens/', {
       method: 'POST',
@@ -1167,12 +1167,12 @@ async function enviarMensagem(event) {
         conteudo: conteudo
       })
     });
-    
+
     if (response.ok) {
       mostrarAlertaMensagem('Mensagem enviada com sucesso!', 'success');
       document.getElementById('form-mensagem').reset();
       document.getElementById('char-count').textContent = '0';
-      
+
       setTimeout(() => {
         fecharModal('modal-nova-mensagem');
         carregarContatosRecentes();
@@ -1191,7 +1191,7 @@ function mostrarAlertaMensagem(mensagem, tipo) {
   const alert = document.getElementById('mensagem-alert');
   alert.textContent = mensagem;
   alert.style.display = 'block';
-  
+
   if (tipo === 'success') {
     alert.style.background = '#dcfce7';
     alert.style.color = '#166534';
@@ -1208,7 +1208,7 @@ async function carregarContatosRecentes() {
     const response = await fetch('/mensagens/contatos?limite=5', {
       headers: getAuthHeaders()
     });
-    
+
     if (response.ok) {
       const contatos = await response.json();
       exibirContatosRecentes(contatos);
@@ -1220,14 +1220,14 @@ async function carregarContatosRecentes() {
 
 function exibirContatosRecentes(contatos) {
   const container = document.getElementById('contatos-recentes');
-  
+
   if (contatos.length === 0) {
     container.innerHTML = '<p style="color: var(--slate); text-align: center;">Nenhuma conversa ainda. Envie a primeira mensagem!</p>';
     return;
   }
-  
+
   let html = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
-  
+
   contatos.forEach(contato => {
     const dataFormatada = new Date(contato.ultima_mensagem).toLocaleString('pt-BR', {
       day: '2-digit',
@@ -1235,9 +1235,9 @@ function exibirContatosRecentes(contatos) {
       hour: '2-digit',
       minute: '2-digit'
     });
-    
+
     html += `
-      <div onclick="abrirConversa(${contato.contato_id}, '${contato.contato_nome}')" 
+      <div onclick="abrirConversa(${contato.contato_id}, '${contato.contato_nome}')"
            style="padding: 1rem; background: white; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;"
            onmouseover="this.style.borderColor='var(--petroleum)'; this.style.boxShadow='0 2px 8px rgba(26,95,122,0.1)'"
            onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
@@ -1251,7 +1251,7 @@ function exibirContatosRecentes(contatos) {
       </div>
     `;
   });
-  
+
   html += '</div>';
   container.innerHTML = html;
 }
@@ -1261,7 +1261,7 @@ async function carregarMensagensNaoLidas() {
     const response = await fetch('/mensagens/nao-lidas/count', {
       headers: getAuthHeaders()
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       if (data.total_nao_lidas > 0) {
@@ -1278,15 +1278,15 @@ async function abrirConversa(alunoId, alunoNome) {
   conversaAtualAlunoId = alunoId;
   document.getElementById('conversa-nome-aluno').textContent = alunoNome;
   document.getElementById('modal-conversa').classList.add('active');
-  
+
   const container = document.getElementById('conversa-mensagens');
   container.innerHTML = '<p style="text-align: center; color: var(--slate);">Carregando mensagens...</p>';
-  
+
   try {
     const response = await fetch(`/mensagens/conversa/${alunoId}?limite=50`, {
       headers: getAuthHeaders()
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       exibirMensagensConversa(data.mensagens);
@@ -1302,17 +1302,17 @@ async function abrirConversa(alunoId, alunoNome) {
 function exibirMensagensConversa(mensagens) {
   const container = document.getElementById('conversa-mensagens');
   const currentUserId = JSON.parse(sessionStorage.getItem('edu_usuario')).id;
-  
+
   if (mensagens.length === 0) {
     container.innerHTML = '<p style="text-align: center; color: var(--slate);">Nenhuma mensagem ainda</p>';
     return;
   }
-  
+
   let html = '';
-  
+
   // Mensagens já vem ordenadas por data DESC, vamos inverter para mostrar mais antigas primeiro
   const mensagensOrdenadas = mensagens.reverse();
-  
+
   mensagensOrdenadas.forEach(msg => {
     const ehRemetente = msg.remetente_id === currentUserId;
     const dataFormatada = new Date(msg.data_envio).toLocaleString('pt-BR', {
@@ -1322,12 +1322,12 @@ function exibirMensagensConversa(mensagens) {
       hour: '2-digit',
       minute: '2-digit'
     });
-    
+
     const align = ehRemetente ? 'flex-end' : 'flex-start';
     const bgColor = ehRemetente ? 'var(--petroleum)' : '#f1f5f9';
     const textColor = ehRemetente ? 'white' : '#334155';
     const labelColor = ehRemetente ? 'rgba(255,255,255,0.8)' : 'var(--slate)';
-    
+
     html += `
       <div style="display: flex; justify-content: ${align}; margin-bottom: 1rem;">
         <div style="max-width: 70%; padding: 0.75rem 1rem; background: ${bgColor}; color: ${textColor}; border-radius: 12px;">
@@ -1344,19 +1344,19 @@ function exibirMensagensConversa(mensagens) {
       </div>
     `;
   });
-  
+
   container.innerHTML = html;
   container.scrollTop = container.scrollHeight;
 }
 
 function responderMensagem() {
   fecharModal('modal-conversa');
-  
+
   if (conversaAtualAlunoId) {
     const select = document.getElementById('destinatario-id');
     select.value = conversaAtualAlunoId;
   }
-  
+
   abrirNovaMensagem();
 }
 
@@ -1367,12 +1367,12 @@ async function sugerirMateriais(alunoId, alunoNome) {
   document.getElementById('modal-sugestoes').classList.add('active');
   document.getElementById('sugestao-loading').style.display = 'block';
   document.getElementById('sugestao-content').style.display = 'none';
-  
+
   try {
     const response = await fetch(`/turmas/alunos/${alunoId}/materiais/sugestoes`, {
       headers: getAuthHeaders()
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       exibirSugestoesMateriais(data);
@@ -1388,7 +1388,7 @@ async function sugerirMateriais(alunoId, alunoNome) {
 function exibirSugestoesMateriais(data) {
   document.getElementById('sugestao-loading').style.display = 'none';
   document.getElementById('sugestao-content').style.display = 'block';
-  
+
   // Se não houver dificuldades
   if (data.topicos_com_dificuldade.length === 0) {
     document.getElementById('topicos-dificuldade').style.display = 'none';
@@ -1396,20 +1396,20 @@ function exibirSugestoesMateriais(data) {
     document.getElementById('sem-sugestoes').style.display = 'block';
     return;
   }
-  
+
   document.getElementById('topicos-dificuldade').style.display = 'block';
   document.getElementById('materiais-sugeridos-lista').style.display = 'block';
   document.getElementById('sem-sugestoes').style.display = 'none';
-  
+
   // Exibir tópicos com dificuldade
   const listaTopicos = document.getElementById('lista-topicos-dificuldade');
-  listaTopicos.innerHTML = data.topicos_com_dificuldade.map(t => 
+  listaTopicos.innerHTML = data.topicos_com_dificuldade.map(t =>
     `<span style="display: inline-block; margin: 0.25rem; padding: 0.375rem 0.75rem; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 6px; font-size: 0.85rem;">${t}</span>`
   ).join('');
-  
+
   // Exibir materiais sugeridos
   const listaMateriais = document.getElementById('materiais-sugeridos-lista');
-  
+
   if (data.materiais_sugeridos.length === 0) {
     listaMateriais.innerHTML = `
       <div style="padding: 1.5rem; text-align: center; background: #f8fafc; border-radius: 8px; color: var(--slate);">
@@ -1419,14 +1419,14 @@ function exibirSugestoesMateriais(data) {
     `;
     return;
   }
-  
+
   let html = '<h4 style="color: var(--petroleum); margin-bottom: 1rem; font-size: 1.1rem;">📚 Materiais Recomendados:</h4>';
   html += '<div style="display: flex; flex-direction: column; gap: 1rem;">';
-  
+
   data.materiais_sugeridos.forEach(material => {
-    const desempenhoColor = material.desempenho_no_topico < 4 ? '#ef4444' : 
+    const desempenhoColor = material.desempenho_no_topico < 4 ? '#ef4444' :
                            material.desempenho_no_topico < 6 ? '#f59e0b' : '#10b981';
-    
+
     html += `
       <div style="padding: 1.25rem; background: white; border: 2px solid #e2e8f0; border-left: 4px solid ${desempenhoColor}; border-radius: 8px;">
         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
@@ -1435,7 +1435,7 @@ function exibirSugestoesMateriais(data) {
             ${material.descricao ? `<p style="color: var(--slate); font-size: 0.9rem; margin: 0.5rem 0;">${material.descricao}</p>` : ''}
           </div>
         </div>
-        
+
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
           <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
             <span style="padding: 0.25rem 0.625rem; background: #e0f2fe; color: #0369a1; border-radius: 4px; font-size: 0.8rem; font-weight: 500;">
@@ -1445,7 +1445,7 @@ function exibirSugestoesMateriais(data) {
               Desempenho: ${material.desempenho_no_topico.toFixed(2)}
             </span>
           </div>
-          
+
           ${material.url ? `
             <a href="${material.url}" target="_blank" style="padding: 0.5rem 1rem; background: var(--petroleum); color: white; text-decoration: none; border-radius: 6px; font-size: 0.85rem; font-weight: 500;">
               📥 Acessar Material
@@ -1455,9 +1455,9 @@ function exibirSugestoesMateriais(data) {
       </div>
     `;
   });
-  
+
   html += '</div>';
-  
+
   // Adicionar estatística
   html += `
     <div style="margin-top: 1.5rem; padding: 1rem; background: #e0f2fe; border-radius: 8px; text-align: center;">
@@ -1467,7 +1467,7 @@ function exibirSugestoesMateriais(data) {
       </p>
     </div>
   `;
-  
+
   listaMateriais.innerHTML = html;
 }
 
@@ -1477,14 +1477,14 @@ function abrirUploadMaterial() {
   // Preencher turmas no seletor
   const select = document.getElementById('upload-turma-id');
   select.innerHTML = '<option value="">Selecione uma turma...</option>';
-  
+
   turmasData.forEach(turma => {
     const option = document.createElement('option');
     option.value = turma.id;
     option.textContent = `${turma.codigo} - ${turma.disciplina}`;
     select.appendChild(option);
   });
-  
+
   document.getElementById('form-upload-material').reset();
   document.getElementById('upload-alert').style.display = 'none';
   document.getElementById('upload-progress').style.display = 'none';
@@ -1493,32 +1493,32 @@ function abrirUploadMaterial() {
 
 async function uploadMaterial(event) {
   event.preventDefault();
-  
+
   const form = event.target;
   const formData = new FormData();
-  
+
   const arquivo = document.getElementById('upload-arquivo').files[0];
   const turmaId = document.getElementById('upload-turma-id').value;
   const titulo = document.getElementById('upload-titulo').value.trim();
   const descricao = document.getElementById('upload-descricao').value.trim();
   const topico = document.getElementById('upload-topico').value.trim();
-  
+
   // Validações
   if (!arquivo) {
     mostrarAlertaUpload('Selecione um arquivo', 'error');
     return;
   }
-  
+
   if (arquivo.size > 50 * 1024 * 1024) { // 50 MB
     mostrarAlertaUpload('Arquivo excede o tamanho máximo de 50MB', 'error');
     return;
   }
-  
+
   if (!turmaId) {
     mostrarAlertaUpload('Selecione uma turma', 'error');
     return;
   }
-  
+
   // Preparar FormData
   formData.append('arquivo', arquivo);
   formData.append('titulo', titulo);
@@ -1526,12 +1526,12 @@ async function uploadMaterial(event) {
   if (topico) {
     formData.append('topico', topico);
   }
-  
+
   // Mostrar progresso
   document.getElementById('upload-progress').style.display = 'block';
   document.getElementById('btn-upload-submit').disabled = true;
   document.getElementById('upload-alert').style.display = 'none';
-  
+
   try {
     const token = sessionStorage.getItem('edu_token');
     const response = await fetch(`/materiais/upload?turma_id=${turmaId}`, {
@@ -1541,14 +1541,14 @@ async function uploadMaterial(event) {
       },
       body: formData
     });
-    
+
     document.getElementById('upload-progress-bar').style.width = '100%';
-    
+
     if (response.ok) {
       const material = await response.json();
       mostrarAlertaUpload('Material enviado com sucesso!', 'success');
       document.getElementById('form-upload-material').reset();
-      
+
       setTimeout(() => {
         fecharModal('modal-upload');
         location.reload(); // Recarregar para mostrar novo material
@@ -1573,7 +1573,7 @@ function mostrarAlertaUpload(mensagem, tipo) {
   const alert = document.getElementById('upload-alert');
   alert.textContent = mensagem;
   alert.style.display = 'block';
-  
+
   if (tipo === 'success') {
     alert.style.background = '#dcfce7';
     alert.style.color = '#166534';

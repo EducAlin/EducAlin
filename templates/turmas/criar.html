@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Criar Turma{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 600px;">
+  <div class="card-edu">
+    <div class="card-edu-header">
+      <h2 class="card-edu-title">Criar Nova Turma</h2>
+    </div>
+
+    <div class="card-edu-body">
+      <div id="turma-alert"></div>
+
+      <form id="form-criar-turma" onsubmit="criarTurma(event)">
+        <div class="form-group-edu">
+          <label class="form-label-edu" for="codigo">Código da Turma *</label>
+          <input
+            type="text"
+            id="codigo"
+            name="codigo"
+            class="form-control-edu"
+            placeholder="Ex: MAT101-2024.1"
+            required
+          />
+          <span class="form-hint">Identificador único da turma</span>
+        </div>
+
+        <div class="form-group-edu">
+          <label class="form-label-edu" for="disciplina">Disciplina *</label>
+          <input
+            type="text"
+            id="disciplina"
+            name="disciplina"
+            class="form-control-edu"
+            placeholder="Ex: Matemática Básica"
+            required
+          />
+        </div>
+
+        <div class="form-group-edu">
+          <label class="form-label-edu" for="semestre">Semestre *</label>
+          <input
+            type="text"
+            id="semestre"
+            name="semestre"
+            class="form-control-edu"
+            placeholder="Ex: 2024.1"
+            required
+          />
+          <span class="form-hint">Formato: ano.período</span>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+          <a href="/dashboard/professor" class="btn-edu-outline" style="flex: 1; text-align: center;">
+            Cancelar
+          </a>
+          <button type="submit" class="btn-edu-primary" style="flex: 1;">
+            Criar Turma
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function getAuthHeaders() {
+  const token = sessionStorage.getItem('edu_token');
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  };
+}
+
+async function criarTurma(event) {
+  event.preventDefault();
+
+  const form = event.target;
+  const formData = new FormData(form);
+
+  const turmaData = {
+    codigo: formData.get('codigo').trim(),
+    disciplina: formData.get('disciplina').trim(),
+    semestre: formData.get('semestre').trim()
+  };
+
+  const alertBox = document.getElementById('turma-alert');
+  alertBox.innerHTML = '';
+
+  try {
+    const response = await fetch('/turmas', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(turmaData)
+    });
+
+    if (response.ok) {
+      alertBox.innerHTML = '<div class="alert-edu alert-edu-success">Turma criada com sucesso! Redirecionando...</div>';
+      setTimeout(() => {
+        window.location.href = '/dashboard/professor';
+      }, 1500);
+    } else {
+      const error = await response.json();
+      let errorMsg = 'Erro ao criar turma';
+
+      if (error.detail) {
+        if (typeof error.detail === 'string') {
+          errorMsg = error.detail;
+        } else if (Array.isArray(error.detail)) {
+          errorMsg = error.detail.map(e => e.msg || e).join(', ');
+        }
+      }
+
+      alertBox.innerHTML = `<div class="alert-edu alert-edu-danger">${errorMsg}</div>`;
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+    alertBox.innerHTML = '<div class="alert-edu alert-edu-danger">Erro de conexão. Verifique sua internet.</div>';
+  }
+}
+</script>
+{% endblock %}

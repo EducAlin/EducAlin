@@ -141,6 +141,46 @@ def dashboard_page(request: Request):
     )
 
 
+@router.get("/turmas/criar", response_class=HTMLResponse, include_in_schema=False)
+def criar_turma_page(
+    request: Request,
+    current_user: UsuarioSchema = Depends(get_current_user_flexible)
+):
+    """
+    Renderiza o formulário de criação de turma.
+
+    Requer autenticação JWT válida e tipo de usuário 'professor' ou 'coordenador'.
+
+    Args:
+        request: Objeto de requisição FastAPI.
+        current_user: Usuário autenticado via JWT.
+
+    Returns:
+        HTMLResponse com o template ``turmas/criar.html`` renderizado.
+
+    Raises:
+        HTTPException: 403 se o usuário não for professor ou coordenador.
+    """
+    if current_user.tipo_usuario not in ['professor', 'coordenador']:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado. Apenas professores e coordenadores podem criar turmas."
+        )
+
+    return templates.TemplateResponse(
+        "turmas/criar.html",
+        _base_ctx(
+            request,
+            current_user={
+                'id': current_user.id,
+                'nome': current_user.nome,
+                'email': current_user.email,
+                'tipo_usuario': current_user.tipo_usuario
+            }
+        ),
+    )
+
+
 @router.get("/dashboard/professor", response_class=HTMLResponse, include_in_schema=False)
 def dashboard_professor_page(
     request: Request,
@@ -163,7 +203,7 @@ def dashboard_professor_page(
 
     Returns:
         HTMLResponse com o template ``dashboard/professor.html`` renderizado.
-        
+
     Raises:
         HTTPException: 403 se o usuário não for professor.
     """
@@ -173,37 +213,37 @@ def dashboard_professor_page(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acesso negado. Apenas professores podem acessar este dashboard."
         )
-    
+
     import json
     import sqlite3
     from educalin.repositories.base import get_connection
     from educalin.repositories.turma_repository import TurmaRepository
     from educalin.repositories.plano_acao_repository import PlanoAcaoRepository
-    
+
     professor_id = current_user.id
-    
+
     try:
         conn = get_connection()
         turma_repo = TurmaRepository(conn)
         plano_repo = PlanoAcaoRepository(conn)
-        
+
         # Buscar turmas do professor autenticado
         turmas = turma_repo.listar_por_professor(professor_id)
-        
+
         # Calcular estatísticas REAIS
         total_alunos = 0
         turmas_data = []
         alunos_ids = set()
-        
+
         for turma in turmas:
             alunos = turma_repo.listar_alunos(turma.id)
             num_alunos = len(alunos)
             total_alunos += num_alunos
-            
+
             # Coletar IDs únicos de alunos para contar planos depois
             for aluno in alunos:
                 alunos_ids.add(aluno['id'])
-            
+
             turmas_data.append({
                 'id': turma.id,
                 'codigo': turma.codigo,
@@ -211,13 +251,13 @@ def dashboard_professor_page(
                 'semestre': turma.semestre,
                 'total_alunos': num_alunos
             })
-        
+
         # Contar planos ATIVOS dos alunos dessas turmas
         planos_ativos = 0
         for aluno_id in alunos_ids:
             planos_ativos += plano_repo.contar(aluno_id=aluno_id, status='em_andamento')
             planos_ativos += plano_repo.contar(aluno_id=aluno_id, status='enviado')
-        
+
         # Converter current_user UsuarioSchema para dict para o template
         current_user_dict = {
             'id': current_user.id,
@@ -225,9 +265,9 @@ def dashboard_professor_page(
             'email': current_user.email,
             'tipo_usuario': current_user.tipo_usuario
         }
-        
+
         conn.close()
-        
+
         return templates.TemplateResponse(
             "dashboard/professor.html",
             _base_ctx(
@@ -282,7 +322,7 @@ def dashboard_aluno_page(
 
     Returns:
         HTMLResponse com o template ``dashboard/aluno.html`` renderizado.
-        
+
     Raises:
         HTTPException: 403 se o usuário não for aluno.
     """
@@ -292,22 +332,22 @@ def dashboard_aluno_page(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acesso negado. Apenas alunos podem acessar este dashboard."
         )
-    
+
     import sqlite3
     from educalin.repositories.base import get_connection
     from educalin.repositories.plano_acao_repository import PlanoAcaoRepository
     from educalin.repositories.material_repository import MaterialRepository
-    
+
     aluno_id = current_user.id
-    
+
     try:
         conn = get_connection()
         plano_repo = PlanoAcaoRepository(conn)
         material_repo = MaterialRepository(conn)
-        
+
         # Buscar turmas do aluno autenticado com notas
         cursor = conn.execute("""
-            SELECT 
+            SELECT
                 t.id, t.codigo, t.disciplina, t.semestre,
                 COUNT(DISTINCT a.id) as total_avaliacoes,
                 AVG(n.valor) as media
@@ -319,17 +359,17 @@ def dashboard_aluno_page(
             GROUP BY t.id, t.codigo, t.disciplina, t.semestre
             ORDER BY t.codigo
         """, (aluno_id,))
-        
+
         turmas = []
         soma_medias = 0
         total_turmas_com_media = 0
-        
+
         for row in cursor.fetchall():
             media = row['media']
             if media is not None:
                 soma_medias += media
                 total_turmas_com_media += 1
-            
+
             turmas.append({
                 'id': row['id'],
                 'codigo': row['codigo'],
@@ -338,16 +378,16 @@ def dashboard_aluno_page(
                 'total_avaliacoes': row['total_avaliacoes'] or 0,
                 'media': media
             })
-        
+
         # Calcular média geral
         if total_turmas_com_media > 0:
             media_geral = round(soma_medias / total_turmas_com_media, 2)
         else:
             media_geral = "N/A"
-        
+
         # Buscar materiais disponíveis para o aluno autenticado
         cursor = conn.execute("""
-            SELECT 
+            SELECT
                 m.id, m.titulo, m.tipo,
                 t.codigo as turma_nome,
                 u.nome as professor_nome
@@ -359,7 +399,7 @@ def dashboard_aluno_page(
             ORDER BY m.data_upload DESC
             LIMIT 10
         """, (aluno_id,))
-        
+
         materiais = []
         for row in cursor.fetchall():
             materiais.append({
@@ -369,7 +409,7 @@ def dashboard_aluno_page(
                 'turma_nome': row['turma_nome'],
                 'professor_nome': row['professor_nome']
             })
-        
+
         # Buscar planos de ação do aluno autenticado
         planos_models = plano_repo.listar_por_aluno(aluno_id)
         planos = []
@@ -381,7 +421,7 @@ def dashboard_aluno_page(
                 'data_limite': plano.data_limite.strftime('%d/%m/%Y') if plano.data_limite else 'N/A',
                 'observacoes': plano.observacoes
             })
-        
+
         # Converter current_user UsuarioSchema para dict para o template
         current_user_dict = {
             'id': current_user.id,
@@ -389,9 +429,9 @@ def dashboard_aluno_page(
             'email': current_user.email,
             'tipo_usuario': current_user.tipo_usuario
         }
-        
+
         conn.close()
-        
+
         return templates.TemplateResponse(
             "dashboard/aluno.html",
             _base_ctx(
