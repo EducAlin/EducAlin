@@ -7,7 +7,7 @@ Fornece:
 - ``require_role``: factory de autorização por tipo de usuário.
 """
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from educalin.utils.security import decodificar_token_jwt
@@ -125,6 +125,101 @@ def get_current_user(
             atualizado_em=usuario.atualizado_em
         )
 
+    finally:
+        conn.close()
+
+
+def get_current_user_flexible(
+    request: Request
+) -> UsuarioSchema:
+    """
+    Dependência flexível que obtém o usuário autenticado do cookie ou header.
+    
+    Tenta ler o token JWT nesta ordem:
+    1. Cookie "access_token"
+    2. Header "Authorization: Bearer <token>"
+    
+    Útil para rotas que servem HTML e precisam funcionar com navegação normal do browser.
+    
+    Args:
+        request: Objeto de requisição FastAPI
+    
+    Returns:
+        UsuarioSchema: Dados do usuário autenticado
+        
+    Raises:
+        HTTPException: 401 se o token for inválido ou não existir
+    """
+    # Tentar pegar token do cookie primeiro
+    token = request.cookies.get("access_token")
+    
+    # Se não tiver no cookie, tentar do header Authorization
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+    
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token não fornecido. Faça login para continuar.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Verificar se o token foi invalidado (logout)
+    if token in _blacklisted_tokens:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido ou expirado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Decodificar o token JWT
+    payload = decodificar_token_jwt(token)
+    
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido ou expirado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Extrair o ID do usuário do payload
+    usuario_id = payload.get("usuario_id")
+    
+    if usuario_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido: usuario_id não encontrado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Buscar o usuário no banco de dados
+    conn = get_connection()
+    try:
+        repo = UsuarioRepository(conn)
+        usuario = repo.buscar_por_id(usuario_id)
+        
+        if usuario is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Usuário não encontrado",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Converter para UsuarioSchema
+        return UsuarioSchema(
+            id=usuario.id,
+            nome=usuario.nome,
+            email=usuario.email,
+            tipo_usuario=usuario.tipo_usuario,
+            registro_funcional=getattr(usuario, 'registro_funcional', None),
+            codigo_coordenacao=getattr(usuario, 'codigo_coordenacao', None),
+            matricula=getattr(usuario, 'matricula', None),
+            criado_em=usuario.criado_em,
+            atualizado_em=usuario.atualizado_em
+        )
+    
     finally:
         conn.close()
 

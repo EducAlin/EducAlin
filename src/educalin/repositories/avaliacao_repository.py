@@ -90,6 +90,23 @@ class AvaliacaoRepository:
             topico=avaliacao_data.get('topico'),
         )
 
+    def listar_por_turma(self, turma_id: int) -> list[AvaliacaoModel]:
+        """
+        Lista todas as avaliações de uma turma.
+
+        Args:
+            turma_id: ID da turma.
+
+        Returns:
+            Lista de objetos AvaliacaoModel. Vazia se a turma não tiver avaliações.
+
+        Examples:
+            >>> avaliacoes = repo.listar_por_turma(turma_id=1)
+            >>> len(avaliacoes)
+            5
+        """
+        return AvaliacaoModel.listar_por_turma(self._conn, turma_id)
+
     def registrar_nota(self, nota_data: dict) -> int:
         """
         Registra a nota de um aluno em uma avaliação.

@@ -8,8 +8,8 @@ Este módulo implementa endpoints para:
 - Recuperação de senha
 """
 
-from typing import Dict
-from fastapi import APIRouter, HTTPException, status, Depends
+from typing import Dict, List
+from fastapi import APIRouter, HTTPException, status, Depends, Response, Query
 from fastapi.security import HTTPAuthorizationCredentials
 
 from educalin.api.schemas import (
@@ -17,10 +17,11 @@ from educalin.api.schemas import (
     LoginSchema,
     TokenSchema,
     UsuarioSchema,
+    UsuarioBuscaResponse,
     RecuperarSenhaSchema,
     ErrorSchema
 )
-from educalin.api.dependencies import get_current_user, security, _blacklisted_tokens
+from educalin.api.dependencies import get_current_user, security, _blacklisted_tokens, require_role
 from educalin.repositories.usuario_repository import UsuarioRepository
 from educalin.repositories.base import get_connection
 from educalin.utils.security import criar_token_jwt
@@ -122,14 +123,13 @@ def register(dados: RegisterSchema) -> UsuarioSchema:
         401: {"description": "Email ou senha inválidos"},
     }
 )
-def login(dados: LoginSchema) -> TokenSchema:
+def login(dados: LoginSchema, response: Response) -> TokenSchema:
     """
     Autentica um usuário e retorna um token JWT.
 
-    O token deve ser incluído nas requisições subsequentes no header:
-    ```
-    Authorization: Bearer <token>
-    ```
+    O token é retornado tanto no corpo da resposta quanto em um cookie HttpOnly.
+    Isso permite usar o token em requisições via JavaScript (sessionStorage) e
+    também em navegação normal do browser (cookie).
 
     Returns:
         Token JWT válido por 24 horas
@@ -155,9 +155,26 @@ def login(dados: LoginSchema) -> TokenSchema:
             perfil=usuario.tipo_usuario
         )
 
+        # Setar cookie HttpOnly com o token (válido por 24 horas)
+        response.set_cookie(
+            key="access_token",
+            value=token,
+            httponly=True,  # Não acessível via JavaScript (XSS protection)
+            max_age=86400,  # 24 horas em segundos
+            samesite="lax",  # CSRF protection
+            secure=False,  # TODO: mudar para True em produção com HTTPS
+            path='/'  # Cookie disponível em todas as rotas
+        )
+
         return TokenSchema(
             access_token=token,
-            token_type="bearer"
+            token_type="bearer",
+            usuario={
+                "id": usuario.id,
+                "nome": usuario.nome,
+                "email": usuario.email,
+                "tipo_usuario": usuario.tipo_usuario
+            }
         )
 
     finally:
@@ -276,3 +293,39 @@ def get_me(current_user: UsuarioSchema = Depends(get_current_user)) -> UsuarioSc
         Dados completos do usuário autenticado
     """
     return current_user
+
+
+@router.get(
+    "/usuarios/buscar",
+    response_model=List[UsuarioBuscaResponse],
+    summary="Buscar usuários",
+    description="Busca usuários por nome ou email. Apenas para professores e coordenadores.",
+)
+def buscar_usuarios(
+    q: str = Query(..., min_length=3),
+    tipo: str = Query(None),
+    current_user: UsuarioSchema = Depends(require_role("professor", "coordenador")),
+) -> List[UsuarioBuscaResponse]:
+    """
+    Busca usuários no sistema.
+
+    Args:
+        q: Termo de busca (mínimo 3 caracteres)
+        tipo: Opcional, filtrar por 'aluno', 'professor', 'coordenador'
+        current_user: Usuário autenticado
+    """
+    conn = get_connection()
+    try:
+        repo = UsuarioRepository(conn)
+        usuarios = repo.buscar(q, tipo_usuario=tipo)
+        
+        return [
+            UsuarioBuscaResponse(
+                id=u.id,
+                nome=u.nome,
+                email=u.email,
+                tipo_usuario=u.tipo_usuario
+            ) for u in usuarios
+        ]
+    finally:
+        conn.close()

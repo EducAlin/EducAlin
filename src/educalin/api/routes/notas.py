@@ -106,6 +106,54 @@ class RelatorioResponse(BaseModel):
 
 
 # Endpoints
+@router.get(
+    "/turmas/{turma_id}/avaliacoes",
+    response_model=list[AvaliacaoResponse],
+    summary="Listar avaliações de uma turma",
+)
+def listar_avaliacoes(
+    turma_id: int,
+    conn: sqlite3.Connection = Depends(get_db),
+    current_user: UsuarioSchema = Depends(get_current_user),
+):
+    """
+    Lista todas as avaliações de uma turma.
+
+    Args:
+        turma_id: ID da turma.
+        conn: Conexão com o banco de dados (injetada).
+        current_user: Usuário autenticado.
+
+    Returns:
+        Lista de avaliações. Vazia se a turma não tiver avaliações.
+
+    Raises:
+        HTTPException 404: Se a turma não for encontrada.
+    """
+    turma = TurmaModel.buscar_por_id(conn, turma_id)
+    if turma is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Turma {turma_id} não encontrada",
+        )
+
+    repo = AvaliacaoRepository(conn)
+    avaliacoes = repo.listar_por_turma(turma_id)
+
+    return [
+        AvaliacaoResponse(
+            id=av.id,
+            titulo=av.titulo,
+            data=av.data,
+            valor_maximo=av.valor_maximo,
+            peso=av.peso,
+            turma_id=av.turma_id,
+            topico=av.topico,
+        )
+        for av in avaliacoes
+    ]
+
+
 @router.post(
     "/turmas/{turma_id}/avaliacoes",
     response_model=AvaliacaoResponse,

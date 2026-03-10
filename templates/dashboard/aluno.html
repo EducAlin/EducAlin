@@ -1,0 +1,772 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard do Aluno{% endblock %}
+
+{% block extra_head %}
+<style>
+  .dashboard-aluno {
+    padding: 2rem 0;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: calc(100vh - 70px);
+  }
+
+  .dash-header {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+  }
+
+  .dash-header h1 {
+    font-family: var(--font-display);
+    color: var(--petroleum);
+    margin-bottom: 0.5rem;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    text-align: center;
+  }
+
+  .stat-card h3 {
+    font-size: 0.9rem;
+    color: var(--slate);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-card .value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--petroleum);
+  }
+
+  .section {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--petroleum);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .turma-card {
+    background: #f8f9fa;
+    border-left: 4px solid var(--green-sea);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .turma-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .turma-card h3 {
+    font-size: 1.1rem;
+    color: var(--petroleum);
+    margin-bottom: 0.5rem;
+  }
+
+  .turma-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .nota-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  .nota-badge.aprovado {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  .nota-badge.reprovado {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  .nota-badge.sem-nota {
+    background: #e2e3e5;
+    color: #383d41;
+  }
+
+  .material-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 0.8rem;
+    transition: background 0.2s;
+  }
+
+  .material-item:hover {
+    background: #e9ecef;
+  }
+
+  .material-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--green-sea);
+    color: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 1.2rem;
+  }
+
+  .material-info {
+    flex: 1;
+  }
+
+  .material-info h4 {
+    margin: 0 0 0.3rem 0;
+    color: var(--petroleum);
+  }
+
+  .material-info p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--slate);
+  }
+
+  .plano-item {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+  }
+
+  .plano-item h4 {
+    color: var(--petroleum);
+    margin-bottom: 0.5rem;
+  }
+
+  .plano-status {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+  }
+
+  .plano-status.em_andamento {
+    background: #17a2b8;
+    color: white;
+  }
+
+  .plano-status.enviado {
+    background: #28a745;
+    color: white;
+  }
+
+  .plano-status.concluido {
+    background: #6c757d;
+    color: white;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--slate);
+  }
+
+  .empty-state svg {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-aluno">
+  <div class="container">
+
+    <!-- Header -->
+    <div class="dash-header">
+      <h1 id="welcomeMessage">Olá, {{ aluno.nome }}!</h1>
+      <p style="color: var(--slate); margin: 0;">Acompanhe seu desempenho acadêmico e acesse seus materiais.</p>
+    </div>
+
+    <!-- Estatísticas Gerais -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Turmas</h3>
+        <div class="value">{{ total_turmas }}</div>
+      </div>
+      <div class="stat-card">
+        <h3>Média Geral</h3>
+        <div class="value">{{ media_geral }}</div>
+      </div>
+      <div class="stat-card">
+        <h3>Materiais</h3>
+        <div class="value">{{ total_materiais }}</div>
+      </div>
+      <div class="stat-card">
+        <h3>Planos de Ação</h3>
+        <div class="value">{{ total_planos }}</div>
+      </div>
+    </div>
+
+    <!-- Minhas Notas por Turma -->
+    <div class="section">
+      <h2 class="section-title">Minhas Notas por Turma</h2>
+
+      {% if turmas %}
+        {% for turma in turmas %}
+        <div class="turma-card">
+          <h3>{{ turma.codigo }} - {{ turma.disciplina }}</h3>
+          <div class="turma-info">
+            <div>
+              <p style="margin: 0.3rem 0; color: var(--slate);">
+                <strong>Semestre:</strong> {{ turma.semestre }}<br>
+                <strong>Total de Avaliações:</strong> {{ turma.total_avaliacoes }}
+              </p>
+            </div>
+            <div>
+              {% if turma.media is not none %}
+                {% if turma.media >= 6.0 %}
+                  <span class="nota-badge aprovado">Média: {{ "%.2f"|format(turma.media) }}</span>
+                {% else %}
+                  <span class="nota-badge reprovado">Média: {{ "%.2f"|format(turma.media) }}</span>
+                {% endif %}
+              {% else %}
+                <span class="nota-badge sem-nota">Sem notas</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <p>Você ainda não está matriculado em nenhuma turma.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Materiais Disponíveis -->
+    <div class="section">
+      <h2 class="section-title">Materiais Disponíveis</h2>
+
+      {% if materiais %}
+        {% for material in materiais %}
+        <div class="material-item">
+          <div class="material-icon">M</div>
+          <div class="material-info">
+            <h4>{{ material.titulo }}</h4>
+            <p>{{ material.turma_nome }} | Enviado por {{ material.professor_nome }}</p>
+          </div>
+          <div style="margin-left: auto;">
+            {% if material.url %}
+              <a href="{{ material.url }}" target="_blank" class="btn-primary-action" style="padding: 0.5rem 1rem; text-decoration: none; border-radius: 6px; font-size: 0.85rem;">Acessar</a>
+            {% else %}
+              <a href="#" onclick="alert('Download simulado: Este arquivo não possui URL física armazenada.'); return false;" class="btn-primary-action" style="padding: 0.5rem 1rem; text-decoration: none; border-radius: 6px; font-size: 0.85rem;">Download</a>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <p>Nenhum material disponível no momento.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Meus Planos de Ação -->
+    <div class="section">
+      <h2 class="section-title">Meus Planos de Ação</h2>
+
+      {% if planos %}
+        {% for plano in planos %}
+        <div class="plano-item">
+          <h4>{{ plano.objetivo }}</h4>
+          <p style="margin: 0.5rem 0; color: var(--slate);">
+            <strong>Data Limite:</strong> {{ plano.data_limite }}
+          </p>
+          {% if plano.observacoes %}
+          <p style="margin: 0.5rem 0; font-size: 0.9rem;">{{ plano.observacoes }}</p>
+          {% endif %}
+          <span class="plano-status {{ plano.status }}">{{ plano.status.replace('_', ' ') }}</span>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <p>Nenhum plano de ação criado ainda.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Mensagens (US10) -->
+    <div class="section">
+      <h2 class="section-title">Mensagens com Professores</h2>
+
+      <div style="margin-bottom: 1rem;">
+        <button
+          onclick="abrirNovaMensagemAluno()"
+          style="padding: 0.625rem 1.25rem; background: var(--petroleum); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 0.95rem;"
+        >
+          ✉️ Nova Mensagem
+        </button>
+      </div>
+
+      <div id="mensagens-nao-lidas-aluno" style="display: none; padding: 0.75rem 1rem; background: #fef9c3; border-left: 4px solid #eab308; border-radius: 6px; margin-bottom: 1rem;">
+        <strong style="color: #854d0e;">📬 Você tem <span id="count-nao-lidas-aluno">0</span> mensagem(ns) não lida(s)</strong>
+      </div>
+
+      <div id="contatos-professores">
+        <p style="color: var(--slate); text-align: center;">Carregando mensagens...</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal para Nova Mensagem do Aluno (US10) -->
+<div id="modal-mensagem-aluno" class="modal">
+  <div class="modal-content" style="max-width: 600px; margin: 2rem auto;">
+    <button class="btn-close" onclick="fecharModalAluno('modal-mensagem-aluno')" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--slate);">&times;</button>
+    <h3 style="color: var(--petroleum); margin-bottom: 1.5rem;">Nova Mensagem para Professor</h3>
+
+    <form id="form-mensagem-aluno" onsubmit="enviarMensagemAluno(event)">
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Professor:
+        </label>
+        <select
+          id="professor-id"
+          required
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
+        >
+          <option value="">Selecione um professor...</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Mensagem:
+        </label>
+        <textarea
+          id="conteudo-mensagem-aluno"
+          required
+          rows="6"
+          maxlength="5000"
+          placeholder="Digite sua mensagem..."
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem; font-family: inherit; resize: vertical;"
+        ></textarea>
+        <small style="color: var(--slate); font-size: 0.85rem;">
+          <span id="char-count-aluno">0</span> / 5000 caracteres
+        </small>
+      </div>
+
+      <div id="alert-mensagem-aluno" style="display: none; padding: 0.75rem; margin-bottom: 1rem; border-radius: 6px;"></div>
+
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <button
+          type="button"
+          onclick="fecharModalAluno('modal-mensagem-aluno')"
+          style="padding: 0.625rem 1.25rem; border: 2px solid var(--slate); background: white; color: var(--slate); border-radius: 6px; cursor: pointer; font-weight: 500;"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          style="padding: 0.625rem 1.5rem; background: var(--petroleum); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;"
+        >
+          ✉️ Enviar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal para Ver Conversa do Aluno (US10) -->
+<div id="modal-conversa-aluno" class="modal">
+  <div class="modal-content" style="max-width: 700px; margin: 2rem auto;">
+    <button class="btn-close" onclick="fecharModalAluno('modal-conversa-aluno')" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--slate);">&times;</button>
+    <h3 style="color: var(--petroleum); margin-bottom: 1rem;">Conversa com <span id="conversa-prof-nome"></span></h3>
+
+    <div id="conversa-mensagens-aluno" style="max-height: 400px; overflow-y: auto; padding: 1rem; background: #f8fafc; border-radius: 6px; margin-bottom: 1rem;">
+      <p style="text-align: center; color: var(--slate);">Carregando...</p>
+    </div>
+
+    <button
+      onclick="responderMensagemAluno()"
+      style="padding: 0.5rem 1rem; background: var(--petroleum); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;"
+    >
+      Responder
+    </button>
+  </div>
+</div>
+
+<style>
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+</style>
+
+<script>
+// Atualizar nome do usuário logado dinamicamente do sessionStorage
+window.addEventListener('DOMContentLoaded', function() {
+  const usuarioStr = sessionStorage.getItem('edu_usuario');
+
+  if (usuarioStr) {
+    try {
+      const usuario = JSON.parse(usuarioStr);
+
+      if (usuario.nome) {
+        const welcomeMsg = document.getElementById('welcomeMessage');
+        if (welcomeMsg) {
+          welcomeMsg.textContent = `Olá, ${usuario.nome}!`;
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao parsear dados do usuário:', e);
+    }
+  }
+});
+
+// ========== FUNÇÕES DE MENSAGENS DO ALUNO (US10) ==========
+
+let professoresDisponiveis = [];
+let conversaAtualProfId = null;
+
+function getAuthHeaders() {
+  const token = sessionStorage.getItem('edu_token');
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  };
+}
+
+// Carregar professores das turmas do aluno
+async function carregarProfessoresDasturmas() {
+  try {
+    const professoresSet = new Set();
+
+    // Buscar dados das turmas atuais ¿Para obter nome dos professores
+    {% for turma in turmas %}
+    professoresSet.add(JSON.stringify({
+      id: {{ turma.professor_id }},
+      nome: "{{ turma.professor_nome }}"
+    }));
+    {% endfor %}
+
+    professoresDisponiveis = Array.from(professoresSet).map(s => JSON.parse(s));
+    atualizarSeletorProfessores();
+  } catch (error) {
+    console.error('Erro ao carregar professores:', error);
+  }
+}
+
+function atualizarSeletorProfessores() {
+  const select = document.getElementById('professor-id');
+  select.innerHTML = '<option value="">Selecione um professor...</option>';
+
+  professoresDisponiveis.forEach(prof => {
+    const option = document.createElement('option');
+    option.value = prof.id;
+    option.textContent = prof.nome;
+    select.appendChild(option);
+  });
+}
+
+function abrirNovaMensagemAluno() {
+  if (professoresDisponiveis.length === 0) {
+    carregarProfessoresDasturmas();
+  }
+
+  document.getElementById('form-mensagem-aluno').reset();
+  document.getElementById('alert-mensagem-aluno').style.display = 'none';
+  document.getElementById('char-count-aluno').textContent = '0';
+  document.getElementById('modal-mensagem-aluno').classList.add('active');
+}
+
+// Contador de caracteres
+document.getElementById('conteudo-mensagem-aluno').addEventListener('input', (e) => {
+  document.getElementById('char-count-aluno').textContent = e.target.value.length;
+});
+
+async function enviarMensagemAluno(event) {
+  event.preventDefault();
+
+  const professorId = parseInt(document.getElementById('professor-id').value);
+  const conteudo = document.getElementById('conteudo-mensagem-aluno').value.trim();
+
+  if (!professorId || !conteudo) {
+    mostrarAlertaAluno('Preencha todos os campos', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch('/mensagens/', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        destinatario_id: professorId,
+        conteudo: conteudo
+      })
+    });
+
+    if (response.ok) {
+      mostrarAlertaAluno('Mensagem enviada com sucesso!', 'success');
+      document.getElementById('form-mensagem-aluno').reset();
+      document.getElementById('char-count-aluno').textContent = '0';
+
+      setTimeout(() => {
+        fecharModalAluno('modal-mensagem-aluno');
+        carregarContatosProfessores();
+      }, 1500);
+    } else {
+      const error = await response.json();
+      mostrarAlertaAluno(error.detail || 'Erro ao enviar', 'error');
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+    mostrarAlertaAluno('Erro ao enviar mensagem', 'error');
+  }
+}
+
+function mostrarAlertaAluno(mensagem, tipo) {
+  const alert = document.getElementById('alert-mensagem-aluno');
+  alert.textContent = mensagem;
+  alert.style.display = 'block';
+
+  if (tipo === 'success') {
+    alert.style.background = '#dcfce7';
+    alert.style.color = '#166534';
+    alert.style.border = '2px solid #22c55e';
+  } else {
+    alert.style.background = '#fee2e2';
+    alert.style.color = '#991b1b';
+    alert.style.border = '2px solid #ef4444';
+  }
+}
+
+async function carregarContatosProfessores() {
+  try {
+    const response = await fetch('/mensagens/contatos?limite=10', {
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const contatos = await response.json();
+      exibirContatosProfessores(contatos);
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+  }
+}
+
+function exibirContatosProfessores(contatos) {
+  const container = document.getElementById('contatos-professores');
+
+  if (contatos.length === 0) {
+    container.innerHTML = '<p style="color: var(--slate); text-align: center;">Nenhuma conversa ainda</p>';
+    return;
+  }
+
+  let html = '';
+
+  contatos.forEach(contato => {
+    const data = new Date(contato.ultima_mensagem).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    html += `
+      <div onclick="abrirConversaProfessor(${contato.contato_id}, '${contato.contato_nome}')"
+           style="padding: 1rem; background: white; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; margin-bottom: 0.75rem; transition: all 0.2s;"
+           onmouseover="this.style.borderColor='var(--petroleum)'"
+           onmouseout="this.style.borderColor='#e2e8f0'">
+        <div style="display: flex; justify-content: space-between;">
+          <div>
+            <strong style="color: var(--petroleum);">${contato.contato_nome}</strong>
+            <span style="color: var(--slate); font-size: 0.85rem; margin-left: 0.5rem;">(${contato.contato_tipo})</span>
+          </div>
+          <small style="color: var(--slate);">${data}</small>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+async function carregarMensagensNaoLidasAluno() {
+  try {
+    const response = await fetch('/mensagens/nao-lidas/count', {
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.total_nao_lidas > 0) {
+        document.getElementById('count-nao-lidas-aluno').textContent = data.total_nao_lidas;
+        document.getElementById('mensagens-nao-lidas-aluno').style.display = 'block';
+      }
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+  }
+}
+
+async function abrirConversaProfessor(profId, profNome) {
+  conversaAtualProfId = profId;
+  document.getElementById('conversa-prof-nome').textContent = profNome;
+  document.getElementById('modal-conversa-aluno').classList.add('active');
+
+  const container = document.getElementById('conversa-mensagens-aluno');
+  container.innerHTML = '<p style="text-align: center; color: var(--slate);">Carregando...</p>';
+
+  try {
+    const response = await fetch(`/mensagens/conversa/${profId}?limite=50`, {
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      exibirMensagensConversaAluno(data.mensagens);
+    } else {
+      container.innerHTML = '<p style="text-align: center; color: #e11d48;">Erro ao carregar</p>';
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+    container.innerHTML = '<p style="text-align: center; color: #e11d48;">Erro ao carregar</p>';
+  }
+}
+
+function exibirMensagensConversaAluno(mensagens) {
+  const container = document.getElementById('conversa-mensagens-aluno');
+  const currentUserId = JSON.parse(sessionStorage.getItem('edu_usuario')).id;
+
+  if (mensagens.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: var(--slate);">Nenhuma mensagem ainda</p>';
+    return;
+  }
+
+  let html = '';
+  const mensagensOrdenadas = mensagens.reverse();
+
+  mensagensOrdenadas.forEach(msg => {
+    const ehRemetente = msg.remetente_id === currentUserId;
+    const data = new Date(msg.data_envio).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const align = ehRemetente ? 'flex-end' : 'flex-start';
+    const bgColor = ehRemetente ? 'var(--petroleum)' : '#f1f5f9';
+    const textColor = ehRemetente ? 'white' : '#334155';
+    const labelColor = ehRemetente ? 'rgba(255,255,255,0.8)' : 'var(--slate)';
+
+    html += `
+      <div style="display: flex; justify-content: ${align}; margin-bottom: 1rem;">
+        <div style="max-width: 70%; padding: 0.75rem 1rem; background: ${bgColor}; color: ${textColor}; border-radius: 12px;">
+          <div style="font-size: 0.75rem; color: ${labelColor}; margin-bottom: 0.25rem;">
+            ${ehRemetente ? 'Você' : 'Professor'}
+          </div>
+          <div style="font-size: 0.95rem; line-height: 1.5;">
+            ${msg.conteudo}
+          </div>
+          <div style="font-size: 0.7rem; color: ${labelColor}; margin-top: 0.5rem; text-align: right;">
+            ${data}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+  container.scrollTop = container.scrollHeight;
+}
+
+function responderMensagemAluno() {
+  fecharModalAluno('modal-conversa-aluno');
+
+  if (conversaAtualProfId) {
+    document.getElementById('professor-id').value = conversaAtualProfId;
+  }
+
+  abrirNovaMensagemAluno();
+}
+
+function fecharModalAluno(modalId) {
+  document.getElementById(modalId).classList.remove('active');
+}
+
+// Carregar dados ao carregar página
+window.addEventListener('DOMContentLoaded', function() {
+  carregarProfessoresDasturmas();
+  carregarContatosProfessores();
+  carregarMensagensNaoLidasAluno();
+});
+
+</script>
+
+{% endblock %}

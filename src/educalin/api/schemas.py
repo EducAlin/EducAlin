@@ -122,6 +122,7 @@ class TokenSchema(BaseModel):
     Attributes:
         access_token: Token JWT de acesso
         token_type: Tipo do token (sempre "bearer")
+        usuario: Informações básicas do usuário autenticado
     """
     access_token: str = Field(
         ...,
@@ -132,6 +133,11 @@ class TokenSchema(BaseModel):
         default="bearer",
         description="Tipo do token",
         json_schema_extra={"example": "bearer"}
+    )
+    usuario: Optional[dict] = Field(
+        None,
+        description="Informações do usuário autenticado",
+        json_schema_extra={"example": {"id": 1, "nome": "João Silva", "tipo_usuario": "professor"}}
     )
 
 
@@ -197,6 +203,40 @@ class UsuarioSchema(BaseModel):
         None,
         description="Data de última atualização",
         json_schema_extra={"example": "2024-01-01T10:00:00"}
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UsuarioBuscaResponse(BaseModel):
+    """
+    Schema simplificado para resultados de busca de usuários.
+
+    Attributes:
+        id: ID do usuário
+        nome: Nome completo
+        email: Email do usuário
+        tipo_usuario: Tipo de usuário
+    """
+    id: int = Field(
+        ...,
+        description="ID único do usuário",
+        json_schema_extra={"example": 1}
+    )
+    nome: str = Field(
+        ...,
+        description="Nome completo do usuário",
+        json_schema_extra={"example": "João Silva"}
+    )
+    email: EmailStr = Field(
+        ...,
+        description="Email do usuário",
+        json_schema_extra={"example": "joao@email.com"}
+    )
+    tipo_usuario: Literal["professor", "coordenador", "aluno"] = Field(
+        ...,
+        description="Tipo de usuário",
+        json_schema_extra={"example": "aluno"}
     )
 
     model_config = ConfigDict(from_attributes=True)

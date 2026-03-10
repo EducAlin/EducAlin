@@ -274,3 +274,48 @@ class TurmaRepository:
         if turma is None:
             raise ValueError(f"Turma com id {turma_id} não encontrada")
         return turma
+
+    def atualizar(self, turma_id: int, dados: dict) -> bool:
+        """
+        Atualiza os dados de uma turma existente.
+
+        Args:
+            turma_id: ID da turma a atualizar.
+            dados: Dicionário com campos a atualizar (disciplina, semestre).
+
+        Returns:
+            True se a turma foi atualizada.
+
+        Raises:
+            ValueError: Se a turma não existir ou se houver erro de validação.
+        """
+        turma = self._garantir_turma_existe(turma_id)
+        
+        # Filtra apenas campos permitidos
+        campos_validos = {
+            k: v for k, v in dados.items() 
+            if k in ('disciplina', 'semestre', 'professor_id') and v is not None
+        }
+        
+        if not campos_validos:
+            return False
+
+        turma.atualizar(self._conn, **campos_validos)
+        return True
+
+    def deletar(self, turma_id: int) -> bool:
+        """
+        Remove uma turma do sistema.
+
+        Args:
+            turma_id: ID da turma a deletar.
+
+        Returns:
+            True se a turma foi deletada.
+
+        Raises:
+            ValueError: Se a turma não existir.
+        """
+        turma = self._garantir_turma_existe(turma_id)
+        turma.deletar(self._conn)
+        return True

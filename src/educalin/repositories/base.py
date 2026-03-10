@@ -25,11 +25,12 @@ def get_connection() -> sqlite3.Connection:
     A conexão é configurada para:
     - Retornar resultados como dicionários (Row Factory)
     - Habilitar foreign keys
+    - Permitir uso em múltiplas threads (check_same_thread=False)
 
     Returns:
         sqlite3.Connection: Conexão ativa com o banco
     """
-    conn = sqlite3.connect(str(DATABASE_PATH))
+    conn = sqlite3.connect(str(DATABASE_PATH), check_same_thread=False)
 
     # Permite acessar colunas por nome
     conn.row_factory = sqlite3.Row

@@ -2,6 +2,15 @@
 
 Sistema inteligente de acompanhamento educacional individualizado para identificar e sanar dificuldades de aprendizado.
 
+## Requisitos de Sistema
+
+- **Python**: 3.12 ou superior
+- **Sistema Operacional**: Windows, Linux ou macOS
+- **Dependências**: Poetry 1.7+ (recomendado) ou pip
+- **Banco de Dados**: SQLite 3.35+
+- **Memória RAM**: Mínimo 2GB
+- **Espaço em Disco**: 500MB para instalação completa
+
 ## Sumário
 
 - [Equipe](#equipe-educalin)
@@ -19,10 +28,13 @@ Sistema inteligente de acompanhamento educacional individualizado para identific
   - [Exemplo de Uso](#exemplo-de-uso-completo)
 - [Tecnologias e Dependências](#tecnologias-e-dependências)
 - [Justificativa da Complexidade](#justificativa-da-complexidade-do-sistema)
+- [Contagem de Classes](#contagem-de-classes-requisitos-mínimos)
 - [Diagrama UML](#diagrama-uml-classes-e-relações)
 - [Hierarquias Previstas](#hierarquias-previstas)
+- [Composição e Agregação](#composição-e-agregação)
 - [Padrões de Projeto](#padrões-de-projeto-planejados)
 - [Princípios SOLID](#princípios-solid-que-serão-aplicados)
+- [Tratamento de Exceções](#tratamento-de-exceções)
 - [Testes](#testes)
 - [Comandos Úteis](#comandos-úteis)
 - [Documentação Adicional](#documentação-adicional)
@@ -144,6 +156,12 @@ print(material.num_paginas) # Acesso direto às propriedades específicas
 - `notas.avaliacao_id` → `avaliacoes.id`
 - `metas.aluno_id` → `usuarios.id`
 - `planos_acao.aluno_id` → `usuarios.id`
+- `mensagens.remetente_id` → `usuarios.id`
+- `mensagens.destinatario_id` → `usuarios.id`
+- `topics_forum.turma_id` → `turmas.id`
+- `topics_forum.autor_id` → `usuarios.id`
+- `respostas_forum.topic_id` → `topics_forum.id`
+- `respostas_forum.autor_id` → `usuarios.id`
 
 **Many-to-Many**
 - `turmas` ↔ `usuarios` (alunos) via `turma_alunos`
@@ -161,7 +179,9 @@ database/migrations/
 ├── 004_create_avaliacoes_table.py # Avaliações
 ├── 005_create_notas_table.py # Notas (associação)
 ├── 006_create_metas_table.py # Metas
-└── 007_create_planos_acao_tables.py # Planos + plano_materiais (N:N)
+├── 007_create_planos_acao_tables.py # Planos + plano_materiais (N:N)
+├── 008_create_mensagens_table.py # Mensagens (comunicação privada)
+└── 009_create_forum_tables.py # Fórum (topics + respostas)
 ```
 
 #### Comandos Úteis
@@ -197,6 +217,12 @@ from educalin.repositories.models import (
  
  # Avaliações e Notas
  AvaliacaoModel, NotaModel,
+ 
+ # Metas e Planos de Ação
+ MetaModel, PlanoAcaoModel,
+ 
+ # Comunicação
+ MensagemModel, TopicForumModel, RespostaForumModel,
  
  # Metas e Planos
  MetaModel, PlanoAcaoModel,
@@ -253,6 +279,25 @@ plano = PlanoAcaoModel.buscar_por_id(conn, plano_id)
 plano.adicionar_material(conn, pdf_id)
 plano.atualizar_status(conn, 'enviado')
 
+# Enviar mensagem privada (US10, US17)
+mensagem_id = MensagemModel.criar(
+ conn, prof_id, aluno_id, "Vamos conversar sobre seu desempenho na última prova."
+)
+mensagem = MensagemModel.buscar_por_id(conn, mensagem_id)
+mensagem.marcar_como_lida(conn)
+
+# Criar tópico no fórum da turma (US11)
+topic_id = TopicForumModel.criar(
+ conn, turma_id, aluno_id, "Dúvida sobre Herança", 
+ "Não entendi a diferença entre herança simples e múltipla."
+)
+
+# Adicionar resposta ao tópico
+resposta_id = RespostaForumModel.criar(
+ conn, topic_id, prof_id, 
+ "Herança simples é quando uma classe herda de apenas uma classe pai..."
+)
+
 conn.close()
 ```
 
@@ -260,7 +305,7 @@ conn.close()
 
 ** Documentação completa do banco:** [`database/README.md`](database/README.md)
 
-## �️ Tecnologias e Dependências
+## Tecnologias e Dependências
 
 ### Core
 - **Python 3.12+** - Linguagem base
@@ -305,7 +350,8 @@ O sistema EducAlin surge como uma ferramenta tecnológica auxiliar para endereç
 
 1. Análise Individualizada de Dados: Sistema inteligente que processa notas, frequência e desempenho em tópicos específicos para identificar padrões e dificuldades de cada aluno.
 2. Geração Dinâmica de Conteúdo: Recomendação automática de materiais de estudo personalizados baseada nas dificuldades identificadas, utilizando diferentes estratégias de análise.
-3. Múltiplos atores e Regras Complexas:
+3. Sistema de Comunicação Integrado: Mensagens privadas entre professor e aluno para discussão individualizada, e fórum da turma para dúvidas colaborativas, reduzindo o distanciamento e fortalecendo o feedback contínuo.
+4. Múltiplos atores e Regras Complexas:
  - Professores: Criam turmas, registram notas associadas a tópicos, geram relatórios, criam Planos de Ação personalizados
  - Alunos: Visualizam desempenho, acessam materiais recomendados, interagem em fóruns, acompanham metas
  - Coordenadores: Geram relatórios consolidados e comparativos entre turmas
@@ -332,7 +378,10 @@ educalin/
 │ │ ├── avaliacao.py # Avaliação
 │ │ ├── nota.py # Nota (classe de associação)
 │ │ ├── plano_acao.py # PlanoAcao + Observer
-│ │ └── meta.py # Meta + Observer
+│ │ ├── meta.py # Meta + Observer
+│ │ ├── mensagem.py # Mensagem (US10, US17)
+│ │ ├── forum.py # TopicForum e Resposta (US11)
+│ │ └── comunicacao.py # Classes base comunicação
 │ │
 │ ├── services/ # Lógica de negócio
 │ │ ├── __init__.py
@@ -361,6 +410,8 @@ educalin/
 │ │ ├── nota_models.py
 │ │ ├── meta_models.py
 │ │ ├── plano_acao_models.py
+│ │ ├── mensagem_models.py # MensagemModel
+│ │ ├── forum_models.py # TopicForumModel, RespostaModel
 │ │ ├── README.md # Docs de repositórios
 │ │ └── EXAMPLES.md # Exemplos de uso
 │ │
@@ -371,7 +422,9 @@ educalin/
 │ │ └── routes/
 │ │ ├── auth.py
 │ │ ├── turmas.py
-│ │ └── materiais.py
+│ │ ├── materiais.py
+│ │ ├── mensagens.py
+│ │ └── forum.py
 │ │
 │ └── utils/ # Utilitários
 │ ├── __init__.py
@@ -385,7 +438,9 @@ educalin/
 │ │ ├── test_avaliacao.py
 │ │ ├── test_nota.py
 │ │ ├── test_meta.py
-│ │ └── test_plano_acao.py
+│ │ ├── test_plano_acao.py
+│ │ ├── test_mensagem.py
+│ │ └── test_forum.py
 │ ├── services/
 │ │ ├── test_analisadordesempenho.py
 │ │ ├── test_estrategias.py
@@ -413,7 +468,9 @@ educalin/
 │ │ ├── 004_create_avaliacoes_table.py
 │ │ ├── 005_create_notas_table.py
 │ │ ├── 006_create_metas_table.py
-│ │ └── 007_create_planos_acao_tables.py
+│ │ ├── 007_create_planos_acao_tables.py
+│ │ ├── 008_create_mensagens_table.py
+│ │ └── 009_create_forum_tables.py
 │ └── README.md # Docs do banco de dados
 │
 ├── docs/ # Documentação
@@ -453,11 +510,70 @@ educalin/
  - Fluxos condicionais baseados em perfil, status, dados históricos
  - Eventos e notificações assíncronas (Observer Pattern) para múltiplos interessados
 
-4. **Arquitetura em Camadas:**
+4. **Sistema de Comunicação Bidirecional:**
 
- - Domínio: Entidades (Usuario, Turma, PlanoAcao, MaterialEstudo)
+ - Mensagens privadas com controle de leitura e histórico de conversas
+ - Fórum de turma com composição de tópicos e respostas (agregação)
+ - Controle de permissões (aluno ↔ professor, isolamento entre turmas)
+ - Notificações de novas mensagens e respostas do fórum
+
+5. **Arquitetura em Camadas:**
+
+ - Domínio: Entidades (Usuario, Turma, PlanoAcao, MaterialEstudo, Mensagem, Forum)
  - Aplicação: Serviços (AnalisadorDesempenho, GeradorRelatorio)
  - Infraestrutura: Repositórios, Notificadores, Factories
+
+## Contagem de Classes (Requisitos Mínimos)
+
+**Requisito:** Mínimo de 12 classes (8 de domínio)
+
+### Classes de Domínio (13 classes)
+
+1. `Usuario` (abstrata)
+2. `Professor` (concreta)
+3. `Aluno` (concreta)
+4. `Coordenador` (concreta)
+5. `Turma` (concreta)
+6. `MaterialEstudo` (abstrata)
+7. `MaterialPDF` (concreta)
+8. `MaterialVideo` (concreta)
+9. `MaterialLink` (concreta)
+10. `Avaliacao` (concreta)
+11. `Nota` (concreta - classe de associação)
+12. `PlanoAcao` (concreta)
+13. `Meta` (concreta)
+14. `Mensagem` (concreta)
+15. `TopicForum` (concreta)
+16. `Resposta` (concreta)
+
+### Classes de Serviço/Aplicação (8 classes)
+
+17. `AnalisadorDesempenho` (context para Strategy)
+18. `EstrategiaAnalise` (abstrata)
+19. `AnaliseNotasBaixas` (concreta)
+20. `AnaliseFrequencia` (concreta)
+21. `AnaliseRegressao` (concreta)
+22. `GeradorRelatorio` (abstrata - Template Method)
+23. `RelatorioTurma` (concreta)
+24. `RelatorioIndividual` (concreta)
+25. `RelatorioComparativo` (concreta)
+
+### Classes de Infraestrutura (6 classes)
+
+26. `MaterialEstudoFactory` (abstrata)
+27. `MaterialPDFFactory` (concreta)
+28. `MaterialVideoFactory` (concreta)
+29. `MaterialLinkFactory` (concreta)
+30. `NotificadorEmail` (Observer)
+31. `NotificadorPush` (Observer)
+
+### Classes Auxiliares/Mixins (2 classes)
+
+32. `AutenticavelMixin`
+33. `NotificavelMixin`
+
+**Total: 33 classes próprias** (requisito mínimo: 12 ✅)
+**Classes de domínio: 16** (requisito mínimo: 8 ✅)
 
 ## Diagrama UML (classes e relações)
 
@@ -725,6 +841,46 @@ classDiagram
  
  AnalisadorDesempenho o-- EstrategiaAnalise
 
+ %% Sistema de Comunicação (US10, US11, US17)
+ class Mensagem {
+ -str _id
+ -Usuario _remetente
+ -Usuario _destinatario
+ -str _conteudo
+ -datetime _data_envio
+ -bool _lida
+ +marcar_como_lida()
+ +responder()
+ }
+ 
+ class TopicForum {
+ -str _id
+ -Turma _turma
+ -Usuario _autor
+ -str _titulo
+ -str _conteudo
+ -List~Resposta~ _respostas
+ -datetime _data_criacao
+ +adicionar_resposta()
+ +obter_respostas()
+ }
+ 
+ class Resposta {
+ -str _id
+ -Usuario _autor
+ -str _conteudo
+ -datetime _data
+ +editar()
+ }
+
+ %% Relacionamentos de Comunicação
+ Usuario "1" -- "*" Mensagem : envia
+ Usuario "1" -- "*" Mensagem : recebe
+ Turma "1" -- "*" TopicForum : possui
+ Usuario "1" -- "*" TopicForum : cria
+ TopicForum *-- "*" Resposta : contém
+ Usuario "1" -- "*" Resposta : escreve
+
  %% Relacionamentos principais
  Professor "1" -- "*" Turma : gerencia
  Turma o-- "*" Aluno : contém
@@ -732,10 +888,12 @@ classDiagram
  PlanoAcao "*" -- "1" Aluno : destinado a
  PlanoAcao *-- "*" MaterialEstudo : contém
  Professor "1" -- "*" MaterialEstudo : publica
+ Turma "1" -- "*" Avaliacao : realiza
  Avaliacao "1" -- "*" Nota : gera
  Aluno "1" -- "*" Nota : possui
  Professor "1" -- "*" Meta : define
  Meta "*" -- "1" Aluno : atribuída a
+ Subject <|.. Meta
 ```
 
 ## Hierarquias previstas
@@ -780,6 +938,87 @@ classDiagram
  Funcionalidades ortogonais (autenticação e notificação) são compartilhadas entre perfis sem duplicação de código.
  Mixins não dependem de `Usuario`, apenas adicionam comportamentos reutilizáveis.
 
+### 6. Sistema de Comunicação: Mensagens e Fórum
+
+ Classes: `Mensagem`, `TopicForum`, `Resposta`
+
+ Implementa as funcionalidades de comunicação para reduzir o relacionamento alienado entre professor e aluno (US10, US11, US17).
+ `Mensagem` permite comunicação privada bidirecional entre usuários (professor ↔ aluno).
+ `TopicForum` e `Resposta` implementam fórum da turma com composição de respostas, permitindo discussão colaborativa sobre dúvidas.
+ Todos os usuários podem criar mensagens; TopicForum pertence a uma Turma específica, garantindo isolamento entre turmas.
+
+## Composição e Agregação
+
+**Requisito:** Mínimo de 2 composições e 2 agregações
+
+### Composições (Ciclo de Vida Dependente) ✅
+
+#### 1. PlanoAcao ◆—— MaterialEstudo (Many-to-Many via `plano_materiais`)
+
+**Justificativa:** Quando um `PlanoAcao` é excluído, as associações com materiais são removidas automaticamente (CASCADE). Os materiais são parte essencial do plano.
+
+```python
+plano = PlanoAcao.buscar_por_id(conn, plano_id)
+plano.adicionar_material(conn, material_id)  # Material compõe o plano
+plano.excluir(conn)  # Remove plano E suas associações com materiais
+```
+
+#### 2. TopicForum ◆—— Resposta
+
+**Justificativa:** `Resposta` não existe sem um `TopicForum`. Quando o tópico é deletado, todas as respostas são deletadas (CASCADE DELETE).
+
+```python
+topic = TopicForum.criar(conn, turma_id, autor_id, "Título", "Conteúdo")
+resposta = Resposta.criar(conn, topic.id, autor_id, "Resposta")
+topic.excluir(conn)  # Deleta tópico E todas as respostas
+```
+
+#### 3. Turma ◆—— Avaliacao
+
+**Justificativa:** `Avaliacao` pertence exclusivamente a uma `Turma`. Sem turma, não há sentido em manter avaliações.
+
+```python
+turma = Turma.criar(conn, "POO2024", "POO", "2024.1", prof_id)
+avaliacao = Avaliacao.criar(conn, "Prova 1", date.today(), 10.0, 0.3, turma.id)
+turma.excluir(conn)  # Remove turma E suas avaliações
+```
+
+### Agregações (Independência de Objetos) ✅
+
+#### 1. Turma ◇—— Aluno (Many-to-Many via `turma_alunos`)
+
+**Justificativa:** `Aluno` existe independentemente de `Turma`. Um aluno pode estar em múltiplas turmas ou em nenhuma. Se a turma é deletada, o aluno continua existindo.
+
+```python
+turma = Turma.buscar_por_id(conn, turma_id)
+turma.adicionar_aluno(conn, aluno_id)  # Aluno agregado à turma
+turma.excluir(conn)  # Remove turma, mas aluno permanece
+```
+
+#### 2. Professor ◇—— MaterialEstudo
+
+**Justificativa:** `MaterialEstudo` pode existir mesmo após professor ser removido. Materiais são ativos permanentes que podem ser reutilizados por outros professores.
+
+```python
+professor = Professor.buscar_por_id(conn, prof_id)
+material = MaterialPDF.criar(conn, "Conteúdo", "Desc", professor.id, 50)
+professor.excluir(conn)  # Professor removido, mas material permanece (autor_id = NULL)
+```
+
+#### 3. Aluno ◇—— Meta
+
+**Justificativa:** `Meta` está associada ao aluno, mas pode ter existência histórica independente para fins de auditoria e análise de progresso ao longo do tempo.
+
+```python
+aluno = Aluno.buscar_por_id(conn, aluno_id)
+meta = Meta.criar(conn, aluno.id, "Média 9.0", 9.0, prazo, 7.5)
+# Meta agregada ao aluno, mas mantida no histórico mesmo após mudanças
+```
+
+**Resumo:**
+- **Composições: 3** (requisito mínimo: 2 ✅)
+- **Agregações: 3** (requisito mínimo: 2 ✅)
+
 ## Padrões de projeto planejados
 
 ### Factory Method
@@ -820,6 +1059,35 @@ Classes participantes:
 - `NotificadorEmail`, `NotificadorPush`, `AtualizadorRelatorio` como concrete observers
 
 Professor registra nova nota -> Turma notifica observers -> Email enviado ao aluno + Dashboard atualizado + Relatório recalculado.
+
+### Template Method
+
+Definir esqueleto de algoritmo de geração de relatórios, permitindo que subclasses redefinam etapas específicas sem alterar a estrutura.
+Hierarquia `GeradorRelatorio` implementa processo comum (coletar → processar → formatar → exportar) com variações por tipo.
+
+Classes participantes:
+
+- `GeradorRelatorio` como template abstrato
+- `RelatorioTurma`, `RelatorioIndividual`, `RelatorioComparativo` como implementações concretas
+
+Métodos template:
+
+```python
+class GeradorRelatorio(ABC):
+    def gerar(self):  # Template Method (invariante)
+        dados = self.coletar_dados()      # Hook - varia por tipo
+        processados = self.processar_dados(dados)  # Concreto - comum
+        formatado = self.formatar_saida(processados)  # Hook - varia
+        return self.exportar(formatado, 'pdf')  # Concreto - comum
+    
+    @abstractmethod
+    def coletar_dados(self): pass  # Implementado pelas subclasses
+    
+    @abstractmethod
+    def formatar_saida(self): pass  # Implementado pelas subclasses
+```
+
+Professor solicita `relatorio.gerar()` → Sequência de passos garantida, mas coleta e formatação customizadas por tipo de relatório.
 
 ## Princípios SOLID que serão aplicados
 
@@ -879,6 +1147,102 @@ Aplicação:
 - Repositórios dependem de interfaces, não de implementações concretas de banco
 
 Professor pode trocar estratégia de análise em runtime sem modificar `AnalisadorDesempenho`.
+
+## Tratamento de Exceções
+
+O sistema implementa tratamento robusto de exceções em todos os níveis:
+
+### Hierarquia de Exceções Customizadas
+
+```python
+class EducAlinException(Exception):
+    """Exceção base do sistema"""
+    pass
+
+class ValidacaoException(EducAlinException):
+    """Erros de validação de dados"""
+    pass
+
+class AutenticacaoException(EducAlinException):
+    """Erros de autenticação/autorização"""
+    pass
+
+class RecursoNaoEncontradoException(EducAlinException):
+    """Recurso não existe no banco"""
+    pass
+
+class RegraDeNegocioException(EducAlinException):
+    """Violação de regra de negócio"""
+    pass
+```
+
+### Estratégias por Camada
+
+**Domínio (Entities):**
+- Validações de atributos lançam `ValidacaoException`
+- Regras de negócio lançam `RegraDeNegocioException`
+- Exemplo: `Nota.validar_valor()` lança exceção se valor > avaliacao.valor_maximo
+
+**Serviços (Application):**
+- Tratam exceções do domínio e adicionam contexto
+- Convertem exceções técnicas em exceções de negócio
+- Exemplo: `AnalisadorDesempenho` captura erros de análise e loga detalhes
+
+**Repositórios (Infrastructure):**
+- Tratam exceções de banco (SQLite)
+- Convertem `sqlite3.Error` em exceções customizadas
+- Garantem rollback em caso de falha
+
+**API (Interface):**
+- Converte exceções em respostas HTTP apropriadas
+- `ValidacaoException` → 400 Bad Request
+- `AutenticacaoException` → 401 Unauthorized
+- `RecursoNaoEncontradoException` → 404 Not Found
+- `RegraDeNegocioException` → 422 Unprocessable Entity
+
+### Exemplos de Uso
+
+```python
+# Validação em entidade
+class Nota:
+    def __init__(self, valor: float, avaliacao: Avaliacao):
+        if valor > avaliacao.valor_maximo:
+            raise ValidacaoException(
+                f"Nota {valor} excede valor máximo {avaliacao.valor_maximo}"
+            )
+        self._valor = valor
+
+# Tratamento em serviço
+class AnalisadorDesempenho:
+    def executar_analise(self, aluno: Aluno):
+        try:
+            return self._estrategia.analisar(aluno, self._historico)
+        except ValidacaoException as e:
+            logger.error(f"Erro validação análise aluno {aluno.id}: {e}")
+            raise RegraDeNegocioException("Dados insuficientes para análise")
+        except Exception as e:
+            logger.exception(f"Erro inesperado na análise: {e}")
+            raise
+
+# Tratamento em API
+@app.post("/notas/")
+async def criar_nota(nota_data: NotaCreate):
+    try:
+        return NotaService.criar(nota_data)
+    except ValidacaoException as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RecursoNaoEncontradoException as e:
+        raise HTTPException(status_code=404, detail=str(e))
+```
+
+### Práticas Adotadas
+
+- ✅ Exceções específicas e significativas
+- ✅ Nunca capturar `Exception` genérico sem relancar
+- ✅ Logging adequado antes de relancar
+- ✅ Mensagens de erro claras e acionáveis
+- ✅ Limpeza de recursos (context managers, finally)
+- ✅ Documentação de exceções em docstrings
 
 ## Testes
 

@@ -1,0 +1,749 @@
+{% extends "base.html" %}
+
+{% block title %}Central de Relatórios{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ================================================================
+   Central de Relatórios — EducAlin
+   Estilo alinhado com coordenador.html (navy/teal/cream, Bootstrap)
+================================================================ */
+
+.reports-page {
+  padding: 2.5rem 0 5rem;
+  background: var(--cream);
+  min-height: calc(100vh - 70px);
+}
+
+/* ── Cabeçalho hero ── */
+.reports-hero {
+  background: var(--navy);
+  border-radius: 14px;
+  padding: 2rem 2.5rem;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+.reports-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 55% 90% at 95% 50%, rgba(26,188,156,.18) 0%, transparent 65%),
+    radial-gradient(ellipse 35% 60% at 5% 10%,  rgba(255,255,255,.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+.reports-hero h1 {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  color: #fff;
+  margin: 0 0 .3rem;
+  position: relative;
+}
+.reports-hero p {
+  color: rgba(255,255,255,.62);
+  font-size: .88rem;
+  margin: 0;
+  position: relative;
+}
+.hero-badge {
+  position: absolute; top: 1.4rem; right: 1.4rem;
+  background: rgba(26,188,156,.18);
+  border: 1px solid rgba(26,188,156,.35);
+  color: var(--teal);
+  font-size: .73rem; font-weight: 700; letter-spacing: .06em;
+  padding: .3rem .85rem; border-radius: 99px;
+}
+
+/* ── Tipo de relatório ── */
+.type-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .85rem;
+  margin-bottom: 1.75rem;
+}
+.type-card {
+  background: #fff;
+  border: 2px solid #e8edf2;
+  border-radius: 12px;
+  padding: 1.1rem 1rem;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color .18s, box-shadow .18s, transform .15s;
+  position: relative; overflow: hidden;
+  user-select: none;
+}
+.type-card::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 3px; background: transparent;
+  transition: background .18s;
+}
+.type-card:hover {
+  border-color: #8ab4cc;
+  box-shadow: 0 4px 16px rgba(0,31,63,.1);
+  transform: translateY(-2px);
+}
+.type-card.active { border-color: var(--teal); box-shadow: 0 4px 20px rgba(26,188,156,.2); }
+.type-card.active::after { background: var(--teal); }
+.type-icon  { font-size: 1.75rem; display: block; margin-bottom: .5rem; }
+.type-label { font-size: .82rem; font-weight: 700; color: var(--navy); display: block; margin-bottom: .2rem; }
+.type-desc  { font-size: .72rem; color: var(--slate); line-height: 1.4; }
+
+/* ── Painel de filtros ── */
+.filters-panel {
+  background: #fff;
+  border: 1px solid #e8edf2;
+  border-radius: 12px;
+  box-shadow: var(--shadow-xs);
+  margin-bottom: 1.75rem;
+  overflow: hidden;
+}
+.filters-head {
+  padding: .9rem 1.5rem;
+  background: var(--cream);
+  border-bottom: 1px solid #e8edf2;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.filters-head h2 { font-family: var(--font-display); font-size: .95rem; color: var(--navy); margin: 0; }
+.filters-ftag {
+  font-size: .72rem; font-weight: 700; color: var(--teal);
+  background: rgba(26,188,156,.1); border-radius: 4px; padding: .2rem .55rem;
+}
+.filters-body { padding: 1.25rem 1.5rem; }
+.fgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.fg label {
+  display: block;
+  font-size: .72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--slate); margin-bottom: .35rem;
+}
+.fsel {
+  width: 100%;
+  padding: .55rem .9rem;
+  border: 1.5px solid #dde3ea;
+  border-radius: 8px;
+  font-family: var(--font-body); font-size: .875rem; color: var(--navy);
+  background: var(--cream);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath fill='%236b7c8d' d='M5.5 7L0 0h11z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right .8rem center; padding-right: 2.1rem;
+  transition: border-color .18s, box-shadow .18s; cursor: pointer;
+}
+.fsel:focus { outline: none; border-color: #4a7fa0; box-shadow: 0 0 0 3px rgba(26,61,92,.1); background: #fff; }
+.factions { display: flex; align-items: center; gap: .75rem; padding-top: .75rem; border-top: 1px solid #e8edf2; }
+.btn-gen {
+  padding: .6rem 1.35rem; background: var(--navy); color: #fff;
+  border: none; border-radius: 8px;
+  font-family: var(--font-body); font-size: .875rem; font-weight: 600;
+  cursor: pointer;
+  transition: background .18s, transform .15s, box-shadow .18s;
+  display: inline-flex; align-items: center; gap: .45rem;
+}
+.btn-gen:hover { background: #163856; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,31,63,.18); }
+.btn-clear {
+  padding: .6rem 1.1rem; background: transparent; color: var(--slate);
+  border: 1.5px solid #dde3ea; border-radius: 8px;
+  font-family: var(--font-body); font-size: .875rem; font-weight: 500;
+  cursor: pointer; display: inline-flex; align-items: center; gap: .4rem;
+  transition: border-color .18s, color .18s;
+}
+.btn-clear:hover { border-color: var(--navy); color: var(--navy); }
+.gen-ts { margin-left: auto; font-size: .75rem; color: var(--slate-lt); }
+
+/* ── Resultados ── */
+.rpt-result { display: none; }
+.rpt-result.on { display: block; animation: fadeUp .3s ease both; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── Section card (idêntico ao coordenador.html) ── */
+.section-card {
+  background: #fff; border: 1px solid #e8edf2;
+  border-radius: 12px; box-shadow: var(--shadow-xs);
+  margin-bottom: 1.75rem; overflow: hidden;
+}
+.section-head {
+  padding: 1.1rem 1.5rem; border-bottom: 1px solid #e8edf2;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+.section-head h2 { font-family: var(--font-display); font-size: 1.05rem; color: var(--navy); margin: 0; }
+.section-desc { font-size: .78rem; color: var(--slate-lt); margin: 0; }
+
+/* ── KPI row ── */
+.kpi-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 1rem; padding: 1.25rem 1.5rem;
+  background: var(--cream); border-bottom: 1px solid #e8edf2;
+}
+.kpi { text-align: center; }
+.kpi-val { font-family: var(--font-display); font-size: 1.9rem; line-height: 1; color: var(--navy); display: block; }
+.kpi-val.good { color: #10b981; }
+.kpi-val.warn { color: #f59e0b; }
+.kpi-val.bad  { color: #ef4444; }
+.kpi-lbl { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--slate); display: block; margin-top: .3rem; }
+
+/* ── Tabela ── */
+.table-wrap { overflow-x: auto; }
+.edu-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.edu-table thead { background: var(--cream); }
+.edu-table th { padding: .75rem 1.25rem; text-align: left; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--slate); border-bottom: 1px solid #e8edf2; white-space: nowrap; }
+.edu-table td { padding: .9rem 1.25rem; border-bottom: 1px solid #e8edf2; vertical-align: middle; color: var(--navy); }
+.edu-table tr:last-child td { border-bottom: none; }
+.edu-table tbody tr:hover td { background: var(--cream); }
+
+/* ── Media bar ── */
+.media-wrap { display: flex; align-items: center; gap: .6rem; min-width: 110px; }
+.media-bar { flex: 1; height: 6px; background: #e8edf2; border-radius: 99px; overflow: hidden; }
+.media-bar-fill { height: 100%; border-radius: 99px; }
+.fill-bom     { background: #10b981; }
+.fill-atencao { background: #f59e0b; }
+.fill-critico { background: #ef4444; }
+.media-num { font-weight: 700; font-size: .88rem; min-width: 32px; text-align: right; color: var(--navy); }
+
+/* ── Badges ── */
+.badge-status { display: inline-block; padding: .22rem .75rem; border-radius: 99px; font-size: .72rem; font-weight: 700; letter-spacing: .03em; }
+.badge-bom     { background: #d1fae5; color: #065f46; }
+.badge-atencao { background: #fef3c7; color: #92400e; }
+.badge-critico { background: #fee2e2; color: #991b1b; }
+
+/* ── Ranking pos ── */
+.rank-pos { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 700; background: var(--cream); color: var(--slate); }
+.rank-pos.gold   { background: #fef3c7; color: #b45309; }
+.rank-pos.silver { background: #f1f5f9; color: #475569; }
+.rank-pos.bronze { background: #fff7ed; color: #9a3412; }
+
+/* ── Comparativo ── */
+.cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.75rem; }
+.cmp-card { background: #fff; border: 1px solid #e8edf2; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-xs); }
+.cmp-head { padding: .9rem 1.25rem; background: var(--navy); display: flex; align-items: center; justify-content: space-between; }
+.cmp-head h4 { font-family: var(--font-display); font-size: .95rem; color: #fff; margin: 0; }
+.cmp-head small { font-size: .75rem; color: rgba(255,255,255,.55); }
+.cmp-body { padding: 1.1rem 1.25rem; }
+.cmp-row { display: flex; align-items: center; justify-content: space-between; padding: .55rem 0; border-bottom: 1px solid #e8edf2; font-size: .875rem; }
+.cmp-row:last-child { border-bottom: none; }
+.cmp-lbl { color: var(--slate); font-size: .8rem; }
+.cmp-v   { font-weight: 700; color: var(--navy); font-size: .95rem; }
+.cmp-v.g { color: #10b981; } .cmp-v.w { color: #f59e0b; } .cmp-v.b { color: #ef4444; }
+
+/* ── Export bar ── */
+.export-bar { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1.5rem; background: #f0fdf4; border-top: 1px solid rgba(26,188,156,.2); }
+.export-bar p { font-size: .8rem; color: var(--navy); margin: 0; font-weight: 500; }
+.export-actions { display: flex; gap: .5rem; }
+.btn-xp { padding: .45rem .9rem; border: 1.5px solid; border-radius: 7px; font-size: .78rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: .3rem; transition: background .15s, color .15s, transform .15s; font-family: var(--font-body); }
+.btn-xp-pdf   { color: #c0392b; border-color: rgba(192,57,43,.3); background: rgba(192,57,43,.06); }
+.btn-xp-pdf:hover   { background: #c0392b; color: #fff; border-color: #c0392b; transform: translateY(-1px); }
+.btn-xp-excel { color: #1a7a4a; border-color: rgba(26,122,74,.3); background: rgba(26,122,74,.06); }
+.btn-xp-excel:hover { background: #1a7a4a; color: #fff; border-color: #1a7a4a; transform: translateY(-1px); }
+
+/* ── Empty / Loading ── */
+.empty-state { text-align: center; padding: 2.75rem 1rem; color: var(--slate); font-size: .9rem; }
+.empty-icon  { font-size: 2.2rem; display: block; margin-bottom: .65rem; opacity: .4; }
+.loading-box { text-align: center; padding: 2.5rem 1rem; color: var(--slate); }
+.loading-dots span { display: inline-block; width: 8px; height: 8px; background: var(--teal); border-radius: 50%; margin: 0 2px; animation: ldB 1.2s infinite; }
+.loading-dots span:nth-child(2) { animation-delay: .2s; }
+.loading-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes ldB { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-7px)} }
+
+/* ── Toast ── */
+#rpt-toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--navy); color: #fff; padding: .75rem 1.2rem; border-radius: 10px; font-size: .85rem; font-weight: 500; box-shadow: 0 8px 24px rgba(0,31,63,.3); border-left: 3px solid var(--teal); display: none; z-index: 9999; animation: fadeUp .25s ease; }
+
+/* ── Responsivo ── */
+@media (max-width: 900px) { .type-grid { grid-template-columns: repeat(2,1fr); } .cmp-grid { grid-template-columns: 1fr; } }
+@media (max-width: 576px) { .fgrid { grid-template-columns: 1fr 1fr; } .hero-badge { display: none; } .type-grid { grid-template-columns: repeat(2,1fr); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reports-page">
+<div class="container">
+
+  {% if error %}
+  <div class="alert alert-danger" style="border-radius:10px;margin-bottom:1.5rem">
+    <strong>Erro ao carregar página:</strong> {{ error }}
+  </div>
+  {% endif %}
+
+  <!-- Cabeçalho -->
+  <div class="reports-hero">
+    <span class="hero-badge">Coordenação</span>
+    <h1>Central de Relatórios</h1>
+    <p>Dados reais do banco &mdash; filtre, visualize e exporte em PDF ou Excel.</p>
+  </div>
+
+  <!-- Tipo -->
+  <div class="type-grid">
+    <div class="type-card active" onclick="setType(this,'turma')">
+      <span class="type-icon">🏫</span>
+      <span class="type-label">Por Turma</span>
+      <span class="type-desc">Desempenho consolidado de uma turma</span>
+    </div>
+    <div class="type-card" onclick="setType(this,'aluno')">
+      <span class="type-icon">👤</span>
+      <span class="type-label">Por Aluno</span>
+      <span class="type-desc">Evolução individual e pontos de atenção</span>
+    </div>
+    <div class="type-card" onclick="setType(this,'comparativo')">
+      <span class="type-icon">⚖️</span>
+      <span class="type-label">Comparativo</span>
+      <span class="type-desc">Duas turmas lado a lado</span>
+    </div>
+    {% if current_user.tipo_usuario == 'coordenador' %}
+    <div class="type-card" onclick="setType(this,'consolidado')">
+      <span class="type-icon">📊</span>
+      <span class="type-label">Consolidado</span>
+      <span class="type-desc">Visão geral da instituição</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters-panel">
+    <div class="filters-head">
+      <h2>⚙️ Filtros</h2>
+      <span class="filters-ftag" id="ftag-label">Turma</span>
+    </div>
+    <div class="filters-body">
+      <div class="fgrid">
+        <div class="fg" id="fg-turma">
+          <label>Turma</label>
+          <select class="fsel" id="f-turma">
+            <option value="">Selecione…</option>
+            {% for t in turmas_disponiveis %}
+            <option value="{{ t.id }}">{{ t.codigo }} — {{ t.disciplina }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="fg" id="fg-turma2" style="display:none">
+          <label>Turma B <span style="color:var(--teal);font-weight:400;text-transform:none;letter-spacing:0">(comparar)</span></label>
+          <select class="fsel" id="f-turma2">
+            <option value="">Selecione…</option>
+            {% for t in turmas_disponiveis %}
+            <option value="{{ t.id }}">{{ t.codigo }} — {{ t.disciplina }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="fg" id="fg-aluno" style="display:none">
+          <label>Aluno</label>
+          <select class="fsel" id="f-aluno" disabled>
+            <option value="">Selecione a turma primeiro…</option>
+          </select>
+        </div>
+        <div class="fg" id="fg-sem">
+          <label>Semestre</label>
+          <select class="fsel" id="f-sem">
+            <option value="">Todos</option>
+            {% for s in semestres_disponiveis %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="factions">
+        <button class="btn-gen" onclick="gerarRelatorio()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Gerar Relatório
+        </button>
+        <button class="btn-clear" onclick="limparFiltros()">↺ Limpar</button>
+        <span class="gen-ts" id="gen-ts"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado inicial -->
+  <div class="section-card" id="initial-state">
+    <div class="empty-state">
+      <span class="empty-icon">📋</span>
+      <p>Selecione o tipo de relatório, configure os filtros e clique em <strong>Gerar Relatório</strong>.</p>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="section-card" id="loading-state" style="display:none">
+    <div class="loading-box">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+      <p style="margin-top:.6rem">Consultando banco de dados…</p>
+    </div>
+  </div>
+
+  <!-- Resultados dinâmicos (JS) -->
+  <div id="rpt-turma"       class="rpt-result"></div>
+  <div id="rpt-aluno"       class="rpt-result"></div>
+  <div id="rpt-comparativo" class="rpt-result"></div>
+
+  <!-- Consolidado: pré-renderizado pelo servidor via Jinja2 -->
+  <div id="rpt-consolidado" class="rpt-result">
+    <div class="section-card">
+      <div class="section-head">
+        <div>
+          <h2>📊 Consolidado Institucional — US18</h2>
+          <p class="section-desc">Todas as turmas · dados em tempo real</p>
+        </div>
+        <div class="export-actions">
+          <button class="btn-xp btn-xp-pdf"   onclick="toast('📄 Exportação em implementação (RNF19).')">📄 PDF</button>
+          <button class="btn-xp btn-xp-excel" onclick="toast('📊 Exportação em implementação (RNF19).')">📊 Excel</button>
+        </div>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi"><span class="kpi-val">{{ resumo_inst.total_turmas }}</span><span class="kpi-lbl">Turmas</span></div>
+        <div class="kpi"><span class="kpi-val">{{ resumo_inst.total_professores }}</span><span class="kpi-lbl">Professores</span></div>
+        <div class="kpi"><span class="kpi-val">{{ resumo_inst.total_alunos }}</span><span class="kpi-lbl">Alunos</span></div>
+        <div class="kpi"><span class="kpi-val">{{ resumo_inst.total_avaliacoes }}</span><span class="kpi-lbl">Avaliações</span></div>
+        <div class="kpi">
+          <span class="kpi-val {% if resumo_inst.media_geral >= 7 %}good{% elif resumo_inst.media_geral >= 5 %}warn{% else %}bad{% endif %}">
+            {{ "%.1f"|format(resumo_inst.media_geral) if resumo_inst.media_geral else "—" }}
+          </span>
+          <span class="kpi-lbl">Média Geral</span>
+        </div>
+      </div>
+      {% if consolidado %}
+      <div class="table-wrap">
+        <table class="edu-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Turma</th><th>Disciplina</th><th>Semestre</th>
+              <th>Professor</th><th>Alunos</th><th>Média</th><th>Aprovação</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in consolidado %}
+            {% set loop_i = loop.index0 %}
+            <tr>
+              <td>
+                <span class="rank-pos{% if loop_i == 0 %} gold{% elif loop_i == 1 %} silver{% elif loop_i == 2 %} bronze{% endif %}">
+                  {{ loop.index }}
+                </span>
+              </td>
+              <td><strong>{{ t.codigo }}</strong></td>
+              <td>{{ t.disciplina }}</td>
+              <td>{{ t.semestre }}</td>
+              <td>{{ t.professor_nome }}</td>
+              <td style="text-align:center">{{ t.total_alunos }}</td>
+              <td>
+                <div class="media-wrap">
+                  <div class="media-bar">
+                    <div class="media-bar-fill fill-{{ t.status }}"
+                         style="width:{{ ((t.media_turma or 0) / 10 * 100)|round|int }}%"></div>
+                  </div>
+                  <span class="media-num">
+                    {{ "%.1f"|format(t.media_turma) if t.media_turma is not none else "—" }}
+                  </span>
+                </div>
+              </td>
+              <td style="text-align:center">
+                {% if t.taxa_aprovacao is not none %}{{ "%.0f"|format(t.taxa_aprovacao) }}%{% else %}—{% endif %}
+              </td>
+              <td>
+                <span class="badge-status badge-{{ t.status }}">
+                  {% if t.status == 'bom' %}Bom
+                  {% elif t.status == 'atencao' %}Atenção
+                  {% else %}Crítico{% endif %}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state"><span class="empty-icon">📭</span><p>Nenhuma turma com dados registrados ainda.</p></div>
+      {% endif %}
+      <div class="export-bar">
+        <p>💡 Relatório institucional completo — exporte para distribuir à gestão.</p>
+        <div class="export-actions">
+          <button class="btn-xp btn-xp-pdf"   onclick="toast('📄 Exportação em implementação (RNF19).')">📄 Exportar PDF</button>
+          <button class="btn-xp btn-xp-excel" onclick="toast('📊 Exportação em implementação (RNF19).')">📊 Exportar Excel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+</div><!-- /reports-page -->
+
+<div id="rpt-toast"></div>
+
+<script id="srv-data" type="application/json">
+{ "tipo_usuario": "{{ current_user.tipo_usuario }}" }
+</script>
+
+<script>
+"use strict";
+const SRV = JSON.parse(document.getElementById('srv-data').textContent);
+
+function getAuthHeaders() {
+  const token = sessionStorage.getItem('edu_token');
+  const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+  if (token) h['Authorization'] = 'Bearer ' + token;
+  return h;
+}
+async function apiFetch(path) {
+  const r = await fetch(path, { headers: getAuthHeaders(), credentials: 'include' });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.detail || 'HTTP ' + r.status); }
+  return r.json();
+}
+
+let activeType = 'turma';
+
+function setType(card, type) {
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  activeType = type;
+  const labels = { turma:'Turma', aluno:'Aluno', comparativo:'Comparativo', consolidado:'Consolidado' };
+  document.getElementById('ftag-label').textContent = labels[type] || type;
+  _show('fg-turma',  type !== 'consolidado');
+  _show('fg-turma2', type === 'comparativo');
+  _show('fg-aluno',  type === 'aluno');
+  _show('fg-sem',    type !== 'consolidado');
+  resetDisplay();
+}
+function _show(id, visible) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = visible ? '' : 'none';
+}
+
+document.getElementById('f-turma').addEventListener('change', function() {
+  if (activeType === 'aluno' && this.value) carregarAlunos(this.value);
+  else if (!this.value) {
+    const s = document.getElementById('f-aluno');
+    s.innerHTML = '<option value="">Selecione a turma primeiro…</option>';
+    s.disabled = true;
+  }
+});
+async function carregarAlunos(turmaId) {
+  const sel = document.getElementById('f-aluno');
+  sel.disabled = true; sel.innerHTML = '<option value="">Carregando…</option>';
+  try {
+    const d = await apiFetch('/turmas/' + turmaId);
+    sel.innerHTML = '<option value="">Selecione o aluno…</option>';
+    (d.alunos || []).forEach(a => {
+      const o = document.createElement('option');
+      o.value = a.id; o.textContent = a.nome; sel.appendChild(o);
+    });
+    sel.disabled = false;
+  } catch(e) { sel.innerHTML = '<option value="">Erro ao carregar alunos</option>'; toast('⚠️ ' + e.message); }
+}
+
+async function gerarRelatorio() {
+  resetDisplay();
+  document.getElementById('initial-state').style.display = 'none';
+  document.getElementById('loading-state').style.display = 'block';
+  try {
+    if      (activeType === 'turma')       await renderTurma();
+    else if (activeType === 'aluno')       await renderAluno();
+    else if (activeType === 'comparativo') await renderComparativo();
+    else if (activeType === 'consolidado') renderConsolidado();
+  } catch(e) {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('initial-state').style.display = 'block';
+    toast('⚠️ ' + e.message); return;
+  }
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('gen-ts').textContent =
+    'Gerado às ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+/* ── Por Turma ── */
+async function renderTurma() {
+  const id = document.getElementById('f-turma').value;
+  if (!id) throw new Error('Selecione uma turma.');
+  const [det, des, top] = await Promise.all([
+    apiFetch('/turmas/'+id), apiFetch('/turmas/'+id+'/desempenho'), apiFetch('/turmas/'+id+'/topicos/analise')
+  ]);
+  const media = des.media_geral || 0, aprv = des.taxa_aprovacao || 0, stM = _st(media);
+  let html = `
+    <div class="section-card">
+      <div class="section-head">
+        <div><h2>🏫 Desempenho da Turma: ${_e(det.codigo)}</h2><p class="section-desc">${_e(det.disciplina||'—')} · ${_e(det.semestre)}</p></div>
+        <div class="export-actions">
+          <button class="btn-xp btn-xp-pdf"   onclick="exportarTurma(${id},'pdf')">📄 PDF</button>
+          <button class="btn-xp btn-xp-excel" onclick="toast('📊 Exportação em implementação.')">📊 Excel</button>
+        </div>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi"><span class="kpi-val">${des.total_alunos}</span><span class="kpi-lbl">Alunos</span></div>
+        <div class="kpi"><span class="kpi-val ${stM.cls}">${media.toFixed(1)}</span><span class="kpi-lbl">Média Geral</span></div>
+        <div class="kpi"><span class="kpi-val ${aprv>=70?'good':aprv>=50?'warn':'bad'}">${aprv.toFixed(0)}%</span><span class="kpi-lbl">Aprovação</span></div>
+        <div class="kpi"><span class="kpi-val">${des.total_avaliacoes||0}</span><span class="kpi-lbl">Avaliações</span></div>
+      </div>
+      <div class="table-wrap"><table class="edu-table">
+        <thead><tr><th>Aluno</th><th>E-mail</th><th>Matrícula</th></tr></thead>
+        <tbody>${(det.alunos||[]).length ? (det.alunos||[]).map(a=>`<tr><td><strong>${_e(a.nome)}</strong></td><td style="color:var(--slate)">${_e(a.email)}</td><td style="color:var(--slate)">${_e(a.matricula||'—')}</td></tr>`).join('') : '<tr><td colspan="3" class="empty-state">Nenhum aluno matriculado.</td></tr>'}</tbody>
+      </table></div>
+      <div class="export-bar">
+        <p>💡 Relatório da turma pronto.</p>
+        <div class="export-actions">
+          <button class="btn-xp btn-xp-pdf"   onclick="exportarTurma(${id},'pdf')">📄 Exportar PDF</button>
+          <button class="btn-xp btn-xp-excel" onclick="toast('📊 Exportação em implementação.')">📊 Exportar Excel</button>
+        </div>
+      </div>
+    </div>`;
+  const topicos = top.topicos || [];
+  if (topicos.length) {
+    html += `<div class="section-card">
+      <div class="section-head"><h2>📌 Tópicos por Dificuldade</h2><p class="section-desc">% de alunos com média &lt; 6.0 no tópico</p></div>
+      <div class="table-wrap"><table class="edu-table">
+        <thead><tr><th>Tópico</th><th>Avaliações</th><th>Média</th><th>Alunos c/ Dificuldade</th><th>% Dificuldade</th></tr></thead>
+        <tbody>${topicos.map(t=>{
+          const tSt=_st(t.media_geral), pct=t.percentual_dificuldade||0;
+          const pCls=pct>=70?'badge-critico':pct>=40?'badge-atencao':'badge-bom';
+          return `<tr>
+            <td><strong>${_e(t.topico)}</strong></td>
+            <td style="text-align:center">${t.total_avaliacoes}</td>
+            <td><div class="media-wrap"><div class="media-bar"><div class="media-bar-fill fill-${tSt.fill}" style="width:${Math.round(t.media_geral/10*100)}%"></div></div><span class="media-num">${t.media_geral.toFixed(1)}</span></div></td>
+            <td style="text-align:center;font-weight:${t.total_alunos_com_dificuldade>0?'700':'400'};color:${t.total_alunos_com_dificuldade>0?'#ef4444':'inherit'}">${t.total_alunos_com_dificuldade}</td>
+            <td><span class="badge-status ${pCls}">${pct.toFixed(1)}%</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>
+    </div>`;
+  }
+  const el = document.getElementById('rpt-turma');
+  el.innerHTML = html; el.classList.add('on');
+}
+
+/* ── Por Aluno ── */
+async function renderAluno() {
+  const turmaId = document.getElementById('f-turma').value;
+  const alunoId = document.getElementById('f-aluno').value;
+  if (!turmaId) throw new Error('Selecione a turma do aluno.');
+  if (!alunoId) throw new Error('Selecione um aluno.');
+  const [notas, turma] = await Promise.all([
+    apiFetch('/alunos/'+alunoId+'/notas?turma_id='+turmaId), apiFetch('/turmas/'+turmaId)
+  ]);
+  const info = (turma.alunos||[]).find(a=>a.id==alunoId)||{};
+  const nome = info.nome||'Aluno', ini = nome.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase();
+  const el = document.getElementById('rpt-aluno');
+  if (!notas.length) {
+    el.innerHTML = `<div class="section-card"><div class="empty-state"><span class="empty-icon">📭</span><p><strong>${_e(nome)}</strong> ainda não possui notas nesta turma.</p></div></div>`;
+    el.classList.add('on'); return;
+  }
+  const vals=notas.map(n=>n.valor), media=vals.reduce((a,b)=>a+b,0)/vals.length, mSt=_st(media);
+  el.innerHTML = `
+    <div class="section-card">
+      <div class="section-head">
+        <div><h2>👤 Desempenho Individual</h2><p class="section-desc">${_e(turma.disciplina||'—')} · ${_e(turma.semestre)}</p></div>
+        <div class="export-actions"><button class="btn-xp btn-xp-pdf" onclick="toast('📄 Exportação em implementação.')">📄 PDF</button></div>
+      </div>
+      <div class="kpi-row" style="align-items:center">
+        <div class="kpi" style="display:flex;align-items:center;gap:.75rem;text-align:left;grid-column:span 2">
+          <div style="width:46px;height:46px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.05rem;color:#fff;font-weight:700;flex-shrink:0">${ini}</div>
+          <div><strong style="display:block;color:var(--navy)">${_e(nome)}</strong><span style="font-size:.78rem;color:var(--slate)">${_e(info.email||'')}</span></div>
+        </div>
+        <div class="kpi"><span class="kpi-val ${mSt.cls}">${media.toFixed(1)}</span><span class="kpi-lbl">Média</span></div>
+        <div class="kpi"><span class="kpi-val good">${Math.max(...vals).toFixed(1)}</span><span class="kpi-lbl">Melhor</span></div>
+        <div class="kpi"><span class="kpi-val bad">${Math.min(...vals).toFixed(1)}</span><span class="kpi-lbl">Pior</span></div>
+        <div class="kpi"><span class="kpi-val">${notas.length}</span><span class="kpi-lbl">Avaliações</span></div>
+      </div>
+      <div class="table-wrap"><table class="edu-table">
+        <thead><tr><th>Avaliação</th><th>Nota</th><th>Desempenho</th></tr></thead>
+        <tbody>${notas.map(n=>{const s=_st(n.valor); return `<tr><td>Avaliação #${n.avaliacao_id}</td><td><span class="badge-status badge-${s.badge}">${n.valor.toFixed(1)}</span></td><td><div class="media-wrap"><div class="media-bar"><div class="media-bar-fill fill-${s.fill}" style="width:${Math.round(n.valor/10*100)}%"></div></div><span class="media-num">${n.valor.toFixed(1)}</span></div></td></tr>`;}).join('')}</tbody>
+      </table></div>
+      <div class="export-bar"><p>Relatório individual gerado com sucesso.</p></div>
+    </div>`;
+  el.classList.add('on');
+}
+
+/* ── Comparativo ── */
+async function renderComparativo() {
+  const idA = document.getElementById('f-turma').value;
+  const idB = document.getElementById('f-turma2').value;
+  if (!idA||!idB) throw new Error('Selecione as duas turmas.');
+  if (idA===idB)  throw new Error('Selecione turmas diferentes.');
+  const [dA,desA,tpA,dB,desB,tpB] = await Promise.all([
+    apiFetch('/turmas/'+idA), apiFetch('/turmas/'+idA+'/desempenho'), apiFetch('/turmas/'+idA+'/topicos/analise'),
+    apiFetch('/turmas/'+idB), apiFetch('/turmas/'+idB+'/desempenho'), apiFetch('/turmas/'+idB+'/topicos/analise'),
+  ]);
+  function card(d,des,L){
+    const m=des.media_geral||0,ap=des.taxa_aprovacao||0,st=_st(m);
+    return `<div class="cmp-card"><div class="cmp-head"><h4>Turma ${L}: ${_e(d.codigo)}</h4><small>${_e(d.disciplina||'—')}</small></div>
+    <div class="cmp-body">
+      <div class="cmp-row"><span class="cmp-lbl">Semestre</span><span class="cmp-v" style="font-size:.85rem">${_e(d.semestre)}</span></div>
+      <div class="cmp-row"><span class="cmp-lbl">Alunos</span><span class="cmp-v">${des.total_alunos}</span></div>
+      <div class="cmp-row"><span class="cmp-lbl">Média Geral</span><span class="cmp-v ${m>=7?'g':m>=5?'w':'b'}">${m.toFixed(1)}</span></div>
+      <div class="cmp-row"><span class="cmp-lbl">Avaliações</span><span class="cmp-v">${des.total_avaliacoes||0}</span></div>
+      <div class="cmp-row"><span class="cmp-lbl">Aprovação</span><span class="cmp-v ${ap>=70?'g':ap>=50?'w':'b'}">${ap.toFixed(0)}%</span></div>
+      <div style="margin-top:.65rem"><span class="badge-status badge-${st.fill}">${st.label}</span></div>
+    </div></div>`;
+  }
+  const map={};
+  (tpA.topicos||[]).forEach(t=>{map[t.topico]={nome:t.topico,mA:t.media_geral};});
+  (tpB.topicos||[]).forEach(t=>{if(!map[t.topico])map[t.topico]={nome:t.topico,mA:null};map[t.topico].mB=t.media_geral;});
+  const rows=Object.values(map);
+  const el=document.getElementById('rpt-comparativo');
+  el.innerHTML=`
+    <div class="cmp-grid">${card(dA,desA,'A')}${card(dB,desB,'B')}</div>
+    <div class="section-card">
+      <div class="section-head">
+        <div><h2>⚖️ Comparativo por Tópico — US19</h2><p class="section-desc">${_e(dA.codigo)} vs ${_e(dB.codigo)}</p></div>
+        <div class="export-actions"><button class="btn-xp btn-xp-pdf" onclick="toast('📄 Exportação em implementação.')">📄 PDF</button></div>
+      </div>
+      <div class="table-wrap"><table class="edu-table">
+        <thead><tr><th>Tópico</th><th>Turma A — ${_e(dA.codigo)}</th><th>Turma B — ${_e(dB.codigo)}</th><th>Diferença</th><th>Melhor</th></tr></thead>
+        <tbody>${rows.length?rows.map(t=>{
+          const mA=t.mA!=null?t.mA:null,mB=t.mB!=null?t.mB:null;
+          const diff=(mA!==null&&mB!==null)?(mA-mB):null;
+          const dFmt=diff!==null?(diff>0?'+'+diff.toFixed(1):diff.toFixed(1)):'—';
+          const dClr=diff===null?'var(--slate)':diff>0?'#10b981':diff<0?'#ef4444':'var(--slate)';
+          const dest=mA!==null&&mB!==null?(mA>mB?'Turma A ✓':mB>mA?'Turma B ✓':'Empate'):'—';
+          const sA=mA!==null?_st(mA):null, sB=mB!==null?_st(mB):null;
+          return `<tr>
+            <td><strong>${_e(t.nome)}</strong></td>
+            <td>${sA?`<span class="badge-status badge-${sA.badge}">${mA.toFixed(1)}</span>`:'<span style="color:var(--slate)">—</span>'}</td>
+            <td>${sB?`<span class="badge-status badge-${sB.badge}">${mB.toFixed(1)}</span>`:'<span style="color:var(--slate)">—</span>'}</td>
+            <td><strong style="color:${dClr}">${dFmt}</strong></td>
+            <td>${dest}</td>
+          </tr>`;
+        }).join(''):'<tr><td colspan="5" class="empty-state" style="padding:1.5rem">Nenhum tópico em comum.</td></tr>'}
+        </tbody>
+      </table></div>
+      <div class="export-bar"><p>💡 Comparativo gerado — identifique boas práticas e replique entre turmas.</p></div>
+    </div>`;
+  el.classList.add('on');
+}
+
+/* ── Consolidado (já renderizado pelo servidor) ── */
+function renderConsolidado() { document.getElementById('rpt-consolidado').classList.add('on'); }
+
+/* ── Exportação TXT (rota existente) ── */
+async function exportarTurma(turmaId, fmt) {
+  if (fmt==='excel'){toast('📊 Exportação em implementação (RNF19).'); return;}
+  toast('📄 Gerando relatório…');
+  try {
+    const r = await apiFetch('/turmas/'+turmaId+'/relatorio?formato=txt');
+    const blob = new Blob([r.conteudo],{type:'text/plain;charset=utf-8'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href=url; a.download='relatorio_turma_'+turmaId+'.txt';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    toast('✅ Relatório exportado!');
+  } catch(e){ toast('⚠️ Erro: '+e.message); }
+}
+
+/* ── Utilitários ── */
+function limparFiltros() {
+  document.querySelectorAll('.fsel').forEach(s=>s.selectedIndex=0);
+  const s=document.getElementById('f-aluno');
+  s.innerHTML='<option value="">Selecione a turma primeiro…</option>'; s.disabled=true;
+  document.getElementById('gen-ts').textContent=''; resetDisplay();
+}
+function resetDisplay() {
+  document.getElementById('initial-state').style.display='block';
+  document.getElementById('loading-state').style.display='none';
+  ['rpt-turma','rpt-aluno','rpt-comparativo','rpt-consolidado'].forEach(id=>{
+    const el=document.getElementById(id); el.classList.remove('on');
+    if(id!=='rpt-consolidado') el.innerHTML='';
+  });
+}
+function _st(m) {
+  if(m>=9) return{cls:'good',fill:'bom',    badge:'bom',    label:'Excelente'};
+  if(m>=7) return{cls:'good',fill:'bom',    badge:'bom',    label:'Bom'};
+  if(m>=5) return{cls:'warn',fill:'atencao',badge:'atencao',label:'Atenção'};
+  return         {cls:'bad', fill:'critico',badge:'critico',label:'Crítico'};
+}
+function _e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function toast(msg,ms=2800){const el=document.getElementById('rpt-toast');el.textContent=msg;el.style.display='block';clearTimeout(el._t);el._t=setTimeout(()=>el.style.display='none',ms);}
+</script>
+{% endblock %}

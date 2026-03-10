@@ -15,19 +15,28 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from dotenv import load_dotenv
 load_dotenv()
 
 from educalin.repositories.base import init_db
-from .routes import auth, turmas, notas, materiais, planos, views
+from .routes import auth, turmas, notas, materiais, planos, views, mensagens
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Inicializa o banco de dados na startup da aplicação."""
     init_db()
+    
+    # Exibir URLs de acesso
+    print("\n" + "="*60)
+    print("EducAlin - Sistema de Gestão Educacional")
+    print("="*60)
+    print("Acesse: http://localhost:8000/login")
+    print("Documentação: http://localhost:8000/docs")
+    print("="*60 + "\n")
+    
     yield
 
 
@@ -47,12 +56,12 @@ app = FastAPI(
 _raw_origins = os.getenv("ALLOWED_ORIGINS", "")
 allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 if not allowed_origins:
-    allowed_origins = ["http://localhost:3000"]
+    allowed_origins = ["http://localhost:3000", "http://localhost:8000"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  #TODO especificar origens permitidas em produção
-    allow_credentials=False,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -70,30 +79,23 @@ _STATIC_DIR = _find_project_root() / "static"
 app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
 # Registrar routers
+app.include_router(views.router)
 app.include_router(auth.router)
 app.include_router(materiais.router)
 app.include_router(turmas.router)
 app.include_router(notas.router)
 app.include_router(planos.router)
 app.include_router(planos.alunos_router)
-app.include_router(views.router)
+app.include_router(mensagens.router)
 
 # Rota raiz
 @app.get("/", tags=["Info"])
 async def root():
     """
     Endpoint raiz da API.
-
-
-    Returns:
-        Informações básicas sobre a API
+    Redireciona para a página de login.
     """
-    return {
-        "message": "Bem-vindo à API EducAlin",
-        "version": "0.1.0",
-        "docs": "/docs",
-        "redoc": "/redoc"
-    }
+    return RedirectResponse(url="/login", status_code=302)
 
 
 # Rota de health check
