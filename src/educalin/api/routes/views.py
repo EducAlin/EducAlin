@@ -11,12 +11,13 @@ Estas rotas servem apenas os templates HTML.
 
 from __future__ import annotations
 
+import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Request, Depends, HTTPException, status
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from ..dependencies import get_current_user, get_current_user_flexible
@@ -122,22 +123,38 @@ def register_page(
     )
 
 
-@router.get("/dashboard", response_class=HTMLResponse, include_in_schema=False)
-def dashboard_page(request: Request):
-    """
-    Renderiza o dashboard principal (placeholder).
 
-    Em uma implementação completa, este endpoint extrairia o token JWT
-    do cookie/sessão, validaria via ``get_current_user`` e popularia
-    ``current_user`` no contexto.
+@router.get("/", include_in_schema=False)
+def index(current_user: Optional[UsuarioSchema] = Depends(get_current_user_flexible)):
+    """Redireciona a raiz para o login ou dashboard apropriado."""
+    if not current_user:
+        return RedirectResponse(url="/login")
+    return RedirectResponse(url="/dashboard")
 
-    Returns:
-        HTMLResponse com o template ``dashboard.html`` renderizado.
+@router.get("/dashboard", include_in_schema=False)
+def dashboard_page(
+    request: Request,
+    current_user: Optional[UsuarioSchema] = Depends(get_current_user_flexible)
+):
     """
-    # TODO: validar JWT do cookie/session e popular current_user
+    Redireciona o usuário para o dashboard específico do seu perfil.
+    Atua como um 'traffic controller' para acessos diretos à URL /dashboard.
+    """
+    if not current_user:
+        return RedirectResponse(url="/login")
+
+    tipo = current_user.tipo_usuario
+    if tipo == 'professor':
+        return RedirectResponse(url="/dashboard/professor")
+    elif tipo == 'coordenador':
+        return RedirectResponse(url="/dashboard/coordenador")
+    elif tipo == 'aluno':
+        return RedirectResponse(url="/dashboard/aluno")
+
+    # Fallback caso o tipo seja desconhecido
     return templates.TemplateResponse(
         "dashboard.html",
-        _base_ctx(request),
+        _base_ctx(request, current_user=current_user),
     )
 
 
@@ -215,7 +232,6 @@ def dashboard_professor_page(
         )
 
     import json
-    import sqlite3
     from educalin.repositories.base import get_connection
     from educalin.repositories.turma_repository import TurmaRepository
     from educalin.repositories.plano_acao_repository import PlanoAcaoRepository
@@ -333,7 +349,6 @@ def dashboard_aluno_page(
             detail="Acesso negado. Apenas alunos podem acessar este dashboard."
         )
 
-    import sqlite3
     from educalin.repositories.base import get_connection
     from educalin.repositories.plano_acao_repository import PlanoAcaoRepository
     from educalin.repositories.material_repository import MaterialRepository
@@ -465,5 +480,206 @@ def dashboard_aluno_page(
                 planos=[],
                 total_planos=0,
                 error=str(e)
+            ),
+        )
+
+@router.get("/dashboard/coordenador", response_class=HTMLResponse, include_in_schema=False)
+def dashboard_coordenador_page(
+    request: Request,
+    current_user: UsuarioSchema = Depends(get_current_user_flexible)
+):
+    """
+    Renderiza o dashboard específico para coordenadores.
+
+    Exibe:
+    - Resumo institucional: total de turmas, professores, alunos e avaliações
+    - Média geral da instituição
+    - Ranking comparativo de turmas por média
+    - Desempenho consolidado por professor
+    - Tópicos com pior desempenho na instituição
+    - Distribuição de alunos por faixa de desempenho
+
+    Requer autenticação JWT válida e tipo de usuário 'coordenador'.
+
+    Args:
+        request: Objeto de requisição FastAPI.
+        current_user: Usuário autenticado via JWT.
+
+    Returns:
+        HTMLResponse com o template ``dashboard/coordenador.html`` renderizado.
+
+    Raises:
+        HTTPException: 403 se o usuário não for coordenador.
+    """
+    if current_user.tipo_usuario != 'coordenador':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado. Apenas coordenadores podem acessar este dashboard."
+        )
+
+    from educalin.repositories.base import get_connection
+
+    try:
+        conn = get_connection()
+
+        # Resumo institucional
+        resumo = {}
+
+        resumo['total_turmas'] = (
+            conn.execute("SELECT COUNT(*) FROM turmas").fetchone()[0]
+        )
+        resumo['total_professores'] = (
+            conn.execute(
+                "SELECT COUNT(*) FROM usuarios WHERE tipo_usuario = 'professor'"
+            ).fetchone()[0]
+        )
+        resumo['total_alunos'] = (
+            conn.execute(
+                "SELECT COUNT(*) FROM usuarios WHERE tipo_usuario = 'aluno'"
+            ).fetchone()[0]
+        )
+        resumo['total_avaliacoes'] = (
+            conn.execute("SELECT COUNT(*) FROM avaliacoes").fetchone()[0]
+        )
+
+        row = conn.execute("SELECT ROUND(AVG(valor), 1) FROM notas").fetchone()
+        resumo['media_geral'] = row[0] if row and row[0] else 0.0
+
+        # Ranking comparativo de turmas
+        cursor = conn.execute("""
+            SELECT
+                t.id,
+                t.codigo          AS turma_codigo,
+                t.disciplina,
+                u.nome            AS professor_nome,
+                COUNT(DISTINCT ta.aluno_id)     AS total_alunos,
+                ROUND(AVG(n.valor), 1)          AS media_turma
+            FROM turmas t
+            INNER JOIN usuarios u       ON t.professor_id = u.id
+            LEFT  JOIN turma_alunos ta  ON t.id = ta.turma_id
+            LEFT  JOIN avaliacoes a     ON a.turma_id = t.id
+            LEFT  JOIN notas n          ON n.avaliacao_id = a.id
+            GROUP BY t.id, t.codigo, t.disciplina, u.nome
+            ORDER BY media_turma DESC
+        """)
+
+        turmas_ranking = []
+        for i, row in enumerate(cursor.fetchall()):
+            media = row['media_turma'] or 0
+            turmas_ranking.append({
+                'posicao':        i + 1,
+                'turma_codigo':   row['turma_codigo'],
+                'disciplina':     row['disciplina'],
+                'professor_nome': row['professor_nome'],
+                'total_alunos':   row['total_alunos'],
+                'media_turma':    row['media_turma'],
+                'status': (
+                    'bom'     if media >= 7.0 else
+                    'atencao' if media >= 5.0 else
+                    'critico'
+                ),
+            })
+
+        # Desempenho por professor
+        cursor = conn.execute("""
+            SELECT
+                u.nome            AS professor_nome,
+                u.email,
+                COUNT(DISTINCT t.id)            AS total_turmas,
+                COUNT(DISTINCT ta.aluno_id)     AS total_alunos,
+                ROUND(AVG(n.valor), 1)          AS media_geral
+            FROM usuarios u
+            LEFT  JOIN turmas t         ON t.professor_id = u.id
+            LEFT  JOIN turma_alunos ta  ON ta.turma_id = t.id
+            LEFT  JOIN avaliacoes a     ON a.turma_id = t.id
+            LEFT  JOIN notas n          ON n.avaliacao_id = a.id
+            WHERE u.tipo_usuario = 'professor'
+            GROUP BY u.id, u.nome, u.email
+            ORDER BY media_geral DESC
+        """)
+        professores = [dict(row) for row in cursor.fetchall()]
+
+        # Tópicos com pior desempenho consolidado
+        cursor = conn.execute("""
+            SELECT
+                a.topico,
+                COUNT(DISTINCT n.id)        AS total_notas,
+                ROUND(AVG(n.valor), 1)      AS media_topico,
+                COUNT(DISTINCT ta.aluno_id) AS alunos_afetados
+            FROM avaliacoes a
+            INNER JOIN notas n         ON n.avaliacao_id = a.id
+            LEFT  JOIN turma_alunos ta ON ta.turma_id = a.turma_id
+            WHERE a.topico IS NOT NULL AND a.topico != ''
+            GROUP BY a.topico
+            HAVING COUNT(DISTINCT n.id) >= 3
+            ORDER BY media_topico ASC
+            LIMIT 8
+        """)
+        topicos_dificeis = [dict(row) for row in cursor.fetchall()]
+
+        # Distribuição de alunos por faixa de desempenho
+        cursor = conn.execute("""
+            SELECT aluno_id, ROUND(AVG(valor), 1) AS media_aluno
+            FROM notas n
+            INNER JOIN avaliacoes a ON n.avaliacao_id = a.id
+            GROUP BY aluno_id
+        """)
+        medias = [r['media_aluno'] for r in cursor.fetchall()]
+
+        distribuicao = {
+            'excelente': sum(1 for m in medias if m >= 9.0),
+            'bom':       sum(1 for m in medias if 7.0 <= m < 9.0),
+            'regular':   sum(1 for m in medias if 5.0 <= m < 7.0),
+            'critico':   sum(1 for m in medias if m < 5.0),
+        }
+
+        current_user_dict = {
+            'id':           current_user.id,
+            'nome':         current_user.nome,
+            'email':        current_user.email,
+            'tipo_usuario': current_user.tipo_usuario,
+        }
+
+        conn.close()
+
+        return templates.TemplateResponse(
+            "dashboard/coordenador.html",
+            _base_ctx(
+                request,
+                current_user=current_user_dict,
+                active_page='dashboard',
+                coordenador={'nome': current_user.nome, 'email': current_user.email},
+                resumo=resumo,
+                turmas_ranking=turmas_ranking,
+                professores=professores,
+                topicos_dificeis=topicos_dificeis,
+                distribuicao=distribuicao,
+            ),
+        )
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return templates.TemplateResponse(
+            "dashboard/coordenador.html",
+            _base_ctx(
+                request,
+                current_user={
+                    'id':           current_user.id,
+                    'nome':         current_user.nome,
+                    'email':        current_user.email,
+                    'tipo_usuario': current_user.tipo_usuario,
+                },
+                active_page='dashboard',
+                coordenador={'nome': current_user.nome, 'email': current_user.email},
+                resumo={
+                    'total_turmas': 0, 'total_professores': 0,
+                    'total_alunos': 0, 'total_avaliacoes': 0, 'media_geral': 0.0,
+                },
+                turmas_ranking=[],
+                professores=[],
+                topicos_dificeis=[],
+                distribuicao={'excelente': 0, 'bom': 0, 'regular': 0, 'critico': 0},
+                error=str(e),
             ),
         )

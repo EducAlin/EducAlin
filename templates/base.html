@@ -61,6 +61,11 @@
               <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}"
                  href="/dashboard/aluno">Dashboard</a>
             </li>
+            {% elif current_user.tipo_usuario == 'coordenador' %}
+            <li class="nav-item">
+              <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}"
+                 href="/dashboard/coordenador">Dashboard</a>
+            </li>
             {% else %}
             <li class="nav-item">
               <span class="nav-link disabled">Dashboard (em breve)</span>
@@ -120,22 +125,22 @@
 
   {# Scripts locais #}
   <script src="{{ url_for('static', path='js/app.js') }}"></script>
-  
+
   <script>
   // Atualizar dados do usuário na navbar dinamicamente
   window.addEventListener('DOMContentLoaded', function() {
     const usuarioStr = sessionStorage.getItem('edu_usuario');
-    
+
     if (usuarioStr) {
       try {
         const usuario = JSON.parse(usuarioStr);
-        
+
         // Atualizar nome
         const nomeElement = document.getElementById('navbar-user-name');
         if (nomeElement && usuario.nome) {
           nomeElement.textContent = usuario.nome;
         }
-        
+
         // Atualizar tipo de usuário
         const tipoElement = document.getElementById('navbar-user-type');
         if (tipoElement && usuario.tipo_usuario) {

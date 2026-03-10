@@ -106,7 +106,7 @@ if (loginForm) {
         if (tipoUsuario === 'professor') {
           window.location.href = '/dashboard/professor';
         } else if (tipoUsuario === 'coordenador') {
-          window.location.href = '/dashboard';
+          window.location.href = '/dashboard/coordenador';
         } else if (tipoUsuario === 'aluno') {
           window.location.href = '/dashboard/aluno';
         } else {
