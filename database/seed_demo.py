@@ -10,13 +10,14 @@ Também cria turmas, avaliações, notas e planos de ação de exemplo.
 """
 
 import sys
+import sqlite3
 from pathlib import Path
 
 # Adicionar o diretório src ao path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
-from educalin.repositories.base import get_connection
+from educalin.repositories.base import get_connection, init_db
 from educalin.repositories.usuario_repository import UsuarioRepository
 from educalin.repositories.turma_repository import TurmaRepository
 from educalin.repositories.avaliacao_repository import AvaliacaoRepository
@@ -35,12 +36,19 @@ def limpar_dados_demo(conn):
     cursor.execute("PRAGMA foreign_keys = OFF")
     
     # Deletar em ordem reversa de dependências
-    cursor.execute("DELETE FROM notas WHERE id >= 1000")
-    cursor.execute("DELETE FROM avaliacoes WHERE id >= 1000")
-    cursor.execute("DELETE FROM planos_acao WHERE id >= 1000")
-    cursor.execute("DELETE FROM turma_alunos WHERE turma_id >= 1000")
-    cursor.execute("DELETE FROM turmas WHERE id >= 1000")
-    cursor.execute("DELETE FROM usuarios WHERE id >= 1000")
+    # Tabelas com coluna 'id'
+    tabelas_com_id = ["notas", "avaliacoes", "planos_acao", "turmas", "usuarios"]
+    for tabela in tabelas_com_id:
+        try:
+            cursor.execute(f"DELETE FROM {tabela} WHERE id >= 1000")
+        except sqlite3.OperationalError:
+            pass
+            
+    # Tabelas sem coluna 'id'
+    try:
+        cursor.execute("DELETE FROM turma_alunos WHERE turma_id >= 1000")
+    except sqlite3.OperationalError:
+        pass
     
     # Reabilitar foreign keys
     cursor.execute("PRAGMA foreign_keys = ON")
@@ -322,6 +330,9 @@ def main():
     print("=" * 60)
     
     try:
+        # Garantir que o banco existe e as tabelas estão criadas
+        init_db()
+        
         conn = get_connection()
         
         # Limpar dados anteriores
