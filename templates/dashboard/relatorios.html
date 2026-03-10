@@ -268,7 +268,7 @@
 
   <!-- Cabeçalho -->
   <div class="reports-hero">
-    <span class="hero-badge">CU004 — Relatórios</span>
+    <span class="hero-badge">Coordenação</span>
     <h1>Central de Relatórios</h1>
     <p>Dados reais do banco &mdash; filtre, visualize e exporte em PDF ou Excel.</p>
   </div>
@@ -288,13 +288,13 @@
     <div class="type-card" onclick="setType(this,'comparativo')">
       <span class="type-icon">⚖️</span>
       <span class="type-label">Comparativo</span>
-      <span class="type-desc">Duas turmas lado a lado — US19</span>
+      <span class="type-desc">Duas turmas lado a lado</span>
     </div>
     {% if current_user.tipo_usuario == 'coordenador' %}
     <div class="type-card" onclick="setType(this,'consolidado')">
       <span class="type-icon">📊</span>
       <span class="type-label">Consolidado</span>
-      <span class="type-desc">Visão geral da instituição — US18</span>
+      <span class="type-desc">Visão geral da instituição</span>
     </div>
     {% endif %}
   </div>
