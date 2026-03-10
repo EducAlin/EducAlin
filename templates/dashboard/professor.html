@@ -171,13 +171,101 @@
     color: var(--petroleum, #1a5f7a);
     margin-bottom: 1rem;
   }
-  .modal-content .btn-close {
-    float: right;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--slate, #64748b);
+  /* ── Avaliações: estilos específicos ── */
+  .avaliacao-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    background: rgba(139,92,246,.12);
+    color: #6d28d9;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: default;
+  }
+
+  .modal-avaliacao .modal-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-avaliacao .modal-header .icon-wrap {
+    width: 40px;
+    height: 40px;
+    background: rgba(139,92,246,.12);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .modal-avaliacao .modal-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+
+  .modal-avaliacao .modal-header p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--slate);
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    .field-row { grid-template-columns: 1fr; }
+  }
+
+  .peso-hint {
+    font-size: 0.78rem;
+    color: var(--slate);
+    margin-top: 0.3rem;
+  }
+
+  .avaliacao-alert {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .avaliacao-alert.success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+  }
+  .avaliacao-alert.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+  }
+
+  /* Shimmer on the new button */
+  .btn-avaliacao {
+    background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-avaliacao::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .btn-avaliacao:hover {
+    background: linear-gradient(135deg, #6d28d9, #7c3aed);
+    color: white;
   }
 </style>
 {% endblock %}
@@ -245,7 +333,28 @@
             </div>
             <div class="col-md-6">
               <div class="form-group">
-                <label for="avaliacao-select">Avaliação</label>
+                <label for="avaliacao-select">
+                  Avaliação
+                  <button
+                    type="button"
+                    id="btn-nova-avaliacao-inline"
+                    onclick="abrirCriarAvaliacaoDoFormNota()"
+                    style="
+                      display: none;
+                      margin-left: 0.5rem;
+                      padding: 0.15rem 0.6rem;
+                      font-size: 0.72rem;
+                      background: rgba(139,92,246,.12);
+                      color: #6d28d9;
+                      border: 1px solid rgba(139,92,246,.3);
+                      border-radius: 99px;
+                      cursor: pointer;
+                      font-weight: 600;
+                      vertical-align: middle;
+                    "
+                    title="Criar nova avaliação para a turma selecionada"
+                  >+ Nova</button>
+                </label>
                 <select id="avaliacao-select" name="avaliacao_id" required disabled>
                   <option value="">Primeiro selecione uma turma...</option>
                 </select>
@@ -306,6 +415,9 @@
             </button>
             <button onclick="abrirGestaoAlunos({{ turma.id }}, '{{ turma.codigo }}')" class="btn-action btn-primary-action" style="background: var(--petroleum-dk);">
               Gerir Alunos
+            </button>
+            <button onclick="abrirCriarAvaliacao({{ turma.id }}, '{{ turma.codigo }} – {{ turma.disciplina }}')" class="btn-action btn-avaliacao">
+              ＋ Avaliação
             </button>
             <button onclick="editarTurma({{ turma.id }}, '{{ turma.codigo }}', '{{ turma.disciplina }}', '{{ turma.semestre }}')" class="btn-action btn-primary-action" style="background: var(--slate);">
               Editar
@@ -393,9 +505,114 @@
   </div>
 </div>
 
+<!-- ══ MODAL: Criar Avaliação ══ -->
+<div id="modal-criar-avaliacao" class="modal modal-avaliacao">
+  <div class="modal-content" style="max-width: 520px;">
+    <button class="btn-close" onclick="fecharModal('modal-criar-avaliacao')" style="position:absolute;top:1rem;right:1rem;">&times;</button>
+
+    <div class="modal-header">
+      <div class="icon-wrap">📝</div>
+      <div>
+        <h3>Nova Avaliação</h3>
+        <p id="avaliacao-turma-label" style="color:var(--slate);font-size:0.82rem;margin-top:0.15rem;"></p>
+      </div>
+    </div>
+
+    <div id="avaliacao-alert" class="avaliacao-alert"></div>
+
+    <form id="form-criar-avaliacao" onsubmit="submitCriarAvaliacao(event)">
+      <input type="hidden" id="avaliacao-turma-id" value="">
+
+      <!-- Título -->
+      <div class="form-group">
+        <label for="av-titulo">Título <span style="color:#ef4444">*</span></label>
+        <input
+          type="text"
+          id="av-titulo"
+          placeholder="Ex: Prova 1 — Álgebra Linear"
+          required
+          maxlength="255"
+          style="width:100%;padding:.625rem;border:1.5px solid #cbd5e1;border-radius:6px;font-size:.9rem;"
+        />
+      </div>
+
+      <!-- Data + Tópico lado a lado -->
+      <div class="field-row">
+        <div class="form-group">
+          <label for="av-data">Data <span style="color:#ef4444">*</span></label>
+          <input
+            type="date"
+            id="av-data"
+            required
+            style="width:100%;padding:.625rem;border:1.5px solid #cbd5e1;border-radius:6px;font-size:.9rem;"
+          />
+        </div>
+        <div class="form-group">
+          <label for="av-topico">Tópico</label>
+          <input
+            type="text"
+            id="av-topico"
+            placeholder="Ex: Matrizes"
+            maxlength="100"
+            style="width:100%;padding:.625rem;border:1.5px solid #cbd5e1;border-radius:6px;font-size:.9rem;"
+          />
+          <span class="peso-hint">Usado na análise de tópicos</span>
+        </div>
+      </div>
+
+      <!-- Valor máximo + Peso lado a lado -->
+      <div class="field-row">
+        <div class="form-group">
+          <label for="av-valor-maximo">Valor Máximo <span style="color:#ef4444">*</span></label>
+          <input
+            type="number"
+            id="av-valor-maximo"
+            placeholder="Ex: 10"
+            min="0.01"
+            step="0.01"
+            required
+            style="width:100%;padding:.625rem;border:1.5px solid #cbd5e1;border-radius:6px;font-size:.9rem;"
+          />
+        </div>
+        <div class="form-group">
+          <label for="av-peso">Peso <span style="color:#ef4444">*</span></label>
+          <input
+            type="number"
+            id="av-peso"
+            placeholder="Ex: 0.3"
+            min="0"
+            max="1"
+            step="0.01"
+            required
+            style="width:100%;padding:.625rem;border:1.5px solid #cbd5e1;border-radius:6px;font-size:.9rem;"
+          />
+          <span class="peso-hint">Entre 0 e 1 &mdash; ex: 0.3 = 30%</span>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+        <button
+          type="button"
+          onclick="fecharModal('modal-criar-avaliacao')"
+          style="padding:.625rem 1.25rem;border:1.5px solid var(--slate);background:white;color:var(--slate);border-radius:6px;cursor:pointer;font-weight:500;"
+        >Cancelar</button>
+        <button
+          type="submit"
+          id="btn-submit-avaliacao"
+          style="padding:.625rem 1.5rem;background:linear-gradient(135deg,#7c3aed,#8b5cf6);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:.4rem;"
+        >
+          <span id="btn-av-spinner" style="display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;"></span>
+          Criar Avaliação
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- /MODAL Criar Avaliação -->
+
 <!-- Modal para Relatório -->
 <div id="modal-relatorio" class="modal">
-  <div class="modal-content" style="max-width: 800px; width: 48%;">
+  <div class="modal-content" style="max-width: 800px; width: 95%;">
     <button class="btn-close" onclick="fecharModal('modal-relatorio')">&times;</button>
     <h3>Relatório de Desempenho</h3>
     <div id="relatorio-content" style="white-space: pre; overflow-x: auto; font-family: monospace; font-size: 0.85rem; color: var(--slate, #334155); margin-top: 1rem; padding: 1rem; background: #f8fafc; border-radius: 6px; max-height: 60vh; overflow-y: auto;">
@@ -834,7 +1051,129 @@ function getAuthHeaders() {
   return headers;
 }
 
-// Função para registrar nota
+// ══════════════════════════════════════════════════════════════
+// CRIAR AVALIAÇÃO — lógica principal
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Abre o modal de criação de avaliação.
+ * @param {number} turmaId
+ * @param {string} turmaLabel - texto descritivo para exibir no modal
+ */
+function abrirCriarAvaliacao(turmaId, turmaLabel) {
+  document.getElementById('avaliacao-turma-id').value = turmaId;
+  document.getElementById('avaliacao-turma-label').textContent = turmaLabel;
+  document.getElementById('form-criar-avaliacao').reset();
+  document.getElementById('avaliacao-turma-id').value = turmaId; // reset limpa hidden, restaurar
+  _ocultarAlertaAvaliacao();
+  document.getElementById('modal-criar-avaliacao').classList.add('active');
+}
+
+/**
+ * Atalho chamado pelo botão "+ Nova" ao lado do select de avaliação
+ * no formulário de registro de nota.
+ */
+function abrirCriarAvaliacaoDoFormNota() {
+  if (!turmaIdNoFormNota) return;
+
+  // Descobrir o label da turma
+  const sel = document.getElementById('turma-select');
+  const label = sel.options[sel.selectedIndex]?.text || `Turma ${turmaIdNoFormNota}`;
+  abrirCriarAvaliacao(turmaIdNoFormNota, label);
+}
+
+async function submitCriarAvaliacao(event) {
+  event.preventDefault();
+
+  const turmaId  = parseInt(document.getElementById('avaliacao-turma-id').value);
+  const titulo   = document.getElementById('av-titulo').value.trim();
+  const data     = document.getElementById('av-data').value;
+  const topico   = document.getElementById('av-topico').value.trim() || null;
+  const valorMax = parseFloat(document.getElementById('av-valor-maximo').value);
+  const peso     = parseFloat(document.getElementById('av-peso').value);
+
+  // Validações front-end
+  if (!titulo || !data || isNaN(valorMax) || isNaN(peso)) {
+    _mostrarAlertaAvaliacao('Preencha todos os campos obrigatórios.', 'error');
+    return;
+  }
+  if (peso < 0 || peso > 1) {
+    _mostrarAlertaAvaliacao('O peso deve ser um valor entre 0 e 1.', 'error');
+    return;
+  }
+  if (valorMax <= 0) {
+    _mostrarAlertaAvaliacao('O valor máximo deve ser maior que zero.', 'error');
+    return;
+  }
+
+  // Feedback visual de loading
+  const btn     = document.getElementById('btn-submit-avaliacao');
+  const spinner = document.getElementById('btn-av-spinner');
+  btn.disabled  = true;
+  spinner.style.display = 'inline-block';
+
+  try {
+    const payload = { titulo, data, valor_maximo: valorMax, peso };
+    if (topico) payload.topico = topico;
+
+    const response = await fetch(`/turmas/${turmaId}/avaliacoes`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      const avaliacao = await response.json();
+      _mostrarAlertaAvaliacao(`Avaliação "${avaliacao.titulo}" criada com sucesso!`, 'success');
+
+      // Recarregar o select de avaliações no form de nota se a turma for a mesma
+      if (turmaIdNoFormNota === turmaId) {
+        await carregarAvaliacoes(/* silencioso */ true);
+        // Pré-selecionar a avaliação recém-criada
+        const sel = document.getElementById('avaliacao-select');
+        for (const opt of sel.options) {
+          if (parseInt(opt.value) === avaliacao.id) {
+            sel.value = avaliacao.id;
+            break;
+          }
+        }
+      }
+
+      // Fechar modal após breve delay
+      setTimeout(() => fecharModal('modal-criar-avaliacao'), 1400);
+    } else {
+      const err = await response.json();
+      const detail = err.detail
+        ? (Array.isArray(err.detail) ? err.detail.map(e => e.msg || e).join('; ') : err.detail)
+        : 'Erro ao criar avaliação.';
+      _mostrarAlertaAvaliacao(detail, 'error');
+    }
+  } catch (e) {
+    console.error('Erro ao criar avaliação:', e);
+    _mostrarAlertaAvaliacao('Erro de conexão. Verifique sua internet.', 'error');
+  } finally {
+    btn.disabled  = false;
+    spinner.style.display = 'none';
+  }
+}
+
+function _mostrarAlertaAvaliacao(mensagem, tipo) {
+  const el = document.getElementById('avaliacao-alert');
+  el.textContent = mensagem;
+  el.className = `avaliacao-alert ${tipo}`;
+  el.style.display = 'block';
+}
+
+function _ocultarAlertaAvaliacao() {
+  const el = document.getElementById('avaliacao-alert');
+  el.style.display = 'none';
+  el.className = 'avaliacao-alert';
+}
+
+// ══════════════════════════════════════════════════════════════
+// REGISTRO DE NOTA
+// ══════════════════════════════════════════════════════════════
+
 async function registrarNota(event) {
   event.preventDefault();
 
@@ -860,6 +1199,8 @@ async function registrarNota(event) {
       form.reset();
       document.getElementById('avaliacao-select').disabled = true;
       document.getElementById('aluno-select').disabled = true;
+      document.getElementById('btn-nova-avaliacao-inline').style.display = 'none';
+      turmaIdNoFormNota = null;
 
       setTimeout(() => {
         document.getElementById('nota-alert').style.display = 'none';
@@ -877,49 +1218,67 @@ async function registrarNota(event) {
   }
 }
 
-// Função para carregar avaliações e alunos de uma turma
-async function carregarAvaliacoes() {
+/**
+ * Carrega avaliações e alunos da turma selecionada no form de nota.
+ * @param {boolean} [silencioso=false] — se true, não reseta os selects antes de recarregar
+ */
+async function carregarAvaliacoes(silencioso = false) {
   const turmaId = document.getElementById('turma-select').value;
   const avaliacaoSelect = document.getElementById('avaliacao-select');
   const alunoSelect = document.getElementById('aluno-select');
+  const btnNovaAvaliacao = document.getElementById('btn-nova-avaliacao-inline');
 
   if (!turmaId) {
+    turmaIdNoFormNota = null;
     avaliacaoSelect.disabled = true;
     alunoSelect.disabled = true;
+    btnNovaAvaliacao.style.display = 'none';
     avaliacaoSelect.innerHTML = '<option value="">Primeiro selecione uma turma...</option>';
     alunoSelect.innerHTML = '<option value="">Primeiro selecione uma turma...</option>';
     return;
   }
 
+  turmaIdNoFormNota = parseInt(turmaId);
+
+  // Exibir botão "+ Nova" assim que há turma selecionada
+  btnNovaAvaliacao.style.display = 'inline';
+
+  if (!silencioso) {
+    avaliacaoSelect.innerHTML = '<option value="">Carregando...</option>';
+    alunoSelect.innerHTML = '<option value="">Carregando...</option>';
+  }
+
   try {
-    // Carregar avaliações
-    const respAvaliacoes = await fetch(`/turmas/${turmaId}/avaliacoes`, {
-      headers: getAuthHeaders()
-    });
+    // Avaliaçõe e alunos em paralelo
+    const [respAvaliacoes, respTurma] = await Promise.all([
+      fetch(`/turmas/${turmaId}/avaliacoes`, { headers: getAuthHeaders() }),
+      fetch(`/turmas/${turmaId}`,            { headers: getAuthHeaders() })
+    ]);
+
+    // Avaliações
     if (respAvaliacoes.ok) {
       const avaliacoes = await respAvaliacoes.json();
-      avaliacaoSelect.innerHTML = '<option value="">Selecione uma avaliação...</option>';
+      avaliacaoSelect.innerHTML = avaliacoes.length
+        ? '<option value="">Selecione uma avaliação...</option>'
+        : '<option value="">Nenhuma avaliação cadastrada</option>';
       avaliacoes.forEach(av => {
-        const option = document.createElement('option');
-        option.value = av.id;
-        option.textContent = `${av.titulo} (${av.data})`;
-        avaliacaoSelect.appendChild(option);
+        const opt = document.createElement('option');
+        opt.value = av.id;
+        opt.textContent = `${av.titulo} — ${av.data} (máx ${av.valor_maximo})`;
+        avaliacaoSelect.appendChild(opt);
       });
       avaliacaoSelect.disabled = false;
     }
 
-    // Carregar alunos
-    const respTurma = await fetch(`/turmas/${turmaId}`, {
-      headers: getAuthHeaders()
-    });
+    // Alunos
     if (respTurma.ok) {
       const turma = await respTurma.json();
       alunoSelect.innerHTML = '<option value="">Selecione um aluno...</option>';
       turma.alunos.forEach(aluno => {
-        const option = document.createElement('option');
-        option.value = aluno.id;
-        option.textContent = aluno.nome;
-        alunoSelect.appendChild(option);
+        const opt = document.createElement('option');
+        opt.value = aluno.id;
+        opt.textContent = aluno.nome;
+        alunoSelect.appendChild(opt);
       });
       alunoSelect.disabled = false;
     }
