@@ -464,12 +464,12 @@
   </div>
 </div>
 
-<!-- Seção de Upload de Materiais -->
+<!-- Seção da Biblioteca de Materiais -->
 <div class="container" style="max-width: 1200px; margin: 2rem auto 3rem;">
   <div style="background: white; padding: 2rem; border-radius: 12px; border: 2px solid var(--petroleum-lt, #e8f2f4);">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
       <h2 style="color: var(--petroleum, #1a5f7a); font-size: 1.5rem; font-weight: 600; margin: 0;">
-        Upload de Materiais
+        Biblioteca de Materiais
       </h2>
       <button onclick="abrirUploadMaterial()" class="btn-primary-action" style="padding: 0.625rem 1.25rem; background: #8b5cf6;">
         Novo Material
@@ -477,30 +477,20 @@
     </div>
 
     <p style="color: var(--slate); font-size: 0.95rem; margin-bottom: 1rem;">
-      Envie materiais de estudo (PDFs, vídeos, áudios) para que seus alunos possam acessá-los 24/7.
+      Gerencie seus materiais de estudo. Você pode editar a descrição, remover e organizar os arquivos de suas turmas.
     </p>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
-      <div style="padding: 1.25rem; background: #f8fafc; border-radius: 8px; text-align: center;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
-        <div style="font-weight: 600; color: var(--petroleum);">PDFs</div>
-        <div style="font-size: 0.85rem; color: var(--slate); margin-top: 0.25rem;">Documentos de estudo</div>
-      </div>
-      <div style="padding: 1.25rem; background:#f8fafc; border-radius: 8px; text-align: center;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎥</div>
-        <div style="font-weight: 600; color: var(--petroleum);">Vídeos</div>
-        <div style="font-size: 0.85rem; color: var(--slate); margin-top: 0.25rem;">MP4, AVI, MKV</div>
-      </div>
-      <div style="padding: 1.25rem; background: #f8fafc; border-radius: 8px; text-align: center;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎵</div>
-        <div style="font-weight: 600; color: var(--petroleum);">Áudios</div>
-        <div style="font-size: 0.85rem; color: var(--slate); margin-top: 0.25rem;">MP3, podcasts</div>
-      </div>
-      <div style="padding: 1.25rem; background: #f8fafc; border-radius: 8px; text-align: center;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚡</div>
-        <div style="font-weight: 600; color: var(--petroleum);">Até 50MB</div>
-        <div style="font-size: 0.85rem; color: var(--slate); margin-top: 0.25rem;">Por arquivo</div>
-      </div>
+    <!-- Filtro ocultado pois o material atualmente é atrelado ao professor e não diretamente a uma turma
+    <div style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; align-items: center;">
+      <label for="filtro-turma-materiais" style="font-size: 0.9rem; font-weight: 500; color: var(--petroleum);">Turma:</label>
+      <select id="filtro-turma-materiais" onchange="carregarBibliotecaMateriais()" style="padding: 0.4rem; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.9rem; min-width: 200px;">
+        <option value="">Todas as turmas</option>
+      </select>
+    </div>
+    -->
+
+    <div id="lista-biblioteca-materiais" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+      <p style="color: var(--slate); grid-column: 1 / -1; text-align: center; padding: 2rem 0;">Carregando materiais...</p>
     </div>
   </div>
 </div>
@@ -1036,6 +1026,7 @@
 // Variáveis globais
 let turmasData = {{ turmas_json|safe }};
 let turmaAtualPlano = null;
+let turmaIdNoFormNota = null; // Variável para rastrear a turma no formulário de notas
 
 // Função auxiliar para obter headers com autenticação
 function getAuthHeaders() {
@@ -1625,7 +1616,114 @@ document.addEventListener('DOMContentLoaded', () => {
   carregarContatosRecentes();
   carregarMensagensNaoLidas();
   carregarAlunosParaMensagem();
+
+  // Inicializar filtro de turmas da biblioteca e carregar materiais
+  inicializarFiltroBiblioteca();
+  carregarBibliotecaMateriais();
 });
+
+// ========== BIBLIOTECA DE MATERIAIS ==========
+
+function inicializarFiltroBiblioteca() {
+  const select = document.getElementById('filtro-turma-materiais');
+  if (!select) return;
+
+  turmasData.forEach(turma => {
+    const option = document.createElement('option');
+    option.value = turma.id;
+    option.textContent = `${turma.codigo} - ${turma.disciplina}`;
+    select.appendChild(option);
+  });
+}
+
+async function carregarBibliotecaMateriais() {
+  const container = document.getElementById('lista-biblioteca-materiais');
+  if (!container) return;
+
+  const selectFiltro = document.getElementById('filtro-turma-materiais');
+  const turmaFiltro = selectFiltro ? selectFiltro.value : null;
+
+  container.innerHTML = '<p style="color: var(--slate); grid-column: 1 / -1; text-align: center; padding: 2rem 0;">Carregando materiais...</p>';
+
+  try {
+    const response = await fetch('/materiais/', {
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const materiais = data.materiais;
+
+      // No modelo atual, o Material não tem turma_id direto (ele é do professor).
+      // Então mostramos todos. Caso no futuro exista vínculo direto, a lógica de filtro pode ser ativada.
+      const materiaisFiltrados = materiais;
+
+      if (materiaisFiltrados.length === 0) {
+        container.innerHTML = '<p style="color: var(--slate); grid-column: 1 / -1; text-align: center; padding: 2rem 0;">Nenhum material encontrado.</p>';
+        return;
+      }
+
+      let html = '';
+      materiaisFiltrados.forEach(mat => {
+        let icone = '📄';
+        let corBg = '#f1f5f9';
+        if (mat.tipo_material === 'video') { icone = '🎥'; corBg = '#e0e7ff'; }
+        if (mat.tipo_material === 'audio') { icone = '🎵'; corBg = '#fce7f3'; }
+
+        // Na modelagem atual de materiais, não há vínculo direto material <-> turma (apenas via plano de ação).
+        // Logo, exibimos que é do Professor.
+        const turmaNome = 'Geral (Acervo do Professor)';
+
+        html += `
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; transition: box-shadow 0.2s;">
+            <div style="padding: 1rem; background: ${corBg}; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: flex-start;">
+              <div style="font-size: 1.5rem;">${icone}</div>
+              <button onclick="excluirMaterial(${mat.id})" title="Excluir Material" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1.1rem; padding: 0.2rem;">&times;</button>
+            </div>
+            <div style="padding: 1rem; flex: 1; display: flex; flex-direction: column;">
+              <h4 style="color: var(--petroleum); font-size: 1.05rem; margin: 0 0 0.5rem 0; font-weight: 600;">${mat.titulo}</h4>
+              <p style="color: var(--slate); font-size: 0.85rem; margin: 0 0 0.5rem 0; line-height: 1.4; flex: 1;">${mat.descricao || 'Sem descrição.'}</p>
+              <div style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
+                <small style="color: var(--slate); font-size: 0.8rem; font-weight: 500;">Turma: ${turmaNome}</small>
+                ${mat.topico ? `<small style="color: #0369a1; background: #e0f2fe; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem; align-self: flex-start;">Tópico: ${mat.topico}</small>` : ''}
+                <small style="color: var(--slate); font-size: 0.75rem; margin-top: 0.25rem;">Adicionado em: ${new Date(mat.data_upload).toLocaleDateString('pt-BR')}</small>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    } else {
+      container.innerHTML = '<p style="color: #ef4444; grid-column: 1 / -1; text-align: center; padding: 2rem 0;">Erro ao carregar materiais.</p>';
+    }
+  } catch (error) {
+    console.error('Erro ao carregar biblioteca:', error);
+    container.innerHTML = '<p style="color: #ef4444; grid-column: 1 / -1; text-align: center; padding: 2rem 0;">Erro de conexão. Verifique sua internet.</p>';
+  }
+}
+
+async function excluirMaterial(materialId) {
+  if (!confirm('Deseja realmente remover este material? Esta ação não pode ser desfeita.')) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/materiais/${materialId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      alert('Material removido com sucesso!');
+      carregarBibliotecaMateriais(); // Recarregar a lista
+    } else {
+      const error = await response.json();
+      alert('Erro ao remover: ' + (error.detail || 'Desconhecido'));
+    }
+  } catch (error) {
+    alert('Erro de conexão ao remover material.');
+  }
+}
 
 async function enviarMensagem(event) {
   event.preventDefault();
