@@ -98,7 +98,8 @@ class RelatorioTurma(GeradorRelatorio):
 
             alunos_data.append(aluno_info)
 
-            if aluno_info['media'] < 6.0:
+            media = aluno_info['media']
+            if isinstance(media, (int, float)) and media < 6.0:
                 alunos_dificuldade.append(aluno_info)
 
         dados['alunos'] = alunos_data
@@ -153,10 +154,12 @@ class RelatorioTurma(GeradorRelatorio):
             linhas.append("-"*70)
 
             for i, aluno in enumerate(ranking, 1):
+                media = aluno.get('media')
+                media_str = f"{media:.2f}" if isinstance(media, (int, float)) else "N/A"
                 linhas.append(
                     f"{i}º - {aluno.get('nome', 'N/A'):<30} "
                     f"Matrícula: {aluno.get('matricula', 'N/A'):<10} "
-                    f"Média: {aluno.get('media', 0.0):.2f}"
+                    f"Média: {media_str}"
                 )
             linhas.append("")
 
@@ -225,7 +228,7 @@ class RelatorioTurma(GeradorRelatorio):
         if 'alunos' in dados_brutos and dados_brutos['alunos']:
             alunos_ordenados = sorted(
                 dados_brutos['alunos'],
-                key=lambda a: a['media'],
+                key=lambda a: a['media'] if isinstance(a['media'], (int, float)) else -1.0,
                 reverse=True
             )
 

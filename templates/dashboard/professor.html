@@ -395,10 +395,10 @@
 
 <!-- Modal para Relatório -->
 <div id="modal-relatorio" class="modal">
-  <div class="modal-content">
+  <div class="modal-content" style="max-width: 800px; width: 48%;">
     <button class="btn-close" onclick="fecharModal('modal-relatorio')">&times;</button>
     <h3>Relatório de Desempenho</h3>
-    <div id="relatorio-content" style="white-space: pre-wrap; font-family: monospace; font-size: 0.85rem; color: var(--slate, #334155); margin-top: 1rem; padding: 1rem; background: #f8fafc; border-radius: 6px; max-height: 400px; overflow-y: auto;">
+    <div id="relatorio-content" style="white-space: pre; overflow-x: auto; font-family: monospace; font-size: 0.85rem; color: var(--slate, #334155); margin-top: 1rem; padding: 1rem; background: #f8fafc; border-radius: 6px; max-height: 60vh; overflow-y: auto;">
       Carregando...
     </div>
   </div>
@@ -797,7 +797,7 @@
   <div class="modal-content" style="max-width: 700px;">
     <button class="btn-close" onclick="fecharModal('modal-gestao-alunos')">&times;</button>
     <h3>Gestão de Alunos - <span id="gestao-turma-codigo"></span></h3>
-    
+
     <div style="margin-bottom: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
       <h4 style="margin-bottom: 1rem; color: var(--petroleum);">Adicionar Aluno à Turma</h4>
       <div style="display: flex; gap: 0.5rem;">
@@ -1611,12 +1611,12 @@ function tratarMudancaArquivoUpload(event) {
   if (!arquivo) return;
 
   const nomeArquivo = arquivo.name.toLowerCase();
-  
+
   if (nomeArquivo.endsWith('.pdf')) {
     camposPdf.style.display = 'block';
     inputNumPaginas.required = true;
-  } else if (nomeArquivo.endsWith('.mp4') || nomeArquivo.endsWith('.avi') || 
-             nomeArquivo.endsWith('.mkv') || nomeArquivo.endsWith('.mov') || 
+  } else if (nomeArquivo.endsWith('.mp4') || nomeArquivo.endsWith('.avi') ||
+             nomeArquivo.endsWith('.mkv') || nomeArquivo.endsWith('.mov') ||
              nomeArquivo.endsWith('.webm') || nomeArquivo.endsWith('.mp3')) {
     camposVideo.style.display = 'block';
     inputDuracao.required = true;
@@ -1654,7 +1654,7 @@ async function uploadMaterial(event) {
   const titulo = document.getElementById('upload-titulo').value.trim();
   const descricao = document.getElementById('upload-descricao').value.trim();
   const topico = document.getElementById('upload-topico').value.trim();
-  
+
   const numPaginas = document.getElementById('upload-num-paginas').value;
   const duracao = document.getElementById('upload-duracao').value;
   const codec = document.getElementById('upload-codec').value.trim();
@@ -1682,7 +1682,7 @@ async function uploadMaterial(event) {
   if (topico) {
     formData.append('topico', topico);
   }
-  
+
   const nomeArquivo = arquivo.name.toLowerCase();
   if (nomeArquivo.endsWith('.pdf')) {
     if (!numPaginas) {
@@ -1690,8 +1690,8 @@ async function uploadMaterial(event) {
       return;
     }
     formData.append('num_paginas', numPaginas);
-  } else if (nomeArquivo.endsWith('.mp4') || nomeArquivo.endsWith('.avi') || 
-             nomeArquivo.endsWith('.mkv') || nomeArquivo.endsWith('.mov') || 
+  } else if (nomeArquivo.endsWith('.mp4') || nomeArquivo.endsWith('.avi') ||
+             nomeArquivo.endsWith('.mkv') || nomeArquivo.endsWith('.mov') ||
              nomeArquivo.endsWith('.webm') || nomeArquivo.endsWith('.mp3')) {
     if (!duracao || !codec) {
       mostrarAlertaUpload('Duração e codec são obrigatórios para vídeo/áudio', 'error');
