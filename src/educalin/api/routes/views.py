@@ -684,3 +684,202 @@ def dashboard_coordenador_page(
                 error=str(e),
             ),
         )
+
+
+@router.get("/relatorios", response_class=HTMLResponse, include_in_schema=False)
+def relatorios_page(
+    request: Request,
+    current_user: UsuarioSchema = Depends(get_current_user_flexible)
+):
+    """
+    Central de Relatórios — CU004.
+
+    Acessível para professores e coordenadores.
+
+    Injeta via Jinja2:
+      - turmas_disponiveis: turmas do professor autenticado (ou todas para coordenador)
+      - disciplinas_disponiveis: lista ordenada e dedupada de disciplinas
+      - semestres_disponiveis: lista ordenada e dedupada de semestres
+      - resumo_inst: KPIs institucionais — apenas coordenador (zeros para professor)
+      - consolidado: ranking de turmas com médias — apenas coordenador ([] para professor)
+    """
+    if current_user.tipo_usuario not in ('professor', 'coordenador'):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado. Apenas professores e coordenadores podem acessar relatórios."
+        )
+
+    from educalin.repositories.base import get_connection
+    from educalin.repositories.turma_repository import TurmaRepository
+
+    current_user_dict = {
+        'id': current_user.id,
+        'nome': current_user.nome,
+        'email': current_user.email,
+        'tipo_usuario': current_user.tipo_usuario,
+    }
+
+    conn = get_connection()
+    try:
+        repo = TurmaRepository(conn)
+
+        # Turmas disponíveis
+        if current_user.tipo_usuario == 'professor':
+            turmas_objs = repo.listar_por_professor(current_user.id)
+            turmas_disponiveis = [
+                {
+                    'id': t.id,
+                    'codigo': t.codigo,
+                    'disciplina': t.disciplina or '—',
+                    'semestre': t.semestre,
+                }
+                for t in turmas_objs
+            ]
+        else:
+            cursor = conn.execute(
+                "SELECT id, codigo, disciplina, semestre FROM turmas ORDER BY codigo"
+            )
+            turmas_disponiveis = [
+                {
+                    'id': row['id'],
+                    'codigo': row['codigo'],
+                    'disciplina': row['disciplina'] or '—',
+                    'semestre': row['semestre'],
+                }
+                for row in cursor.fetchall()
+            ]
+
+        # Filtros auxiliares
+        disciplinas_disponiveis = sorted({
+            t['disciplina']
+            for t in turmas_disponiveis
+            if t['disciplina'] and t['disciplina'] != '—'
+        })
+
+        semestres_disponiveis = sorted(
+            {t['semestre'] for t in turmas_disponiveis if t['semestre']},
+            reverse=True,
+        )
+
+        # Dados institucionais (apenas coordenador)
+        resumo_inst = {
+            'total_turmas': 0,
+            'total_professores': 0,
+            'total_alunos': 0,
+            'total_avaliacoes': 0,
+            'media_geral': 0.0,
+        }
+        consolidado = []
+
+        if current_user.tipo_usuario == 'coordenador':
+            resumo_inst['total_turmas'] = (
+                conn.execute("SELECT COUNT(*) FROM turmas").fetchone()[0]
+            )
+            resumo_inst['total_professores'] = (
+                conn.execute(
+                    "SELECT COUNT(*) FROM usuarios WHERE tipo_usuario = 'professor'"
+                ).fetchone()[0]
+            )
+            resumo_inst['total_alunos'] = (
+                conn.execute(
+                    "SELECT COUNT(*) FROM usuarios WHERE tipo_usuario = 'aluno'"
+                ).fetchone()[0]
+            )
+            resumo_inst['total_avaliacoes'] = (
+                conn.execute("SELECT COUNT(*) FROM avaliacoes").fetchone()[0]
+            )
+            row = conn.execute("SELECT ROUND(AVG(valor), 1) FROM notas").fetchone()
+            resumo_inst['media_geral'] = float(row[0]) if row and row[0] else 0.0
+
+            # Ranking completo de turmas
+            cursor = conn.execute("""
+                SELECT
+                    t.id,
+                    t.codigo,
+                    t.disciplina,
+                    t.semestre,
+                    u.nome                                          AS professor_nome,
+                    COUNT(DISTINCT ta.aluno_id)                     AS total_alunos,
+                    ROUND(AVG(n.valor), 1)                          AS media_turma,
+                    -- Taxa de aprovação: alunos cuja média >= 6.0
+                    ROUND(
+                        100.0 * SUM(
+                            CASE WHEN medias_aluno.media_aluno >= 6.0 THEN 1 ELSE 0 END
+                        ) / NULLIF(COUNT(DISTINCT ta.aluno_id), 0),
+                        1
+                    )                                               AS taxa_aprovacao
+                FROM turmas t
+                INNER JOIN usuarios u        ON t.professor_id = u.id
+                LEFT  JOIN turma_alunos ta   ON ta.turma_id = t.id
+                LEFT  JOIN avaliacoes a      ON a.turma_id = t.id
+                LEFT  JOIN notas n           ON n.avaliacao_id = a.id
+                -- Subquery para média por aluno nesta turma (usada na taxa de aprovação)
+                LEFT  JOIN (
+                    SELECT
+                        n2.aluno_id,
+                        a2.turma_id,
+                        AVG(n2.valor) AS media_aluno
+                    FROM notas n2
+                    INNER JOIN avaliacoes a2 ON n2.avaliacao_id = a2.id
+                    GROUP BY n2.aluno_id, a2.turma_id
+                ) medias_aluno ON medias_aluno.aluno_id = ta.aluno_id
+                               AND medias_aluno.turma_id = t.id
+                GROUP BY t.id, t.codigo, t.disciplina, t.semestre, u.nome
+                ORDER BY media_turma DESC NULLS LAST, t.codigo
+            """)
+
+            for row in cursor.fetchall():
+                media = float(row['media_turma']) if row['media_turma'] is not None else None
+                aprovacao = float(row['taxa_aprovacao']) if row['taxa_aprovacao'] is not None else None
+                consolidado.append({
+                    'id':             row['id'],
+                    'codigo':         row['codigo'],
+                    'disciplina':     row['disciplina'] or '—',
+                    'semestre':       row['semestre'],
+                    'professor_nome': row['professor_nome'],
+                    'total_alunos':   row['total_alunos'],
+                    'media_turma':    media,
+                    'taxa_aprovacao': aprovacao,
+                    'status': (
+                        'bom'     if media is not None and media >= 7.0 else
+                        'atencao' if media is not None and media >= 5.0 else
+                        'critico'
+                    ),
+                })
+
+        return templates.TemplateResponse(
+            "dashboard/relatorios.html",
+            _base_ctx(
+                request,
+                current_user=current_user_dict,
+                active_page='relatorios',
+                turmas_disponiveis=turmas_disponiveis,
+                disciplinas_disponiveis=disciplinas_disponiveis,
+                semestres_disponiveis=semestres_disponiveis,
+                resumo_inst=resumo_inst,
+                consolidado=consolidado,
+            ),
+        )
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return templates.TemplateResponse(
+            "dashboard/relatorios.html",
+            _base_ctx(
+                request,
+                current_user=current_user_dict,
+                active_page='relatorios',
+                turmas_disponiveis=[],
+                disciplinas_disponiveis=[],
+                semestres_disponiveis=[],
+                resumo_inst={
+                    'total_turmas': 0, 'total_professores': 0,
+                    'total_alunos': 0, 'total_avaliacoes': 0, 'media_geral': 0.0,
+                },
+                consolidado=[],
+                error=str(e),
+            ),
+        )
+    finally:
+        conn.close()
