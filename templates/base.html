@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="EducAlin - Sistema de Gestão Educacional">
+    <title>{% block title %}EducAlin{% endblock %} — EducAlin</title>
+
+    {# Bootstrap CSS #}
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        crossorigin="anonymous"
+    >
+
+    {# Estilos locais #}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="d-flex flex-column" style="min-height:100vh">
+
+    {# ── Navbar ── #}
+  {% if show_navbar is not defined or show_navbar %}
+  <nav class="navbar navbar-educalin navbar-expand-lg">
+    <div class="container">
+
+      <a class="navbar-brand" href="/">
+        <img
+          src="{{ url_for('static', path='Logo_Horizontal.svg') }}"
+          alt="EducAlin"
+          class="logo-navbar"
+        />
+      </a>
+
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#navbarMain"
+        aria-controls="navbarMain"
+        aria-expanded="false"
+        aria-label="Abrir menu"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarMain">
+        {% if current_user %}
+          {# Usuário autenticado #}
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          {% if current_user.tipo_usuario == 'professor' %}
+          <li class="nav-item">
+            <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}"
+               href="/dashboard/professor">Dashboard</a>
+          </li>
+          {% elif current_user.tipo_usuario == 'aluno' %}
+          <li class="nav-item">
+            <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}"
+               href="/dashboard/aluno">Dashboard</a>
+          </li>
+          {% elif current_user.tipo_usuario == 'coordenador' %}
+          <li class="nav-item">
+            <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}"
+               href="/dashboard/coordenador">Dashboard</a>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <span class="nav-link disabled">Dashboard (em breve)</span>
+          </li>
+          {% endif %}
+          {% if current_user.tipo_usuario in ('professor', 'coordenador') %}
+          <li class="nav-item">
+            <a class="nav-link {% if active_page == 'relatorios' %}active{% endif %}"
+               href="/relatorios">Relatórios</a>
+          </li>
+          {% endif %}
+          </ul>
+
+          <ul class="navbar-nav ms-auto align-items-center gap-2">
+            <li class="nav-item">
+              <span class="nav-link" style="color:var(--slate-lt);font-size:.82rem">
+                <span id="navbar-user-name">{{ current_user.nome }}</span>
+                <span class="badge-edu badge-edu-amber ms-1" id="navbar-user-type">
+                  {{ current_user.tipo_usuario | capitalize }}
+                </span>
+              </span>
+            </li>
+            <li class="nav-item">
+              <a href="#" id="logout-btn" class="nav-link">Sair</a>
+            </li>
+          </ul>
+
+        {% else %}
+          {# Visitante #}
+          <ul class="navbar-nav ms-auto align-items-center gap-2">
+            <li class="nav-item">
+              <a class="nav-link" href="/login">Entrar</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link nav-link-cta" href="/register">Cadastrar</a>
+            </li>
+          </ul>
+        {% endif %}
+      </div>
+
+    </div>
+  </nav>
+  {% endif %}
+
+  {# ── Conteúdo principal ── #}
+  <main class="flex-grow-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  {# ── Footer ── #}
+  {% if show_footer is not defined or show_footer %}
+  <footer class="footer-edu">
+    &copy; {{ current_year | default(2026) }} EducAlin. Todos os direitos reservados.
+  </footer>
+  {% endif %}
+
+  {# Bootstrap JS #}
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmk2eDMjsxh+rLKmrGCNBQLpkMh"
+    crossorigin="anonymous"
+  ></script>
+
+  {# Scripts locais #}
+  <script src="{{ url_for('static', path='js/app.js') }}"></script>
+
+  <script>
+  // Atualizar dados do usuário na navbar dinamicamente
+  window.addEventListener('DOMContentLoaded', function() {
+    const usuarioStr = sessionStorage.getItem('edu_usuario');
+
+    if (usuarioStr) {
+      try {
+        const usuario = JSON.parse(usuarioStr);
+
+        // Atualizar nome
+        const nomeElement = document.getElementById('navbar-user-name');
+        if (nomeElement && usuario.nome) {
+          nomeElement.textContent = usuario.nome;
+        }
+
+        // Atualizar tipo de usuário
+        const tipoElement = document.getElementById('navbar-user-type');
+        if (tipoElement && usuario.tipo_usuario) {
+          const tipoCapitalizado = usuario.tipo_usuario.charAt(0).toUpperCase() + usuario.tipo_usuario.slice(1);
+          tipoElement.textContent = tipoCapitalizado;
+        }
+      } catch (e) {
+        console.error('Erro ao atualizar navbar:', e);
+      }
+    }
+  });
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
+
+</body>
+</html>

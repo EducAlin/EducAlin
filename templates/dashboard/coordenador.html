@@ -1,0 +1,580 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Coordenador{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Layout geral ── */
+  .dashboard-coord {
+    padding: 2.5rem 0 4rem;
+    background: var(--cream);
+    min-height: calc(100vh - 70px);
+  }
+
+  /* ── Cabeçalho da página ── */
+  .coord-header {
+    background: var(--navy);
+    padding: 2rem 2.5rem;
+    border-radius: 14px;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .coord-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 80% at 90% 50%, rgba(26,188,156,.18) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 10% 20%, rgba(255,255,255,.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .coord-header h1 {
+    font-family: var(--font-display);
+    font-size: 1.7rem;
+    color: #fff;
+    margin-bottom: .3rem;
+    position: relative;
+  }
+
+  .coord-header p {
+    color: rgba(255,255,255,.65);
+    font-size: .9rem;
+    margin: 0;
+    position: relative;
+  }
+
+  .coord-header .teal-pill {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: rgba(26,188,156,.2);
+    border: 1px solid rgba(26,188,156,.4);
+    color: var(--teal);
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    padding: .35rem .9rem;
+    border-radius: 99px;
+  }
+
+  /* ── Cards de estatística ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: #fff;
+    border: 1px solid var(--cream-dk);
+    border-radius: 12px;
+    padding: 1.35rem 1.5rem;
+    box-shadow: var(--shadow-xs);
+    border-top: 3px solid var(--navy);
+    transition: box-shadow var(--transition), transform var(--transition);
+  }
+
+  .stat-card:hover {
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
+  }
+
+  .stat-card.accent-teal   { border-top-color: var(--teal); }
+  .stat-card.accent-amber  { border-top-color: var(--amber); }
+  .stat-card.accent-danger { border-top-color: #c0392b; }
+
+  .stat-card .stat-label {
+    font-size: .73rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--slate);
+    margin-bottom: .5rem;
+  }
+
+  .stat-card .stat-value {
+    font-family: var(--font-display);
+    font-size: 2.1rem;
+    line-height: 1;
+    color: var(--navy);
+    font-weight: 700;
+  }
+
+  .stat-card .stat-sub {
+    font-size: .78rem;
+    color: var(--slate-lt);
+    margin-top: .25rem;
+  }
+
+  /* ── Seção genérica ── */
+  .section-card {
+    background: #fff;
+    border: 1px solid var(--cream-dk);
+    border-radius: 12px;
+    box-shadow: var(--shadow-xs);
+    margin-bottom: 1.75rem;
+    overflow: hidden;
+  }
+
+  .section-head {
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid var(--cream-dk);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .section-head h2 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--navy);
+    margin: 0;
+  }
+
+  .section-head .section-desc {
+    font-size: .78rem;
+    color: var(--slate-lt);
+    margin: 0;
+  }
+
+  /* ── Distribuição ── */
+  .distribuicao-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    padding: 1.5rem;
+  }
+
+  .dist-item {
+    text-align: center;
+    padding: 1.25rem 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--cream-dk);
+  }
+
+  .dist-item .dist-icon { font-size: 1.6rem; margin-bottom: .5rem; }
+  .dist-item .dist-num  {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--navy);
+  }
+  .dist-item .dist-label { font-size: .76rem; color: var(--slate); margin-top: .35rem; }
+
+  .dist-excelente { background: #f0fdf4; }
+  .dist-bom       { background: #eff6ff; }
+  .dist-regular   { background: #fefce8; }
+  .dist-critico   { background: #fff1f2; }
+
+  /* ── Tabelas ── */
+  .table-wrap { overflow-x: auto; }
+
+  .edu-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .875rem;
+  }
+
+  .edu-table thead { background: var(--cream); }
+
+  .edu-table th {
+    padding: .75rem 1.25rem;
+    text-align: left;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--slate);
+    border-bottom: 1px solid var(--cream-dk);
+    white-space: nowrap;
+  }
+
+  .edu-table td {
+    padding: .9rem 1.25rem;
+    border-bottom: 1px solid var(--cream-dk);
+    vertical-align: middle;
+    color: var(--navy);
+  }
+
+  .edu-table tr:last-child td { border-bottom: none; }
+  .edu-table tbody tr:hover td { background: var(--cream); }
+
+  /* ── Barra de média ── */
+  .media-wrap { display: flex; align-items: center; gap: .6rem; min-width: 120px; }
+
+  .media-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--cream-dk);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .media-bar-fill { height: 100%; border-radius: 99px; }
+  .fill-bom       { background: #10b981; }
+  .fill-atencao   { background: var(--amber); }
+  .fill-critico   { background: #ef4444; }
+
+  .media-num {
+    font-weight: 700;
+    font-size: .88rem;
+    min-width: 32px;
+    text-align: right;
+    color: var(--navy);
+  }
+
+  /* ── Badges ── */
+  .badge-status {
+    display: inline-block;
+    padding: .22rem .75rem;
+    border-radius: 99px;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+  }
+
+  .badge-bom     { background: #d1fae5; color: #065f46; }
+  .badge-atencao { background: #fef3c7; color: #92400e; }
+  .badge-critico { background: #fee2e2; color: #991b1b; }
+
+  /* ── Posição ranking ── */
+  .rank-pos {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .78rem;
+    font-weight: 700;
+    background: var(--cream);
+    color: var(--slate);
+  }
+
+  .rank-pos.gold   { background: #fef3c7; color: #b45309; }
+  .rank-pos.silver { background: #f1f5f9; color: #475569; }
+  .rank-pos.bronze { background: #fff7ed; color: #9a3412; }
+
+  /* ── Tópicos difíceis ── */
+  .topico-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: .9rem 1.5rem;
+    border-bottom: 1px solid var(--cream-dk);
+  }
+
+  .topico-item:last-child { border-bottom: none; }
+
+  .topico-nome  { flex: 1; font-size: .88rem; font-weight: 500; color: var(--navy); }
+  .topico-extra { font-size: .78rem; color: var(--slate); }
+
+  /* ── Grid de duas colunas ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.75rem;
+  }
+
+  /* ── Estado vazio ── */
+  .empty-state {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--slate);
+    font-size: .9rem;
+  }
+
+  /* ── Responsivo ── */
+  @media (max-width: 900px) {
+    .two-col { grid-template-columns: 1fr; }
+    .distribuicao-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 576px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .distribuicao-grid { grid-template-columns: repeat(2, 1fr); }
+    .coord-header .teal-pill { display: none; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-coord">
+  <div class="container">
+
+    <!-- ── Cabeçalho ── -->
+    <div class="coord-header">
+      <span class="teal-pill">Coordenação</span>
+      <h1>Olá, {{ coordenador.nome }}!</h1>
+      <p>Visão consolidada da instituição — acompanhe desempenho de turmas, professores e alunos.</p>
+    </div>
+
+    <!-- ── Acesso rápido: Relatórios ── -->
+    <div style="margin-bottom:1.5rem">
+      <a href="/relatorios"
+         style="display:inline-flex;align-items:center;gap:.6rem;
+                padding:.7rem 1.4rem;
+                background:var(--teal);color:#fff;
+                border-radius:9px;font-weight:600;font-size:.9rem;
+                text-decoration:none;
+                box-shadow:0 4px 14px rgba(26,188,156,.3);
+                transition:background .18s,transform .15s,box-shadow .18s;"
+         onmouseover="this.style.background='#17a78a';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(26,188,156,.4)'"
+         onmouseout="this.style.background='var(--teal)';this.style.transform='';this.style.boxShadow='0 4px 14px rgba(26,188,156,.3)'">
+        📊 Central de Relatórios
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5" style="opacity:.8">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </a>
+      <span style="margin-left:.75rem;font-size:.8rem;color:var(--slate)">
+        Relatórios por turma, aluno, comparativo e consolidado institucional
+      </span>
+    </div>
+
+    <!-- ── 1. Cards de resumo ── -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <p class="stat-label">Turmas Ativas</p>
+        <p class="stat-value">{{ resumo.total_turmas }}</p>
+        <p class="stat-sub">no sistema</p>
+      </div>
+      <div class="stat-card accent-teal">
+        <p class="stat-label">Professores</p>
+        <p class="stat-value">{{ resumo.total_professores }}</p>
+        <p class="stat-sub">cadastrados</p>
+      </div>
+      <div class="stat-card accent-amber">
+        <p class="stat-label">Alunos</p>
+        <p class="stat-value">{{ resumo.total_alunos }}</p>
+        <p class="stat-sub">matriculados</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Avaliações</p>
+        <p class="stat-value">{{ resumo.total_avaliacoes }}</p>
+        <p class="stat-sub">registradas</p>
+      </div>
+      <div class="stat-card accent-teal">
+        <p class="stat-label">Média Geral</p>
+        <p class="stat-value">{{ resumo.media_geral if resumo.media_geral else "—" }}</p>
+        <p class="stat-sub">da instituição</p>
+      </div>
+    </div>
+
+    <!-- ── 2. Distribuição de desempenho dos alunos ── -->
+    <div class="section-card">
+      <div class="section-head">
+        <div>
+          <h2>Distribuição de Desempenho</h2>
+          <p class="section-desc">Alunos agrupados pela média geral de notas</p>
+        </div>
+      </div>
+      <div class="distribuicao-grid">
+        <div class="dist-item dist-excelente">
+          <div class="dist-icon">🌟</div>
+          <div class="dist-num">{{ distribuicao.excelente }}</div>
+          <div class="dist-label">Excelente (≥ 9,0)</div>
+        </div>
+        <div class="dist-item dist-bom">
+          <div class="dist-icon">✅</div>
+          <div class="dist-num">{{ distribuicao.bom }}</div>
+          <div class="dist-label">Bom (7,0 – 8,9)</div>
+        </div>
+        <div class="dist-item dist-regular">
+          <div class="dist-icon">⚠️</div>
+          <div class="dist-num">{{ distribuicao.regular }}</div>
+          <div class="dist-label">Regular (5,0 – 6,9)</div>
+        </div>
+        <div class="dist-item dist-critico">
+          <div class="dist-icon">🔴</div>
+          <div class="dist-num">{{ distribuicao.critico }}</div>
+          <div class="dist-label">Crítico (&lt; 5,0)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 3. Ranking comparativo de turmas ── -->
+    <div class="section-card">
+      <div class="section-head">
+        <div>
+          <h2>Ranking de Turmas por Desempenho</h2>
+          <p class="section-desc">Relatório comparativo entre turmas — US19</p>
+        </div>
+      </div>
+
+      {% if turmas_ranking %}
+      <div class="table-wrap">
+        <table class="edu-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Turma</th>
+              <th>Disciplina</th>
+              <th>Professor</th>
+              <th>Alunos</th>
+              <th>Média</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for turma in turmas_ranking %}
+            <tr>
+              <td>
+                <span class="rank-pos
+                  {%- if turma.posicao == 1 %} gold
+                  {%- elif turma.posicao == 2 %} silver
+                  {%- elif turma.posicao == 3 %} bronze
+                  {%- endif %}">
+                  {{ turma.posicao }}
+                </span>
+              </td>
+              <td>
+                <strong>{{ turma.turma_codigo }}</strong>
+                {% if turma.turma_nome %}<br><small style="color:var(--slate-lt)">{{ turma.turma_nome }}</small>{% endif %}
+              </td>
+              <td>{{ turma.disciplina or "—" }}</td>
+              <td>{{ turma.professor_nome }}</td>
+              <td style="text-align:center">{{ turma.total_alunos }}</td>
+              <td>
+                <div class="media-wrap">
+                  <div class="media-bar">
+                    <div class="media-bar-fill fill-{{ turma.status }}"
+                         style="width:{{ ((turma.media_turma or 0) / 10 * 100)|round|int }}%">
+                    </div>
+                  </div>
+                  <span class="media-num">{{ turma.media_turma or "—" }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge-status badge-{{ turma.status }}">
+                  {%- if turma.status == 'bom' %}Bom
+                  {%- elif turma.status == 'atencao' %}Atenção
+                  {%- else %}Crítico{%- endif %}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">Nenhuma turma com avaliações registradas ainda.</div>
+      {% endif %}
+    </div>
+
+    <!-- ── 4. Professores + Tópicos difíceis ── -->
+    <div class="two-col">
+
+      <!-- Professores (US18) -->
+      <div class="section-card">
+        <div class="section-head">
+          <div>
+            <h2>Professores</h2>
+            <p class="section-desc">Desempenho consolidado por docente</p>
+          </div>
+        </div>
+
+        {% if professores %}
+        <div class="table-wrap">
+          <table class="edu-table">
+            <thead>
+              <tr>
+                <th>Professor</th>
+                <th>Turmas</th>
+                <th>Alunos</th>
+                <th>Média</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for prof in professores %}
+              {% set m = prof.media_geral or 0 %}
+              {% set st = 'bom' if m >= 7.0 else ('atencao' if m >= 5.0 else 'critico') %}
+              <tr>
+                <td>
+                  <strong>{{ prof.professor_nome }}</strong>
+                  <br><small style="color:var(--slate-lt)">{{ prof.email }}</small>
+                </td>
+                <td style="text-align:center">{{ prof.total_turmas }}</td>
+                <td style="text-align:center">{{ prof.total_alunos }}</td>
+                <td>
+                  <div class="media-wrap">
+                    <div class="media-bar">
+                      <div class="media-bar-fill fill-{{ st }}"
+                           style="width:{{ ((m / 10) * 100)|round|int }}%">
+                      </div>
+                    </div>
+                    <span class="media-num">{{ prof.media_geral or "—" }}</span>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-state">Nenhum professor cadastrado.</div>
+        {% endif %}
+      </div>
+
+      <!-- Tópicos com menor desempenho -->
+      <div class="section-card">
+        <div class="section-head">
+          <div>
+            <h2>Tópicos com Menor Desempenho</h2>
+            <p class="section-desc">Conteúdos que mais impactam a instituição</p>
+          </div>
+        </div>
+
+        {% if topicos_dificeis %}
+          {% for topico in topicos_dificeis %}
+          {% set m = topico.media_topico or 0 %}
+          {% set st = 'bom' if m >= 7.0 else ('atencao' if m >= 5.0 else 'critico') %}
+          <div class="topico-item">
+            <div style="flex:1">
+              <p class="topico-nome">{{ topico.topico }}</p>
+              <p class="topico-extra">{{ topico.alunos_afetados }} aluno(s) afetado(s)</p>
+            </div>
+            <div class="media-wrap" style="min-width:110px">
+              <div class="media-bar">
+                <div class="media-bar-fill fill-{{ st }}"
+                     style="width:{{ ((m / 10) * 100)|round|int }}%">
+                </div>
+              </div>
+              <span class="media-num">{{ topico.media_topico or "—" }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+        <div class="empty-state">Dados insuficientes para análise de tópicos.</div>
+        {% endif %}
+      </div>
+
+    </div><!-- fim two-col -->
+
+  </div><!-- fim container -->
+</div><!-- fim dashboard-coord -->
+
+<script>
+// Atualizar nome do usuário a partir do sessionStorage (padrão do projeto)
+window.addEventListener('DOMContentLoaded', function () {
+  const usuarioStr = sessionStorage.getItem('edu_usuario');
+  if (!usuarioStr) return;
+
+  try {
+    const usuario = JSON.parse(usuarioStr);
+    if (usuario.nome) {
+      const h1 = document.querySelector('.coord-header h1');
+      if (h1) h1.textContent = `Olá, ${usuario.nome}!`;
+    }
+  } catch (e) {
+    console.error('Erro ao atualizar dados do usuário:', e);
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width:640px">
+  <div class="text-center">
+
+    <img
+      src="{{ url_for('static', path='Logo_Horizontal.svg') }}"
+      alt="EducAlin"
+      class="logo-auth mb-4"
+      style="max-width:180px"
+    />
+
+    <h2 style="font-family:var(--font-display);color:var(--petroleum)">
+      Login realizado com sucesso!
+    </h2>
+
+    <p style="color:var(--slate);margin:1rem 0 1.5rem">
+      O dashboard está em construção e será expandido em breve.
+    </p>
+
+    <a href="/login" class="btn-edu-primary" style="display:inline-block;width:auto;padding:.65rem 1.5rem">
+      Voltar ao Login
+    </a>
+
+  </div>
+</div>
+{% endblock %}

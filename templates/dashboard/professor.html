@@ -1,0 +1,2440 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Professor{% endblock %}
+
+{% block extra_head %}
+<style>
+  .card-turma {
+    border: 2px solid var(--petroleum-lt, #e8f2f4);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    background: white;
+    transition: all 0.2s ease;
+  }
+  .card-turma:hover {
+    border-color: var(--petroleum, #1a5f7a);
+    box-shadow: 0 4px 12px rgba(26, 95, 122, 0.1);
+  }
+  .card-turma h3 {
+    color: var(--petroleum, #1a5f7a);
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+  .card-turma .info {
+    color: var(--slate, #64748b);
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+  }
+  .btn-action {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    margin-right: 0.5rem;
+    margin-top: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-primary-action {
+    background: var(--petroleum, #1a5f7a);
+    color: white;
+  }
+  .btn-primary-action:hover {
+    background: var(--petroleum-dk, #144557);
+    color: white;
+  }
+  .btn-secondary-action {
+    background: var(--amber, #f59e0b);
+    color: white;
+  }
+  .btn-secondary-action:hover {
+    background: var(--amber-dk, #d97706);
+    color: white;
+  }
+  .btn-success-action {
+    background: #10b981;
+    color: white;
+  }
+  .btn-success-action:hover {
+    background: #059669;
+    color: white;
+  }
+  .badge-info {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: var(--amber-lt, #fef3c7);
+    color: var(--amber-dk, #92400e);
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  .stats-card {
+    background: var(--petroleum-lt, #e8f2f4);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .stats-card h4 {
+    color: white;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+  .stats-card .value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: white;
+  }
+  .form-registro-nota {
+    background: white;
+    border: 2px solid var(--petroleum-lt, #e8f2f4);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .form-registro-nota h3 {
+    color: var(--petroleum, #1a5f7a);
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  .form-group label {
+    display: block;
+    color: var(--slate, #64748b);
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+  }
+  .form-group select,
+  .form-group input {
+    width: 100%;
+    padding: 0.625rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  .form-group select:focus,
+  .form-group input:focus {
+    outline: none;
+    border-color: var(--petroleum, #1a5f7a);
+    box-shadow: 0 0 0 3px rgba(26, 95, 122, 0.1);
+  }
+  .alert {
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+  }
+  .alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+  }
+  .alert-error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+  }
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+  }
+  .modal.active {
+    display: flex;
+  }
+  .modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal-content h3 {
+    color: var(--petroleum, #1a5f7a);
+    margin-bottom: 1rem;
+  }
+  /* ── Avaliações: estilos específicos ── */
+  .avaliacao-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    background: rgba(139,92,246,.12);
+    color: #6d28d9;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: default;
+  }
+
+  .modal-avaliacao .modal-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-avaliacao .modal-header .icon-wrap {
+    width: 40px;
+    height: 40px;
+    background: rgba(139,92,246,.12);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .modal-avaliacao .modal-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+
+  .modal-avaliacao .modal-header p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--slate);
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    .field-row { grid-template-columns: 1fr; }
+  }
+
+  .peso-hint {
+    font-size: 0.78rem;
+    color: var(--slate);
+    margin-top: 0.3rem;
+  }
+
+  .avaliacao-alert {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .avaliacao-alert.success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+  }
+  .avaliacao-alert.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+  }
+
+  /* Shimmer on the new button */
+  .btn-avaliacao {
+    background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-avaliacao::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .btn-avaliacao:hover {
+    background: linear-gradient(135deg, #6d28d9, #7c3aed);
+    color: white;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row">
+    <div class="col-12">
+      <h1 style="color: var(--petroleum, #1a5f7a); font-family: var(--font-display); margin-bottom: 0.5rem;">
+        Dashboard do Professor
+      </h1>
+      <p style="color: var(--slate, #64748b); margin-bottom: 2rem;">
+        Bem-vindo, <strong>{{ current_user.nome if current_user else 'Professor' }}</strong>!
+      </p>
+    </div>
+  </div>
+
+  <!-- Acesso rápido: Relatórios -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div style="padding:1.1rem 1.5rem;background:#fff;border:2px solid #e8edf2;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+        <div>
+          <h4 style="font-family:var(--font-display);color:var(--petroleum);margin:0 0 .2rem;font-size:1rem">📋 Central de Relatórios</h4>
+          <p style="font-size:.82rem;color:var(--slate);margin:0">Visualize desempenho por turma, alunos individuais e compare turmas</p>
+        </div>
+        <a href="/relatorios"
+           style="display:inline-flex;align-items:center;gap:.5rem;
+                  padding:.6rem 1.25rem;
+                  background:var(--petroleum,#1a5f7a);color:#fff;
+                  border-radius:8px;font-weight:600;font-size:.875rem;
+                  text-decoration:none;white-space:nowrap;
+                  transition:background .18s,transform .15s;"
+           onmouseover="this.style.background='#144557';this.style.transform='translateY(-1px)'"
+           onmouseout="this.style.background='var(--petroleum,#1a5f7a)';this.style.transform=''">
+          Ver Relatórios
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estatísticas Rápidas -->
+  <div class="row">
+    <div class="col-md-4">
+      <div class="stats-card">
+        <h4>Total de Turmas</h4>
+        <div class="value">{{ turmas|length }}</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stats-card">
+        <h4>Total de Alunos</h4>
+        <div class="value">{{ total_alunos }}</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stats-card">
+        <h4>Planos Ativos</h4>
+        <div class="value">{{ planos_ativos }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulário de Registro de Nota -->
+  <div class="row">
+    <div class="col-12">
+      <div class="form-registro-nota">
+        <h3>Registrar Nota Rápida</h3>
+
+        <div id="nota-alert" class="alert alert-success" style="display: none;">
+          Nota registrada com sucesso!
+        </div>
+        <div id="nota-error" class="alert alert-error" style="display: none;">
+          Erro ao registrar nota. Tente novamente.
+        </div>
+
+        <form id="form-nota" onsubmit="registrarNota(event)">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="turma-select">Turma</label>
+                <select id="turma-select" name="turma_id" required onchange="carregarAvaliacoes()">
+                  <option value="">Selecione uma turma...</option>
+                  {% for turma in turmas %}
+                  <option value="{{ turma.id }}">{{ turma.codigo }} - {{ turma.disciplina }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="avaliacao-select">
+                  Avaliação
+                  <button
+                    type="button"
+                    id="btn-nova-avaliacao-inline"
+                    onclick="abrirCriarAvaliacaoDoFormNota()"
+                    style="
+                      display: none;
+                      margin-left: 0.5rem;
+                      padding: 0.15rem 0.6rem;
+                      font-size: 0.72rem;
+                      background: rgba(139,92,246,.12);
+                      color: #6d28d9;
+                      border: 1px solid rgba(139,92,246,.3);
+                      border-radius: 99px;
+                      cursor: pointer;
+                      font-weight: 600;
+                      vertical-align: middle;
+                    "
+                    title="Criar nova avaliação para a turma selecionada"
+                  >+ Nova</button>
+                </label>
+                <select id="avaliacao-select" name="avaliacao_id" required disabled>
+                  <option value="">Primeiro selecione uma turma...</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="aluno-select">Aluno</label>
+                <select id="aluno-select" name="aluno_id" required disabled>
+                  <option value="">Primeiro selecione uma turma...</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="valor-input">Nota</label>
+                <input type="number" id="valor-input" name="valor" step="0.01" min="0" required placeholder="Ex: 8.5">
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="btn-action btn-primary-action">
+            Registrar Nota
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Turmas -->
+  <div class="row">
+    <div class="col-12">
+      <h2 style="color: var(--petroleum, #1a5f7a); font-size: 1.5rem; margin-bottom: 1.5rem; font-weight: 600;">
+        Minhas Turmas
+      </h2>
+
+      {% if turmas|length == 0 %}
+      <div style="text-align: center; padding: 3rem; color: var(--slate, #64748b);">
+        <p style="font-size: 1.1rem;">Você ainda não possui turmas cadastradas.</p>
+        <a href="/turmas/criar" class="btn-action btn-primary-action" style="margin-top: 1rem;">
+          Criar primeira turma
+        </a>
+      </div>
+      {% else %}
+        {% for turma in turmas %}
+        <div class="card-turma">
+          <h3>{{ turma.codigo }} - {{ turma.disciplina }}</h3>
+          <div class="info">
+            <strong>Semestre:</strong> {{ turma.semestre }} |
+            <strong>Alunos:</strong>
+            <span class="badge-info">{{ turma.total_alunos }} matriculados</span>
+          </div>
+
+          <div class="actions">
+            <button onclick="verDetalhesTurma({{ turma.id }})" class="btn-action btn-primary-action">
+              Ver Detalhes
+            </button>
+            <button onclick="abrirGestaoAlunos({{ turma.id }}, '{{ turma.codigo }}')" class="btn-action btn-primary-action" style="background: var(--petroleum-dk);">
+              Gerir Alunos
+            </button>
+            <button onclick="abrirCriarAvaliacao({{ turma.id }}, '{{ turma.codigo }} – {{ turma.disciplina }}')" class="btn-action btn-avaliacao">
+              ＋ Avaliação
+            </button>
+            <button onclick="editarTurma({{ turma.id }}, '{{ turma.codigo }}', '{{ turma.disciplina }}', '{{ turma.semestre }}')" class="btn-action btn-primary-action" style="background: var(--slate);">
+              Editar
+            </button>
+            <button onclick="abrirConfirmacaoExclusao({{ turma.id }}, '{{ turma.codigo }}')" class="btn-action btn-primary-action" style="background: #ef4444;">
+              Excluir
+            </button>
+            <button onclick="verAnaliseTopicos({{ turma.id }})" class="btn-action btn-primary-action" style="background: #8b5cf6;">
+              Análise de Tópicos
+            </button>
+            <button onclick="criarPlanoAcao({{ turma.id }})" class="btn-action btn-secondary-action">
+              Criar Plano de Ação
+            </button>
+            <button onclick="verRelatorio({{ turma.id }})" class="btn-action btn-success-action">
+              Ver Relatório
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Seção de Mensagens -->
+<div class="container" style="max-width: 1200px; margin: 2rem auto 3rem;">
+  <div style="background: white; padding: 2rem; border-radius: 12px; border: 2px solid var(--petroleum-lt, #e8f2f4);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <h2 style="color: var(--petroleum, #1a5f7a); font-size: 1.5rem; font-weight: 600; margin: 0;">
+        Mensagens
+      </h2>
+      <button onclick="abrirNovaMensagem()" class="btn-primary-action" style="padding: 0.625rem 1.25rem;">
+        Nova Mensagem
+      </button>
+    </div>
+
+    <div id="contatos-recentes" style="margin-top: 1rem;">
+      <p style="color: var(--slate); text-align: center;">Carregando conversas...</p>
+    </div>
+
+    <div id="mensagens-nao-lidas" style="margin-top: 1rem; padding: 0.75rem; background: #fef9c3; border-left: 4px solid #eab308; border-radius: 6px; display: none;">
+      <strong style="color: #854d0e;">📬 Você tem <span id="count-nao-lidas">0</span> mensagem(ns) não lida(s)</strong>
+    </div>
+  </div>
+</div>
+
+<!-- Seção da Biblioteca de Materiais -->
+<div class="container" style="max-width: 1200px; margin: 2rem auto 3rem;">
+  <div style="background: white; padding: 2rem; border-radius: 12px; border: 2px solid var(--petroleum-lt, #e8f2f4);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <h2 style="color: var(--petroleum, #1a5f7a); font-size: 1.5rem; font-weight: 600; margin: 0;">
+        Biblioteca de Materiais
+      </h2>
+      <button onclick="abrirUploadMaterial()" class="btn-primary-action" style="padding: 0.625rem 1.25rem; background: #8b5cf6;">
+        Novo Material
+      </button>
+    </div>
+
+    <p style="color: var(--slate); font-size: 0.95rem; margin-bottom: 1rem;">
+      Gerencie seus materiais de estudo. Você pode editar a descrição, remover e organizar os arquivos de suas turmas.
+    </p>
+
+    <!-- Filtro ocultado pois o material atualmente é atrelado ao professor e não diretamente a uma turma
+    <div style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; align-items: center;">
+      <label for="filtro-turma-materiais" style="font-size: 0.9rem; font-weight: 500; color: var(--petroleum);">Turma:</label>
+      <select id="filtro-turma-materiais" onchange="carregarBibliotecaMateriais()" style="padding: 0.4rem; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.9rem; min-width: 200px;">
+        <option value="">Todas as turmas</option>
+      </select>
+    </div>
+    -->
+
+    <div id="lista-biblioteca-materiais" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+      <p style="color: var(--slate); grid-column: 1 / -1; text-align: center; padding: 2rem 0;">Carregando materiais...</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Criar Avaliação ══ -->
+<div id="modal-criar-avaliacao" class="modal modal-avaliacao">
+  <div class="modal-content" style="max-width: 520px;">
+    <button class="btn-close" onclick="fecharModal('modal-criar-avaliacao')" style="position:absolute;top:1rem;right:1rem;">&times;</button>
+
+    <div class="modal-header">
+      <div class="icon-wrap">📝</div>
+      <div>
+        <h3>Nova Avaliação</h3>
+        <p id="avaliacao-turma-label" style="color:var(--slate);font-size:0.82rem;margin-top:0.15rem;"></p>
+      </div>
+    </div>
+
+    <div id="avaliacao-alert" class="avaliacao-alert"></div>
+
+    <form id="form-criar-avaliacao" onsubmit="submitCriarAvaliacao(event)">
+      <input type="hidden" id="avaliacao-turma-id" value="">
+
+      <!-- Título -->
+      <div class="form-group">
+        <label for="av-titulo">Título <span style="color:#ef4444">*</span></label>
+        <input
+          type="text"
+          id="av-titulo"
+          placeholder="Ex: Prova 1 — Álgebra Linear"
+          required
+          maxlength="255"
+          style="width:100%;padding:.625rem;border:1.5px solid #cbd5e1;border-radius:6px;font-size:.9rem;"
+        />
+      </div>
+
+      <!-- Data + Tópico lado a lado -->
+      <div class="field-row">
+        <div class="form-group">
+          <label for="av-data">Data <span style="color:#ef4444">*</span></label>
+          <input
+            type="date"
+            id="av-data"
+            required
+            style="width:100%;padding:.625rem;border:1.5px solid #cbd5e1;border-radius:6px;font-size:.9rem;"
+          />
+        </div>
+        <div class="form-group">
+          <label for="av-topico">Tópico</label>
+          <input
+            type="text"
+            id="av-topico"
+            placeholder="Ex: Matrizes"
+            maxlength="100"
+            style="width:100%;padding:.625rem;border:1.5px solid #cbd5e1;border-radius:6px;font-size:.9rem;"
+          />
+          <span class="peso-hint">Usado na análise de tópicos</span>
+        </div>
+      </div>
+
+      <!-- Valor máximo + Peso lado a lado -->
+      <div class="field-row">
+        <div class="form-group">
+          <label for="av-valor-maximo">Valor Máximo <span style="color:#ef4444">*</span></label>
+          <input
+            type="number"
+            id="av-valor-maximo"
+            placeholder="Ex: 10"
+            min="0.01"
+            step="0.01"
+            required
+            style="width:100%;padding:.625rem;border:1.5px solid #cbd5e1;border-radius:6px;font-size:.9rem;"
+          />
+        </div>
+        <div class="form-group">
+          <label for="av-peso">Peso <span style="color:#ef4444">*</span></label>
+          <input
+            type="number"
+            id="av-peso"
+            placeholder="Ex: 0.3"
+            min="0"
+            max="1"
+            step="0.01"
+            required
+            style="width:100%;padding:.625rem;border:1.5px solid #cbd5e1;border-radius:6px;font-size:.9rem;"
+          />
+          <span class="peso-hint">Entre 0 e 1 &mdash; ex: 0.3 = 30%</span>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+        <button
+          type="button"
+          onclick="fecharModal('modal-criar-avaliacao')"
+          style="padding:.625rem 1.25rem;border:1.5px solid var(--slate);background:white;color:var(--slate);border-radius:6px;cursor:pointer;font-weight:500;"
+        >Cancelar</button>
+        <button
+          type="submit"
+          id="btn-submit-avaliacao"
+          style="padding:.625rem 1.5rem;background:linear-gradient(135deg,#7c3aed,#8b5cf6);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:.4rem;"
+        >
+          <span id="btn-av-spinner" style="display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;"></span>
+          Criar Avaliação
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- /MODAL Criar Avaliação -->
+
+<!-- Modal para Relatório -->
+<div id="modal-relatorio" class="modal">
+  <div class="modal-content" style="max-width: 800px; width: 95%;">
+    <button class="btn-close" onclick="fecharModal('modal-relatorio')">&times;</button>
+    <h3>Relatório de Desempenho</h3>
+    <div id="relatorio-content" style="white-space: pre; overflow-x: auto; font-family: monospace; font-size: 0.85rem; color: var(--slate, #334155); margin-top: 1rem; padding: 1rem; background: #f8fafc; border-radius: 6px; max-height: 60vh; overflow-y: auto;">
+      Carregando...
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Análise de Tópicos -->
+<div id="modal-topicos" class="modal">
+  <div class="modal-content" style="max-width: 700px;">
+    <button class="btn-close" onclick="fecharModal('modal-topicos')">&times;</button>
+    <h3>Análise de Tópicos da Turma <small style="color: var(--slate);"></small></h3>
+    <p style="color: var(--slate); font-size: 0.9rem; margin-bottom: 1.5rem;">
+      Tópicos ordenados por dificuldade (% de alunos com média < 6.0)
+    </p>
+    <div id="topicos-content">
+      Carregando...
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Criar Plano de Ação -->
+<div id="modal-plano" class="modal">
+  <div class="modal-content">
+    <button class="btn-close" onclick="fecharModal('modal-plano')">&times;</button>
+    <h3>Criar Plano de Ação</h3>
+
+    <div id="plano-alert" class="alert alert-success" style="display: none;">
+      Plano de ação criado com sucesso!
+    </div>
+
+    <form id="form-plano" onsubmit="submitPlanoAcao(event)">
+      <div class="form-group">
+        <label for="plano-aluno">Aluno</label>
+        <select id="plano-aluno" name="aluno_id" required>
+          <option value="">Selecione um aluno...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="plano-objetivo">Objetivo</label>
+        <input type="text" id="plano-objetivo" name="objetivo" required placeholder="Ex: Melhorar desempenho em Matemática">
+      </div>
+      <div class="form-group">
+        <label for="plano-data-limite">Data Limite</label>
+        <input type="date" id="plano-data-limite" name="data_limite" required>
+      </div>
+      <div class="form-group">
+        <label for="plano-observacoes">Observações (opcional)</label>
+        <input type="text" id="plano-observacoes" name="observacoes" placeholder="Notas adicionais sobre o plano">
+      </div>
+      <button type="submit" class="btn-action btn-secondary-action">
+        Criar Plano
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal para Ver Detalhes da Turma -->
+<div id="modal-detalhes" class="modal">
+  <div class="modal-content">
+    <button class="btn-close" onclick="fecharModal('modal-detalhes')">&times;</button>
+    <h3>Detalhes da Turma</h3>
+
+    <div id="detalhes-loading" style="text-align: center; padding: 20px;">
+      Carregando detalhes...
+    </div>
+
+    <div id="detalhes-content" style="display: none;">
+      <div class="info-section">
+        <h4>Informações Gerais</h4>
+        <p><strong>Nome:</strong> <span id="det-nome"></span></p>
+        <p><strong>Disciplina:</strong> <span id="det-disciplina"></span></p>
+        <p><strong>Total de Alunos:</strong> <span id="det-total-alunos"></span></p>
+        <p><strong>Média da Turma:</strong> <span id="det-media-turma"></span></p>
+      </div>
+
+      <div class="info-section">
+        <h4>Lista de Alunos</h4>
+        <div id="lista-alunos-detalhes"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Nova Mensagem -->
+<div id="modal-nova-mensagem" class="modal">
+  <div class="modal-content" style="max-width: 600px;">
+    <button class="btn-close" onclick="fecharModal('modal-nova-mensagem')">&times;</button>
+    <h3>Nova Mensagem <small style="color: var(--slate);"></small></h3>
+
+    <form id="form-mensagem" onsubmit="enviarMensagem(event)" style="margin-top: 1.5rem;">
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Destinatário (Aluno):
+        </label>
+        <select
+          id="destinatario-id"
+          name="destinatario_id"
+          required
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
+        >
+          <option value="">Selecione um aluno...</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Mensagem:
+        </label>
+        <textarea
+          id="conteudo-mensagem"
+          name="conteudo"
+          required
+          rows="6"
+          maxlength="5000"
+          placeholder="Digite sua mensagem aqui..."
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem; font-family: inherit; resize: vertical;"
+        ></textarea>
+        <small style="color: var(--slate); font-size: 0.85rem;">
+          <span id="char-count">0</span> / 5000 caracteres
+        </small>
+      </div>
+
+      <div id="mensagem-alert" style="display: none; padding: 0.75rem; margin-bottom: 1rem; border-radius: 6px;"></div>
+
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <button
+          type="button"
+          onclick="fecharModal('modal-nova-mensagem')"
+          style="padding: 0.625rem 1.25rem; border: 2px solid var(--slate); background: white; color: var(--slate); border-radius: 6px; cursor: pointer; font-weight: 500;"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="btn-primary-action"
+          style="padding: 0.625rem 1.5rem; border: none;"
+        >
+          Enviar Mensagem
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal para Ver Conversa -->
+<div id="modal-conversa" class="modal">
+  <div class="modal-content" style="max-width: 700px;">
+    <button class="btn-close" onclick="fecharModal('modal-conversa')">&times;</button>
+    <h3>Conversa com <span id="conversa-nome-aluno"></span></h3>
+
+    <div id="conversa-mensagens" style="max-height: 400px; overflow-y: auto; padding: 1rem; background: #f8fafc; border-radius: 6px; margin-top: 1rem;">
+      <p style="text-align: center; color: var(--slate);">Carregando mensagens...</p>
+    </div>
+
+    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 2px solid #e2e8f0;">
+      <button
+        onclick="responderMensagem()"
+        class="btn-primary-action"
+        style="padding: 0.5rem 1rem;"
+      >
+        Responder
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Sugestões de Materiais -->
+<div id="modal-sugestoes" class="modal">
+  <div class="modal-content" style="max-width: 800px;">
+    <button class="btn-close" onclick="fecharModal('modal-sugestoes')">&times;</button>
+    <h3>Sugestões de Materiais Personalizados <small style="color: var(--slate);"></small></h3>
+    <p style="color: var(--slate); font-size: 0.9rem; margin-bottom: 0.5rem;">
+      Para o aluno: <strong id="sugestao-aluno-nome"></strong>
+    </p>
+
+    <div id="sugestao-loading" style="text-align: center; padding: 2rem; color: var(--slate);">
+      Analisando desempenho e buscando materiais...
+    </div>
+
+    <div id="sugestao-content" style="display: none;">
+      <div id="topicos-dificuldade" style="margin-bottom: 1.5rem; padding: 1rem; background: #fef9c3; border-left: 4px solid #eab308; border-radius: 6px;">
+        <strong style="color: #854d0e;">⚠️ Tópicos com dificuldade:</strong>
+        <div id="lista-topicos-dificuldade" style="margin-top: 0.5rem; color: #854d0e;"></div>
+      </div>
+
+      <div id="materiais-sugeridos-lista">
+        <!-- Lista de materiais será inserida aqui -->
+      </div>
+
+      <div id="sem-sugestoes" style="display: none; padding: 1.5rem; text-align: center; color: var(--slate); background: #f8fafc; border-radius: 8px;">
+        <p>✅ Ótimo! O aluno não apresenta dificuldades significativas nas últimas 3 avaliações.</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Média em todos os tópicos ≥ 6.0</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Upload de Material -->
+<div id="modal-upload" class="modal">
+  <div class="modal-content" style="max-width: 600px;">
+    <button class="btn-close" onclick="fecharModal('modal-upload')">&times;</button>
+    <h3>Upload de Material <small style="color: var(--slate);"></small></h3>
+
+    <form id="form-upload-material" onsubmit="uploadMaterial(event)" enctype="multipart/form-data" style="margin-top: 1.5rem;">
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Turma:
+        </label>
+        <select
+          id="upload-turma-id"
+          name="turma_id"
+          required
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
+        >
+          <option value="">Selecione uma turma...</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Arquivo:
+        </label>
+        <input
+          type="file"
+          id="upload-arquivo"
+          name="arquivo"
+          accept=".pdf,.mp4,.mp3,.avi,.mkv,.mov,.webm"
+          required
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
+          onchange="tratarMudancaArquivoUpload(event)"
+        />
+        <small style="color: var(--slate); font-size: 0.85rem;">
+          Formatos: PDF, MP4, MP3, AVI, MKV, MOV, WEBM (máx. 50MB)
+        </small>
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Título:
+        </label>
+        <input
+          type="text"
+          id="upload-titulo"
+          name="titulo"
+          required
+          placeholder="Ex: Apostila de Álgebra Linear"
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
+        />
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Descrição:
+        </label>
+        <textarea
+          id="upload-descricao"
+          name="descricao"
+          required
+          rows="3"
+          placeholder="Descreva o conteúdo do material..."
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem; font-family: inherit; resize: vertical;"
+        ></textarea>
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Tópico (opcional):
+        </label>
+        <input
+          type="text"
+          id="upload-topico"
+          name="topico"
+          placeholder="Ex: Módulo 1, Capítulo 3"
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
+        />
+      </div>
+
+      <!-- Campos Dinâmicos -->
+      <div id="campos-pdf" style="display: none; margin-bottom: 1.25rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Número de Páginas <span style="color: #ef4444;">*</span>:
+        </label>
+        <input
+          type="number"
+          id="upload-num-paginas"
+          name="num_paginas"
+          min="1"
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
+        />
+      </div>
+
+      <div id="campos-video" style="display: none; margin-bottom: 1.25rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Duração em Segundos <span style="color: #ef4444;">*</span>:
+        </label>
+        <input
+          type="number"
+          id="upload-duracao"
+          name="duracao_segundos"
+          min="1"
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem; margin-bottom: 0.75rem;"
+        />
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Codec <span style="color: #ef4444;">*</span>:
+        </label>
+        <input
+          type="text"
+          id="upload-codec"
+          name="codec"
+          placeholder="Ex: h264, mp4a"
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
+        />
+      </div>
+      <!-- Fim Campos Dinâmicos -->
+
+      <div id="upload-alert" style="display: none; padding: 0.75rem; margin-bottom: 1rem; border-radius: 6px;"></div>
+
+      <div id="upload-progress" style="display: none; margin-bottom: 1rem;">
+        <div style="background: #e2e8f0; border-radius: 8px; height: 8px; overflow: hidden;">
+          <div id="upload-progress-bar" style="background: var(--petroleum); height: 100%; width: 0%; transition: width 0.3s;"></div>
+        </div>
+        <p style="text-align: center; font-size: 0.85rem; color: var(--slate); margin-top: 0.5rem;">Enviando...</p>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <button
+          type="button"
+          onclick="fecharModal('modal-upload')"
+          style="padding: 0.625rem 1.25rem; border: 2px solid var(--slate); background: white; color: var(--slate); border-radius: 6px; cursor: pointer; font-weight: 500;"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          id="btn-upload-submit"
+          style="padding: 0.625rem 1.5rem; background: #8b5cf6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;"
+        >
+          Enviar Material
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal para Editar Turma -->
+<div id="modal-editar-turma" class="modal">
+  <div class="modal-content">
+    <button class="btn-close" onclick="fecharModal('modal-editar-turma')">&times;</button>
+    <h3>Editar Turma</h3>
+    <form id="form-editar-turma" onsubmit="submitEditarTurma(event)">
+      <input type="hidden" id="edit-turma-id" name="id">
+      <div class="form-group">
+        <label for="edit-codigo">Código (não editável)</label>
+        <input type="text" id="edit-codigo" disabled>
+      </div>
+      <div class="form-group">
+        <label for="edit-disciplina">Disciplina</label>
+        <input type="text" id="edit-disciplina" name="disciplina" required>
+      </div>
+      <div class="form-group">
+        <label for="edit-semestre">Semestre</label>
+        <input type="text" id="edit-semestre" name="semestre" required>
+      </div>
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+        <button type="button" onclick="fecharModal('modal-editar-turma')" class="btn-action" style="background: var(--slate); color: white;">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-action btn-primary-action">
+          Salvar Alterações
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal para Confirmar Exclusão -->
+<div id="modal-excluir-turma" class="modal">
+  <div class="modal-content">
+    <h3>Confirmar Exclusão</h3>
+    <p>Você tem certeza que deseja excluir a turma <strong id="excluir-turma-codigo"></strong>?</p>
+    <p style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+      ⚠️ Esta ação é irreversível e removerá todos os vínculos de alunos e notas desta turma.
+    </p>
+    <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+      <button onclick="fecharModal('modal-excluir-turma')" class="btn-action" style="background: var(--slate); color: white;">
+        Cancelar
+      </button>
+      <button id="btn-confirmar-exclusao" class="btn-action" style="background: #ef4444; color: white;">
+        Excluir Turma
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Gestão de Alunos -->
+<div id="modal-gestao-alunos" class="modal">
+  <div class="modal-content" style="max-width: 700px;">
+    <button class="btn-close" onclick="fecharModal('modal-gestao-alunos')">&times;</button>
+    <h3>Gestão de Alunos - <span id="gestao-turma-codigo"></span></h3>
+
+    <div style="margin-bottom: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+      <h4 style="margin-bottom: 1rem; color: var(--petroleum);">Adicionar Aluno à Turma</h4>
+      <div style="display: flex; gap: 0.5rem;">
+        <div style="flex: 1; position: relative;">
+          <input type="text" id="busca-aluno" placeholder="Buscar aluno por nome ou email..." oninput="buscarAlunos()" style="width: 100%; padding: 0.625rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+          <div id="resultados-busca-alunos" style="position: absolute; width: 100%; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #cbd5e1; border-top: none; display: none; z-index: 100;"></div>
+        </div>
+      </div>
+    </div>
+
+    <h4 style="margin-bottom: 1rem; color: var(--petroleum);">Alunos Matriculados</h4>
+    <div id="lista-alunos-gestao" style="max-height: 300px; overflow-y: auto;">
+      <!-- Lista de alunos carregada via JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+// Variáveis globais
+let turmasData = {{ turmas_json|safe }};
+let turmaAtualPlano = null;
+let turmaIdNoFormNota = null; // Variável para rastrear a turma no formulário de notas
+
+// Função auxiliar para obter headers com autenticação
+function getAuthHeaders() {
+  const token = sessionStorage.getItem('edu_token');
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
+}
+
+// ══════════════════════════════════════════════════════════════
+// CRIAR AVALIAÇÃO — lógica principal
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Abre o modal de criação de avaliação.
+ * @param {number} turmaId
+ * @param {string} turmaLabel - texto descritivo para exibir no modal
+ */
+function abrirCriarAvaliacao(turmaId, turmaLabel) {
+  document.getElementById('avaliacao-turma-id').value = turmaId;
+  document.getElementById('avaliacao-turma-label').textContent = turmaLabel;
+  document.getElementById('form-criar-avaliacao').reset();
+  document.getElementById('avaliacao-turma-id').value = turmaId; // reset limpa hidden, restaurar
+  _ocultarAlertaAvaliacao();
+  document.getElementById('modal-criar-avaliacao').classList.add('active');
+}
+
+/**
+ * Atalho chamado pelo botão "+ Nova" ao lado do select de avaliação
+ * no formulário de registro de nota.
+ */
+function abrirCriarAvaliacaoDoFormNota() {
+  if (!turmaIdNoFormNota) return;
+
+  // Descobrir o label da turma
+  const sel = document.getElementById('turma-select');
+  const label = sel.options[sel.selectedIndex]?.text || `Turma ${turmaIdNoFormNota}`;
+  abrirCriarAvaliacao(turmaIdNoFormNota, label);
+}
+
+async function submitCriarAvaliacao(event) {
+  event.preventDefault();
+
+  const turmaId  = parseInt(document.getElementById('avaliacao-turma-id').value);
+  const titulo   = document.getElementById('av-titulo').value.trim();
+  const data     = document.getElementById('av-data').value;
+  const topico   = document.getElementById('av-topico').value.trim() || null;
+  const valorMax = parseFloat(document.getElementById('av-valor-maximo').value);
+  const peso     = parseFloat(document.getElementById('av-peso').value);
+
+  // Validações front-end
+  if (!titulo || !data || isNaN(valorMax) || isNaN(peso)) {
+    _mostrarAlertaAvaliacao('Preencha todos os campos obrigatórios.', 'error');
+    return;
+  }
+  if (peso < 0 || peso > 1) {
+    _mostrarAlertaAvaliacao('O peso deve ser um valor entre 0 e 1.', 'error');
+    return;
+  }
+  if (valorMax <= 0) {
+    _mostrarAlertaAvaliacao('O valor máximo deve ser maior que zero.', 'error');
+    return;
+  }
+
+  // Feedback visual de loading
+  const btn     = document.getElementById('btn-submit-avaliacao');
+  const spinner = document.getElementById('btn-av-spinner');
+  btn.disabled  = true;
+  spinner.style.display = 'inline-block';
+
+  try {
+    const payload = { titulo, data, valor_maximo: valorMax, peso };
+    if (topico) payload.topico = topico;
+
+    const response = await fetch(`/turmas/${turmaId}/avaliacoes`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      const avaliacao = await response.json();
+      _mostrarAlertaAvaliacao(`Avaliação "${avaliacao.titulo}" criada com sucesso!`, 'success');
+
+      // Recarregar o select de avaliações no form de nota se a turma for a mesma
+      if (turmaIdNoFormNota === turmaId) {
+        await carregarAvaliacoes(/* silencioso */ true);
+        // Pré-selecionar a avaliação recém-criada
+        const sel = document.getElementById('avaliacao-select');
+        for (const opt of sel.options) {
+          if (parseInt(opt.value) === avaliacao.id) {
+            sel.value = avaliacao.id;
+            break;
+          }
+        }
+      }
+
+      // Fechar modal após breve delay
+      setTimeout(() => fecharModal('modal-criar-avaliacao'), 1400);
+    } else {
+      const err = await response.json();
+      const detail = err.detail
+        ? (Array.isArray(err.detail) ? err.detail.map(e => e.msg || e).join('; ') : err.detail)
+        : 'Erro ao criar avaliação.';
+      _mostrarAlertaAvaliacao(detail, 'error');
+    }
+  } catch (e) {
+    console.error('Erro ao criar avaliação:', e);
+    _mostrarAlertaAvaliacao('Erro de conexão. Verifique sua internet.', 'error');
+  } finally {
+    btn.disabled  = false;
+    spinner.style.display = 'none';
+  }
+}
+
+function _mostrarAlertaAvaliacao(mensagem, tipo) {
+  const el = document.getElementById('avaliacao-alert');
+  el.textContent = mensagem;
+  el.className = `avaliacao-alert ${tipo}`;
+  el.style.display = 'block';
+}
+
+function _ocultarAlertaAvaliacao() {
+  const el = document.getElementById('avaliacao-alert');
+  el.style.display = 'none';
+  el.className = 'avaliacao-alert';
+}
+
+// ══════════════════════════════════════════════════════════════
+// REGISTRO DE NOTA
+// ══════════════════════════════════════════════════════════════
+
+async function registrarNota(event) {
+  event.preventDefault();
+
+  const form = event.target;
+  const formData = new FormData(form);
+  const avaliacaoId = formData.get('avaliacao_id');
+  const alunoId = formData.get('aluno_id');
+  const valor = formData.get('valor');
+
+  try {
+    const response = await fetch(`/avaliacoes/${avaliacaoId}/notas`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        aluno_id: parseInt(alunoId),
+        valor: parseFloat(valor)
+      })
+    });
+
+    if (response.ok) {
+      document.getElementById('nota-alert').style.display = 'block';
+      document.getElementById('nota-error').style.display = 'none';
+      form.reset();
+      document.getElementById('avaliacao-select').disabled = true;
+      document.getElementById('aluno-select').disabled = true;
+      document.getElementById('btn-nova-avaliacao-inline').style.display = 'none';
+      turmaIdNoFormNota = null;
+
+      setTimeout(() => {
+        document.getElementById('nota-alert').style.display = 'none';
+      }, 3000);
+    } else {
+      const error = await response.json();
+      document.getElementById('nota-error').textContent = error.detail || 'Erro ao registrar nota';
+      document.getElementById('nota-error').style.display = 'block';
+      document.getElementById('nota-alert').style.display = 'none';
+    }
+  } catch (error) {
+    document.getElementById('nota-error').textContent = 'Erro ao registrar nota. Tente novamente.';
+    document.getElementById('nota-error').style.display = 'block';
+    document.getElementById('nota-alert').style.display = 'none';
+  }
+}
+
+/**
+ * Carrega avaliações e alunos da turma selecionada no form de nota.
+ * @param {boolean} [silencioso=false] — se true, não reseta os selects antes de recarregar
+ */
+async function carregarAvaliacoes(silencioso = false) {
+  const turmaId = document.getElementById('turma-select').value;
+  const avaliacaoSelect = document.getElementById('avaliacao-select');
+  const alunoSelect = document.getElementById('aluno-select');
+  const btnNovaAvaliacao = document.getElementById('btn-nova-avaliacao-inline');
+
+  if (!turmaId) {
+    turmaIdNoFormNota = null;
+    avaliacaoSelect.disabled = true;
+    alunoSelect.disabled = true;
+    btnNovaAvaliacao.style.display = 'none';
+    avaliacaoSelect.innerHTML = '<option value="">Primeiro selecione uma turma...</option>';
+    alunoSelect.innerHTML = '<option value="">Primeiro selecione uma turma...</option>';
+    return;
+  }
+
+  turmaIdNoFormNota = parseInt(turmaId);
+
+  // Exibir botão "+ Nova" assim que há turma selecionada
+  btnNovaAvaliacao.style.display = 'inline';
+
+  if (!silencioso) {
+    avaliacaoSelect.innerHTML = '<option value="">Carregando...</option>';
+    alunoSelect.innerHTML = '<option value="">Carregando...</option>';
+  }
+
+  try {
+    // Avaliaçõe e alunos em paralelo
+    const [respAvaliacoes, respTurma] = await Promise.all([
+      fetch(`/turmas/${turmaId}/avaliacoes`, { headers: getAuthHeaders() }),
+      fetch(`/turmas/${turmaId}`,            { headers: getAuthHeaders() })
+    ]);
+
+    // Avaliações
+    if (respAvaliacoes.ok) {
+      const avaliacoes = await respAvaliacoes.json();
+      avaliacaoSelect.innerHTML = avaliacoes.length
+        ? '<option value="">Selecione uma avaliação...</option>'
+        : '<option value="">Nenhuma avaliação cadastrada</option>';
+      avaliacoes.forEach(av => {
+        const opt = document.createElement('option');
+        opt.value = av.id;
+        opt.textContent = `${av.titulo} — ${av.data} (máx ${av.valor_maximo})`;
+        avaliacaoSelect.appendChild(opt);
+      });
+      avaliacaoSelect.disabled = false;
+    }
+
+    // Alunos
+    if (respTurma.ok) {
+      const turma = await respTurma.json();
+      alunoSelect.innerHTML = '<option value="">Selecione um aluno...</option>';
+      turma.alunos.forEach(aluno => {
+        const opt = document.createElement('option');
+        opt.value = aluno.id;
+        opt.textContent = aluno.nome;
+        alunoSelect.appendChild(opt);
+      });
+      alunoSelect.disabled = false;
+    }
+  } catch (error) {
+    console.error('Erro ao carregar dados:', error);
+  }
+}
+
+// Função para criar plano de ação
+async function criarPlanoAcao(turmaId) {
+  turmaAtualPlano = turmaId;
+
+  // Carregar alunos da turma
+  try {
+    const response = await fetch(`/turmas/${turmaId}`, {
+      headers: getAuthHeaders()
+    });
+    if (response.ok) {
+      const turma = await response.json();
+      const alunoSelect = document.getElementById('plano-aluno');
+      alunoSelect.innerHTML = '<option value="">Selecione um aluno...</option>';
+      turma.alunos.forEach(aluno => {
+        const option = document.createElement('option');
+        option.value = aluno.id;
+        option.textContent = aluno.nome;
+        alunoSelect.appendChild(option);
+      });
+
+      document.getElementById('modal-plano').classList.add('active');
+    } else {
+      const error = await response.json();
+      alert(`Erro ao carregar alunos: ${error.detail || 'Turma não encontrada'}`);
+    }
+  } catch (error) {
+    console.error('Erro ao carregar alunos da turma:', error);
+    alert(`Erro ao carregar alunos: ${error.message || 'Verifique sua conexão'}`);
+  }
+}
+
+// Função para submeter plano de ação
+async function submitPlanoAcao(event) {
+  event.preventDefault();
+
+  const form = event.target;
+  const formData = new FormData(form);
+
+  const alunoId = parseInt(formData.get('aluno_id'));
+  const objetivo = formData.get('objetivo');
+  const dataLimite = formData.get('data_limite');
+  const observacoes = formData.get('observacoes') || null;
+
+  // Calcular prazo_dias (diferença entre data_limite e hoje)
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const limite = new Date(dataLimite);
+  limite.setHours(0, 0, 0, 0);
+  const prazoDias = Math.ceil((limite - hoje) / (1000 * 60 * 60 * 24));
+
+  if (prazoDias < 1) {
+    alert('A data limite deve ser no futuro!');
+    return;
+  }
+
+  if (prazoDias > 365) {
+    alert('O prazo não pode ser maior que 365 dias!');
+    return;
+  }
+
+  const planoData = {
+    objetivo: objetivo,
+    prazo_dias: prazoDias,
+    observacoes: observacoes
+  };
+
+  try {
+    const response = await fetch(`/planos?aluno_id=${alunoId}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(planoData)
+    });
+
+    if (response.ok) {
+      document.getElementById('plano-alert').style.display = 'block';
+      form.reset();
+
+      setTimeout(() => {
+        fecharModal('modal-plano');
+        document.getElementById('plano-alert').style.display = 'none';
+        location.reload(); // Recarregar para atualizar contagem de planos
+      }, 2000);
+    } else {
+      const error = await response.json();
+      alert(`Erro ao criar plano: ${error.detail || 'Erro desconhecido'}`);
+    }
+  } catch (error) {
+    console.error('Erro ao criar plano de ação:', error);
+    alert(`Erro ao criar plano de ação: ${error.message || 'Verifique sua conexão'}`);
+  }
+}
+
+// Função para ver relatório
+async function verRelatorio(turmaId) {
+  document.getElementById('modal-relatorio').classList.add('active');
+  document.getElementById('relatorio-content').textContent = 'Carregando relatório...';
+
+  try {
+    const response = await fetch(`/turmas/${turmaId}/relatorio?formato=txt`, {
+      headers: getAuthHeaders()
+    });
+    if (response.ok) {
+      const relatorio = await response.json();
+      document.getElementById('relatorio-content').textContent = relatorio.conteudo;
+    } else {
+      document.getElementById('relatorio-content').textContent = 'Erro ao carregar relatório. Tente novamente.';
+    }
+  } catch (error) {
+    document.getElementById('relatorio-content').textContent = 'Erro ao carregar relatório. Verifique sua conexão.';
+  }
+}
+
+// Função para ver análise de tópicos
+async function verAnaliseTopicos(turmaId) {
+  document.getElementById('modal-topicos').classList.add('active');
+  document.getElementById('topicos-content').innerHTML = '<p style="text-align: center; color: var(--slate);">Carregando análise...</p>';
+
+  try {
+    const response = await fetch(`/turmas/${turmaId}/topicos/analise`, {
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const topicos = data.topicos;
+
+      if (topicos.length === 0) {
+        document.getElementById('topicos-content').innerHTML = '<p style="text-align: center; color: var(--slate);">Nenhuma avaliação com tópico registrado ainda.</p>';
+        return;
+      }
+
+      // Construir tabela com análise de tópicos
+      let html = '<table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">';
+      html += '<thead><tr style="background: var(--blue, #3b82f6); color: white;">';
+      html += '<th style="padding: 0.75rem; text-align: left;">Tópico</th>';
+      html += '<th style="padding: 0.75rem; text-align: center;">Avaliações</th>';
+      html += '<th style="padding: 0.75rem; text-align: center;">Média</th>';
+      html += '<th style="padding: 0.75rem; text-align: center;">Alunos C/ Dificuldade</th>';
+      html += '<th style="padding: 0.75rem; text-align: center;">% Dificuldade</th>';
+      html += '</tr></thead><tbody>';
+
+      topicos.forEach((item, idx) => {
+        // Color coding baseado no percentual de dificuldade
+        let bgColor = '#dcfce7'; // verde (baixa dificuldade)
+        let textColor = '#166534';
+        if (item.percentual_dificuldade >= 70) {
+          bgColor = '#fee2e2'; // vermelho (alta dificuldade)
+          textColor = '#991b1b';
+        } else if (item.percentual_dificuldade >= 40) {
+          bgColor = '#fef9c3'; // amarelo (média dificuldade)
+          textColor = '#854d0e';
+        }
+
+        const rowStyle = `background: ${idx % 2 === 0 ? '#f8fafc' : 'white'};`;
+        html += `<tr style="${rowStyle}">`;
+        html += `<td style="padding: 0.75rem; font-weight: 500;">${item.topico || 'Sem tópico'}</td>`;
+        html += `<td style="padding: 0.75rem; text-align: center;">${item.total_avaliacoes}</td>`;
+        html += `<td style="padding: 0.75rem; text-align: center; font-weight: 500;">${item.media_geral.toFixed(2)}</td>`;
+        html += `<td style="padding: 0.75rem; text-align: center;">${item.total_alunos_com_dificuldade}</td>`;
+        html += `<td style="padding: 0.75rem; text-align: center;">
+                   <span style="background: ${bgColor}; color: ${textColor}; padding: 0.25rem 0.75rem; border-radius: 12px; font-weight: 600; display: inline-block; min-width: 50px;">
+                     ${item.percentual_dificuldade.toFixed(1)}%
+                   </span>
+                 </td>`;
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+
+      // Adicionar legenda
+      html += '<div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">';
+      html += '<p style="font-size: 0.85rem; color: var(--slate); margin-bottom: 0.5rem;"><strong>Legenda:</strong></p>';
+      html += '<div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.8rem;">';
+      html += '<span style="background: #dcfce7; color: #166534; padding: 0.25rem 0.5rem; border-radius: 4px;">Baixa (&lt;40%)</span>';
+      html += '<span style="background: #fef9c3; color: #854d0e; padding: 0.25rem 0.5rem; border-radius: 4px;">Média (40-70%)</span>';
+      html += '<span style="background: #fee2e2; color: #991b1b; padding: 0.25rem 0.5rem; border-radius: 4px;">Alta (&gt;70%)</span>';
+      html += '</div>';
+      html += '<p style="font-size: 0.8rem; color: var(--slate); margin-top: 0.75rem;">Dificuldade = % de alunos com média &lt; 6.0 no tópico</p>';
+      html += '</div>';
+
+      document.getElementById('topicos-content').innerHTML = html;
+
+    } else {
+      document.getElementById('topicos-content').innerHTML = '<p style="text-align: center; color: #e11d48;">Erro ao carregar análise. Tente novamente.</p>';
+    }
+  } catch (error) {
+    console.error('Erro ao buscar análise de tópicos:', error);
+    document.getElementById('topicos-content').innerHTML = '<p style="text-align: center; color: #e11d48;">Erro ao carregar análise. Verifique sua conexão.</p>';
+  }
+}
+
+// Função para ver detalhes da turma
+async function verDetalhesTurma(turmaId) {
+  document.getElementById('modal-detalhes').classList.add('active');
+  document.getElementById('detalhes-loading').style.display = 'block';
+  document.getElementById('detalhes-content').style.display = 'none';
+
+  try {
+    // Buscar detalhes da turma e desempenho em paralelo
+    const [detalheResponse, desempenhoResponse] = await Promise.all([
+      fetch(`/turmas/${turmaId}`, { headers: getAuthHeaders() }),
+      fetch(`/turmas/${turmaId}/desempenho`, { headers: getAuthHeaders() })
+    ]);
+
+    if (detalheResponse.ok && desempenhoResponse.ok) {
+      const turma = await detalheResponse.json();
+      const desempenho = await desempenhoResponse.json();
+
+      // Preencher informações gerais
+      document.getElementById('det-nome').textContent = turma.codigo;
+      document.getElementById('det-disciplina').textContent = turma.disciplina;
+      document.getElementById('det-total-alunos').textContent = desempenho.total_alunos;
+      document.getElementById('det-media-turma').textContent = desempenho.media_geral.toFixed(2);
+
+      // Preencher lista de alunos
+      const listaAlunosDiv = document.getElementById('lista-alunos-detalhes');
+      listaAlunosDiv.innerHTML = '';
+
+      if (turma.alunos && turma.alunos.length > 0) {
+        turma.alunos.forEach(aluno => {
+          const alunoDiv = document.createElement('div');
+          alunoDiv.className = 'aluno-item';
+          alunoDiv.style.cssText = 'padding: 12px; margin: 8px 0; background: #f8f9fa; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;';
+
+          alunoDiv.innerHTML = `
+            <div>
+              <strong style="font-size: 1rem; color: var(--petroleum);">${aluno.nome}</strong>
+              <br>
+              <small style="color: var(--slate);">Email: ${aluno.email || 'N/A'}</small>
+              ${aluno.matricula ? `<br><small style="color: var(--slate);">Matrícula: ${aluno.matricula}</small>` : ''}
+            </div>
+            <button
+              onclick="sugerirMateriais(${aluno.id}, '${aluno.nome}')"
+              style="padding: 0.5rem 1rem; background: #16a34a; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; white-space: nowrap;"
+              onmouseover="this.style.background='#15803d'"
+              onmouseout="this.style.background='#16a34a'"
+            >
+              Sugerir Materiais
+            </button>
+          `;
+
+          listaAlunosDiv.appendChild(alunoDiv);
+        });
+      } else {
+        listaAlunosDiv.innerHTML = '<p>Nenhum aluno matriculado.</p>';
+      }
+
+      // Mostrar conteúdo
+      document.getElementById('detalhes-loading').style.display = 'none';
+      document.getElementById('detalhes-content').style.display = 'block';
+    } else {
+      document.getElementById('detalhes-loading').textContent = 'Erro ao carregar detalhes. Tente novamente.';
+    }
+  } catch (error) {
+    document.getElementById('detalhes-loading').textContent = 'Erro ao carregar detalhes. Verifique sua conexão.';
+  }
+}
+
+// Função para fechar modal
+function fecharModal(modalId) {
+  document.getElementById(modalId).classList.remove('active');
+}
+
+// Fechar modal ao clicar fora
+window.onclick = function(event) {
+  if (event.target.classList.contains('modal')) {
+    event.target.classList.remove('active');
+  }
+}
+
+// ========== FUNÇÕES DE MENSAGENS ==========
+
+let alunosDisponiveis = [];
+let conversaAtualAlunoId = null;
+
+// Carregar lista de alunos para o seletor
+async function carregarAlunosParaMensagem() {
+  try {
+    // Buscar todos os alunos das turmas do professor
+    const alunosSet = new Set();
+
+    for (const turma of turmasData) {
+      const response = await fetch(`/turmas/${turma.id}`, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const turmaData = await response.json();
+        if (turmaData.alunos) {
+          turmaData.alunos.forEach(aluno => {
+            alunosSet.add(JSON.stringify({ id: aluno.id, nome: aluno.nome }));
+          });
+        }
+      }
+    }
+
+    alunosDisponiveis = Array.from(alunosSet).map(s => JSON.parse(s));
+    atualizarSeletorAlunos();
+  } catch (error) {
+    console.error('Erro ao carregar alunos:', error);
+  }
+}
+
+function atualizarSeletorAlunos() {
+  const select = document.getElementById('destinatario-id');
+  select.innerHTML = '<option value="">Selecione um aluno...</option>';
+
+  alunosDisponiveis.forEach(aluno => {
+    const option = document.createElement('option');
+    option.value = aluno.id;
+    option.textContent = aluno.nome;
+    select.appendChild(option);
+  });
+}
+
+function abrirNovaMensagem() {
+  if (alunosDisponiveis.length === 0) {
+    carregarAlunosParaMensagem();
+  }
+
+  document.getElementById('form-mensagem').reset();
+  document.getElementById('mensagem-alert').style.display = 'none';
+  document.getElementById('char-count').textContent = '0';
+  document.getElementById('modal-nova-mensagem').classList.add('active');
+}
+
+// Contador de caracteres
+document.addEventListener('DOMContentLoaded', () => {
+  const textarea = document.getElementById('conteudo-mensagem');
+  if (textarea) {
+    textarea.addEventListener('input', (e) => {
+      document.getElementById('char-count').textContent = e.target.value.length;
+    });
+  }
+
+  // Carregar contatos e mensagens não lidas
+  carregarContatosRecentes();
+  carregarMensagensNaoLidas();
+  carregarAlunosParaMensagem();
+
+  // Inicializar filtro de turmas da biblioteca e carregar materiais
+  inicializarFiltroBiblioteca();
+  carregarBibliotecaMateriais();
+});
+
+// ========== BIBLIOTECA DE MATERIAIS ==========
+
+function inicializarFiltroBiblioteca() {
+  const select = document.getElementById('filtro-turma-materiais');
+  if (!select) return;
+
+  turmasData.forEach(turma => {
+    const option = document.createElement('option');
+    option.value = turma.id;
+    option.textContent = `${turma.codigo} - ${turma.disciplina}`;
+    select.appendChild(option);
+  });
+}
+
+async function carregarBibliotecaMateriais() {
+  const container = document.getElementById('lista-biblioteca-materiais');
+  if (!container) return;
+
+  const selectFiltro = document.getElementById('filtro-turma-materiais');
+  const turmaFiltro = selectFiltro ? selectFiltro.value : null;
+
+  container.innerHTML = '<p style="color: var(--slate); grid-column: 1 / -1; text-align: center; padding: 2rem 0;">Carregando materiais...</p>';
+
+  try {
+    const response = await fetch('/materiais/', {
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const materiais = data.materiais;
+
+      // No modelo atual, o Material não tem turma_id direto (ele é do professor).
+      // Então mostramos todos. Caso no futuro exista vínculo direto, a lógica de filtro pode ser ativada.
+      const materiaisFiltrados = materiais;
+
+      if (materiaisFiltrados.length === 0) {
+        container.innerHTML = '<p style="color: var(--slate); grid-column: 1 / -1; text-align: center; padding: 2rem 0;">Nenhum material encontrado.</p>';
+        return;
+      }
+
+      let html = '';
+      materiaisFiltrados.forEach(mat => {
+        let icone = '📄';
+        let corBg = '#f1f5f9';
+        if (mat.tipo_material === 'video') { icone = '🎥'; corBg = '#e0e7ff'; }
+        if (mat.tipo_material === 'audio') { icone = '🎵'; corBg = '#fce7f3'; }
+
+        // Na modelagem atual de materiais, não há vínculo direto material <-> turma (apenas via plano de ação).
+        // Logo, exibimos que é do Professor.
+        const turmaNome = 'Geral (Acervo do Professor)';
+
+        html += `
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; transition: box-shadow 0.2s;">
+            <div style="padding: 1rem; background: ${corBg}; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: flex-start;">
+              <div style="font-size: 1.5rem;">${icone}</div>
+              <button onclick="excluirMaterial(${mat.id})" title="Excluir Material" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1.1rem; padding: 0.2rem;">&times;</button>
+            </div>
+            <div style="padding: 1rem; flex: 1; display: flex; flex-direction: column;">
+              <h4 style="color: var(--petroleum); font-size: 1.05rem; margin: 0 0 0.5rem 0; font-weight: 600;">${mat.titulo}</h4>
+              <p style="color: var(--slate); font-size: 0.85rem; margin: 0 0 0.5rem 0; line-height: 1.4; flex: 1;">${mat.descricao || 'Sem descrição.'}</p>
+              <div style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
+                <small style="color: var(--slate); font-size: 0.8rem; font-weight: 500;">Turma: ${turmaNome}</small>
+                ${mat.topico ? `<small style="color: #0369a1; background: #e0f2fe; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem; align-self: flex-start;">Tópico: ${mat.topico}</small>` : ''}
+                <small style="color: var(--slate); font-size: 0.75rem; margin-top: 0.25rem;">Adicionado em: ${new Date(mat.data_upload).toLocaleDateString('pt-BR')}</small>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    } else {
+      container.innerHTML = '<p style="color: #ef4444; grid-column: 1 / -1; text-align: center; padding: 2rem 0;">Erro ao carregar materiais.</p>';
+    }
+  } catch (error) {
+    console.error('Erro ao carregar biblioteca:', error);
+    container.innerHTML = '<p style="color: #ef4444; grid-column: 1 / -1; text-align: center; padding: 2rem 0;">Erro de conexão. Verifique sua internet.</p>';
+  }
+}
+
+async function excluirMaterial(materialId) {
+  if (!confirm('Deseja realmente remover este material? Esta ação não pode ser desfeita.')) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/materiais/${materialId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      alert('Material removido com sucesso!');
+      carregarBibliotecaMateriais(); // Recarregar a lista
+    } else {
+      const error = await response.json();
+      alert('Erro ao remover: ' + (error.detail || 'Desconhecido'));
+    }
+  } catch (error) {
+    alert('Erro de conexão ao remover material.');
+  }
+}
+
+async function enviarMensagem(event) {
+  event.preventDefault();
+
+  const destinatarioId = parseInt(document.getElementById('destinatario-id').value);
+  const conteudo = document.getElementById('conteudo-mensagem').value.trim();
+
+  if (!destinatarioId || !conteudo) {
+    mostrarAlertaMensagem('Por favor, preencha todos os campos', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch('/mensagens/', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        destinatario_id: destinatarioId,
+        conteudo: conteudo
+      })
+    });
+
+    if (response.ok) {
+      mostrarAlertaMensagem('Mensagem enviada com sucesso!', 'success');
+      document.getElementById('form-mensagem').reset();
+      document.getElementById('char-count').textContent = '0';
+
+      setTimeout(() => {
+        fecharModal('modal-nova-mensagem');
+        carregarContatosRecentes();
+      }, 1500);
+    } else {
+      const error = await response.json();
+      mostrarAlertaMensagem(error.detail || 'Erro ao enviar mensagem', 'error');
+    }
+  } catch (error) {
+    console.error('Erro ao enviar mensagem:', error);
+    mostrarAlertaMensagem('Erro ao enviar mensagem. Verifique sua conexão.', 'error');
+  }
+}
+
+function mostrarAlertaMensagem(mensagem, tipo) {
+  const alert = document.getElementById('mensagem-alert');
+  alert.textContent = mensagem;
+  alert.style.display = 'block';
+
+  if (tipo === 'success') {
+    alert.style.background = '#dcfce7';
+    alert.style.color = '#166534';
+    alert.style.border = '2px solid #22c55e';
+  } else {
+    alert.style.background = '#fee2e2';
+    alert.style.color = '#991b1b';
+    alert.style.border = '2px solid #ef4444';
+  }
+}
+
+async function carregarContatosRecentes() {
+  try {
+    const response = await fetch('/mensagens/contatos?limite=5', {
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const contatos = await response.json();
+      exibirContatosRecentes(contatos);
+    }
+  } catch (error) {
+    console.error('Erro ao carregar contatos:', error);
+  }
+}
+
+function exibirContatosRecentes(contatos) {
+  const container = document.getElementById('contatos-recentes');
+
+  if (contatos.length === 0) {
+    container.innerHTML = '<p style="color: var(--slate); text-align: center;">Nenhuma conversa ainda. Envie a primeira mensagem!</p>';
+    return;
+  }
+
+  let html = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
+
+  contatos.forEach(contato => {
+    const dataFormatada = new Date(contato.ultima_mensagem).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    html += `
+      <div onclick="abrirConversa(${contato.contato_id}, '${contato.contato_nome}')"
+           style="padding: 1rem; background: white; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;"
+           onmouseover="this.style.borderColor='var(--petroleum)'; this.style.boxShadow='0 2px 8px rgba(26,95,122,0.1)'"
+           onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong style="color: var(--petroleum); font-size: 1rem;">${contato.contato_nome}</strong>
+            <span style="color: var(--slate); font-size: 0.85rem; margin-left: 0.5rem;">(${contato.contato_tipo})</span>
+          </div>
+          <small style="color: var(--slate); font-size: 0.8rem;">${dataFormatada}</small>
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+async function carregarMensagensNaoLidas() {
+  try {
+    const response = await fetch('/mensagens/nao-lidas/count', {
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.total_nao_lidas > 0) {
+        document.getElementById('count-nao-lidas').textContent = data.total_nao_lidas;
+        document.getElementById('mensagens-nao-lidas').style.display = 'block';
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao carregar mensagens não lidas:', error);
+  }
+}
+
+async function abrirConversa(alunoId, alunoNome) {
+  conversaAtualAlunoId = alunoId;
+  document.getElementById('conversa-nome-aluno').textContent = alunoNome;
+  document.getElementById('modal-conversa').classList.add('active');
+
+  const container = document.getElementById('conversa-mensagens');
+  container.innerHTML = '<p style="text-align: center; color: var(--slate);">Carregando mensagens...</p>';
+
+  try {
+    const response = await fetch(`/mensagens/conversa/${alunoId}?limite=50`, {
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      exibirMensagensConversa(data.mensagens);
+    } else {
+      container.innerHTML = '<p style="text-align: center; color: #e11d48;">Erro ao carregar mensagens</p>';
+    }
+  } catch (error) {
+    console.error('Erro ao carregar conversa:', error);
+    container.innerHTML = '<p style="text-align: center; color: #e11d48;">Erro ao carregar mensagens</p>';
+  }
+}
+
+function exibirMensagensConversa(mensagens) {
+  const container = document.getElementById('conversa-mensagens');
+  const currentUserId = JSON.parse(sessionStorage.getItem('edu_usuario')).id;
+
+  if (mensagens.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: var(--slate);">Nenhuma mensagem ainda</p>';
+    return;
+  }
+
+  let html = '';
+
+  // Mensagens já vem ordenadas por data DESC, vamos inverter para mostrar mais antigas primeiro
+  const mensagensOrdenadas = mensagens.reverse();
+
+  mensagensOrdenadas.forEach(msg => {
+    const ehRemetente = msg.remetente_id === currentUserId;
+    const dataFormatada = new Date(msg.data_envio).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const align = ehRemetente ? 'flex-end' : 'flex-start';
+    const bgColor = ehRemetente ? 'var(--petroleum)' : '#f1f5f9';
+    const textColor = ehRemetente ? 'white' : '#334155';
+    const labelColor = ehRemetente ? 'rgba(255,255,255,0.8)' : 'var(--slate)';
+
+    html += `
+      <div style="display: flex; justify-content: ${align}; margin-bottom: 1rem;">
+        <div style="max-width: 70%; padding: 0.75rem 1rem; background: ${bgColor}; color: ${textColor}; border-radius: 12px;">
+          <div style="font-size: 0.75rem; color: ${labelColor}; margin-bottom: 0.25rem;">
+            ${ehRemetente ? 'Você' : 'Aluno'}
+          </div>
+          <div style="font-size: 0.95rem; line-height: 1.5; word-wrap: break-word;">
+            ${msg.conteudo}
+          </div>
+          <div style="font-size: 0.7rem; color: ${labelColor}; margin-top: 0.5rem; text-align: right;">
+            ${dataFormatada} ${!msg.lida && !ehRemetente ? '• Não lida' : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+  container.scrollTop = container.scrollHeight;
+}
+
+function responderMensagem() {
+  fecharModal('modal-conversa');
+
+  if (conversaAtualAlunoId) {
+    const select = document.getElementById('destinatario-id');
+    select.value = conversaAtualAlunoId;
+  }
+
+  abrirNovaMensagem();
+}
+
+// ========== FUNÇÕES DE SUGESTÕES DE MATERIAIS ==========
+
+async function sugerirMateriais(alunoId, alunoNome) {
+  document.getElementById('sugestao-aluno-nome').textContent = alunoNome;
+  document.getElementById('modal-sugestoes').classList.add('active');
+  document.getElementById('sugestao-loading').style.display = 'block';
+  document.getElementById('sugestao-content').style.display = 'none';
+
+  try {
+    const response = await fetch(`/turmas/alunos/${alunoId}/materiais/sugestoes`, {
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      exibirSugestoesMateriais(data);
+    } else {
+      document.getElementById('sugestao-loading').innerHTML = '<p style="color: #e11d48;">Erro ao carregar sugestões. Tente novamente.</p>';
+    }
+  } catch (error) {
+    console.error('Erro ao buscar sugestões:', error);
+    document.getElementById('sugestao-loading').innerHTML = '<p style="color: #e11d48;">Erro ao buscar sugestões. Verifique sua conexão.</p>';
+  }
+}
+
+function exibirSugestoesMateriais(data) {
+  document.getElementById('sugestao-loading').style.display = 'none';
+  document.getElementById('sugestao-content').style.display = 'block';
+
+  // Se não houver dificuldades
+  if (data.topicos_com_dificuldade.length === 0) {
+    document.getElementById('topicos-dificuldade').style.display = 'none';
+    document.getElementById('materiais-sugeridos-lista').style.display = 'none';
+    document.getElementById('sem-sugestoes').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('topicos-dificuldade').style.display = 'block';
+  document.getElementById('materiais-sugeridos-lista').style.display = 'block';
+  document.getElementById('sem-sugestoes').style.display = 'none';
+
+  // Exibir tópicos com dificuldade
+  const listaTopicos = document.getElementById('lista-topicos-dificuldade');
+  listaTopicos.innerHTML = data.topicos_com_dificuldade.map(t =>
+    `<span style="display: inline-block; margin: 0.25rem; padding: 0.375rem 0.75rem; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 6px; font-size: 0.85rem;">${t}</span>`
+  ).join('');
+
+  // Exibir materiais sugeridos
+  const listaMateriais = document.getElementById('materiais-sugeridos-lista');
+
+  if (data.materiais_sugeridos.length === 0) {
+    listaMateriais.innerHTML = `
+      <div style="padding: 1.5rem; text-align: center; background: #f8fafc; border-radius: 8px; color: var(--slate);">
+        <p>Nenhum material específico encontrado para os tópicos identificados.</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Sugestão: Faça upload de materiais relacionados aos tópicos listados acima.</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '<h4 style="color: var(--petroleum); margin-bottom: 1rem; font-size: 1.1rem;">📚 Materiais Recomendados:</h4>';
+  html += '<div style="display: flex; flex-direction: column; gap: 1rem;">';
+
+  data.materiais_sugeridos.forEach(material => {
+    const desempenhoColor = material.desempenho_no_topico < 4 ? '#ef4444' :
+                           material.desempenho_no_topico < 6 ? '#f59e0b' : '#10b981';
+
+    html += `
+      <div style="padding: 1.25rem; background: white; border: 2px solid #e2e8f0; border-left: 4px solid ${desempenhoColor}; border-radius: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+          <div style="flex: 1;">
+            <h5 style="color: var(--petroleum); margin: 0 0 0.5rem 0; font-size: 1rem;">${material.titulo}</h5>
+            ${material.descricao ? `<p style="color: var(--slate); font-size: 0.9rem; margin: 0.5rem 0;">${material.descricao}</p>` : ''}
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <span style="padding: 0.25rem 0.625rem; background: #e0f2fe; color: #0369a1; border-radius: 4px; font-size: 0.8rem; font-weight: 500;">
+              📌 ${material.topico_relacionado}
+            </span>
+            <span style="padding: 0.25rem 0.625rem; background: ${desempenhoColor}20; color: ${desempenhoColor}; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
+              Desempenho: ${material.desempenho_no_topico.toFixed(2)}
+            </span>
+          </div>
+
+          ${material.url ? `
+            <a href="${material.url}" target="_blank" style="padding: 0.5rem 1rem; background: var(--petroleum); color: white; text-decoration: none; border-radius: 6px; font-size: 0.85rem; font-weight: 500;">
+              📥 Acessar Material
+            </a>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+
+  // Adicionar estatística
+  html += `
+    <div style="margin-top: 1.5rem; padding: 1rem; background: #e0f2fe; border-radius: 8px; text-align: center;">
+      <strong style="color: var(--petroleum);">Total de ${data.total_sugestoes} material(is) sugerido(s)</strong>
+      <p style="font-size: 0.85rem; color: var(--slate); margin-top: 0.5rem;">
+        Baseado em desempenho inferior a 6.0 nas últimas 3 avaliações
+      </p>
+    </div>
+  `;
+
+  listaMateriais.innerHTML = html;
+}
+
+// ========== FUNÇÕES DE UPLOAD DE MATERIAIS ==========
+
+function tratarMudancaArquivoUpload(event) {
+  const arquivo = event.target.files[0];
+  const camposPdf = document.getElementById('campos-pdf');
+  const camposVideo = document.getElementById('campos-video');
+  const inputNumPaginas = document.getElementById('upload-num-paginas');
+  const inputDuracao = document.getElementById('upload-duracao');
+  const inputCodec = document.getElementById('upload-codec');
+
+  camposPdf.style.display = 'none';
+  camposVideo.style.display = 'none';
+  inputNumPaginas.required = false;
+  inputDuracao.required = false;
+  inputCodec.required = false;
+
+  if (!arquivo) return;
+
+  const nomeArquivo = arquivo.name.toLowerCase();
+
+  if (nomeArquivo.endsWith('.pdf')) {
+    camposPdf.style.display = 'block';
+    inputNumPaginas.required = true;
+  } else if (nomeArquivo.endsWith('.mp4') || nomeArquivo.endsWith('.avi') ||
+             nomeArquivo.endsWith('.mkv') || nomeArquivo.endsWith('.mov') ||
+             nomeArquivo.endsWith('.webm') || nomeArquivo.endsWith('.mp3')) {
+    camposVideo.style.display = 'block';
+    inputDuracao.required = true;
+    inputCodec.required = true;
+  }
+}
+
+function abrirUploadMaterial() {
+  // Preencher turmas no seletor
+  const select = document.getElementById('upload-turma-id');
+  select.innerHTML = '<option value="">Selecione uma turma...</option>';
+
+  turmasData.forEach(turma => {
+    const option = document.createElement('option');
+    option.value = turma.id;
+    option.textContent = `${turma.codigo} - ${turma.disciplina}`;
+    select.appendChild(option);
+  });
+
+  document.getElementById('form-upload-material').reset();
+  tratarMudancaArquivoUpload({ target: { files: [] } }); // Esconder campos
+  document.getElementById('upload-alert').style.display = 'none';
+  document.getElementById('upload-progress').style.display = 'none';
+  document.getElementById('modal-upload').classList.add('active');
+}
+
+async function uploadMaterial(event) {
+  event.preventDefault();
+
+  const form = event.target;
+  const formData = new FormData();
+
+  const arquivo = document.getElementById('upload-arquivo').files[0];
+  const turmaId = document.getElementById('upload-turma-id').value;
+  const titulo = document.getElementById('upload-titulo').value.trim();
+  const descricao = document.getElementById('upload-descricao').value.trim();
+  const topico = document.getElementById('upload-topico').value.trim();
+
+  const numPaginas = document.getElementById('upload-num-paginas').value;
+  const duracao = document.getElementById('upload-duracao').value;
+  const codec = document.getElementById('upload-codec').value.trim();
+
+  // Validações
+  if (!arquivo) {
+    mostrarAlertaUpload('Selecione um arquivo', 'error');
+    return;
+  }
+
+  if (arquivo.size > 50 * 1024 * 1024) { // 50 MB
+    mostrarAlertaUpload('Arquivo excede o tamanho máximo de 50MB', 'error');
+    return;
+  }
+
+  if (!turmaId) {
+    mostrarAlertaUpload('Selecione uma turma', 'error');
+    return;
+  }
+
+  // Preparar FormData
+  formData.append('arquivo', arquivo);
+  formData.append('titulo', titulo);
+  formData.append('descricao', descricao);
+  if (topico) {
+    formData.append('topico', topico);
+  }
+
+  const nomeArquivo = arquivo.name.toLowerCase();
+  if (nomeArquivo.endsWith('.pdf')) {
+    if (!numPaginas) {
+      mostrarAlertaUpload('Número de páginas é obrigatório para PDF', 'error');
+      return;
+    }
+    formData.append('num_paginas', numPaginas);
+  } else if (nomeArquivo.endsWith('.mp4') || nomeArquivo.endsWith('.avi') ||
+             nomeArquivo.endsWith('.mkv') || nomeArquivo.endsWith('.mov') ||
+             nomeArquivo.endsWith('.webm') || nomeArquivo.endsWith('.mp3')) {
+    if (!duracao || !codec) {
+      mostrarAlertaUpload('Duração e codec são obrigatórios para vídeo/áudio', 'error');
+      return;
+    }
+    formData.append('duracao_segundos', duracao);
+    formData.append('codec', codec);
+  }
+
+  // Mostrar progresso
+  document.getElementById('upload-progress').style.display = 'block';
+  document.getElementById('btn-upload-submit').disabled = true;
+  document.getElementById('upload-alert').style.display = 'none';
+
+  try {
+    const token = sessionStorage.getItem('edu_token');
+    const response = await fetch(`/materiais/upload?turma_id=${turmaId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    document.getElementById('upload-progress-bar').style.width = '100%';
+
+    if (response.ok) {
+      const material = await response.json();
+      mostrarAlertaUpload('Material enviado com sucesso!', 'success');
+      document.getElementById('form-upload-material').reset();
+
+      setTimeout(() => {
+        fecharModal('modal-upload');
+        location.reload(); // Recarregar para mostrar novo material
+      }, 2000);
+    } else {
+      const error = await response.json();
+      mostrarAlertaUpload(error.detail || 'Erro ao enviar material', 'error');
+    }
+  } catch (error) {
+    console.error('Erro no upload:', error);
+    mostrarAlertaUpload('Erro ao enviar material. Verifique sua conexão.', 'error');
+  } finally {
+    document.getElementById('btn-upload-submit').disabled = false;
+    setTimeout(() => {
+      document.getElementById('upload-progress').style.display = 'none';
+      document.getElementById('upload-progress-bar').style.width = '0%';
+    }, 1000);
+  }
+}
+
+function mostrarAlertaUpload(mensagem, tipo) {
+  const alert = document.getElementById('upload-alert');
+  alert.textContent = mensagem;
+  alert.style.display = 'block';
+
+  if (tipo === 'success') {
+    alert.style.background = '#dcfce7';
+    alert.style.color = '#166534';
+    alert.style.border = '2px solid #22c55e';
+  } else {
+    alert.style.background = '#fee2e2';
+    alert.style.color = '#991b1b';
+    alert.style.border = '2px solid #ef4444';
+  }
+}
+
+// ========== GESTÃO DE TURMAS (CRUD) ==========
+
+function editarTurma(id, codigo, disciplina, semestre) {
+  document.getElementById('edit-turma-id').value = id;
+  document.getElementById('edit-codigo').value = codigo;
+  document.getElementById('edit-disciplina').value = disciplina;
+  document.getElementById('edit-semestre').value = semestre;
+  document.getElementById('modal-editar-turma').classList.add('active');
+}
+
+async function submitEditarTurma(event) {
+  event.preventDefault();
+  const id = document.getElementById('edit-turma-id').value;
+  const disciplina = document.getElementById('edit-disciplina').value;
+  const semestre = document.getElementById('edit-semestre').value;
+
+  try {
+    const response = await fetch(`/turmas/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ disciplina, semestre })
+    });
+
+    if (response.ok) {
+      alert('Turma atualizada com sucesso!');
+      location.reload();
+    } else {
+      const error = await response.json();
+      alert('Erro ao atualizar: ' + (error.detail || 'Desconhecido'));
+    }
+  } catch (error) {
+    alert('Erro de conexão ao atualizar turma.');
+  }
+}
+
+function abrirConfirmacaoExclusao(id, codigo) {
+  document.getElementById('excluir-turma-codigo').textContent = codigo;
+  const btn = document.getElementById('btn-confirmar-exclusao');
+  btn.onclick = () => executarExclusaoTurma(id);
+  document.getElementById('modal-excluir-turma').classList.add('active');
+}
+
+async function executarExclusaoTurma(id) {
+  try {
+    const response = await fetch(`/turmas/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      alert('Turma excluída com sucesso!');
+      location.reload();
+    } else {
+      const error = await response.json();
+      alert('Erro ao excluir: ' + (error.detail || 'Desconhecido'));
+    }
+  } catch (error) {
+    alert('Erro de conexão ao excluir turma.');
+  }
+}
+
+// ========== GESTÃO DE ALUNOS (MATRÍCULA) ==========
+
+let turmaIdGestaoAtual = null;
+
+async function abrirGestaoAlunos(id, codigo) {
+  turmaIdGestaoAtual = id;
+  document.getElementById('gestao-turma-codigo').textContent = codigo;
+  document.getElementById('modal-gestao-alunos').classList.add('active');
+  carregarAlunosMatriculados();
+}
+
+async function carregarAlunosMatriculados() {
+  const container = document.getElementById('lista-alunos-gestao');
+  container.innerHTML = '<p style="text-align: center;">Carregando alunos...</p>';
+
+  try {
+    const response = await fetch(`/turmas/${turmaIdGestaoAtual}`, {
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (!data.alunos || data.alunos.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--slate); padding: 1rem;">Nenhum aluno matriculado nesta turma.</p>';
+        return;
+      }
+
+      let html = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
+      data.alunos.forEach(aluno => {
+        html += `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: white; border: 1px solid #e2e8f0; border-radius: 6px;">
+            <div>
+              <strong style="color: var(--petroleum);">${aluno.nome}</strong><br>
+              <small style="color: var(--slate);">${aluno.email} | Matrícula: ${aluno.matricula || 'N/A'}</small>
+            </div>
+            <button onclick="removerAlunoTurma(${aluno.id})" style="padding: 0.4rem 0.8rem; background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
+              Remover
+            </button>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+  } catch (error) {
+    container.innerHTML = '<p style="color: #ef4444;">Erro ao carregar alunos.</p>';
+  }
+}
+
+let timeoutBusca = null;
+async function buscarAlunos() {
+  const query = document.getElementById('busca-aluno').value.trim();
+  const resultadosDiv = document.getElementById('resultados-busca-alunos');
+
+  if (query.length < 3) {
+    resultadosDiv.style.display = 'none';
+    return;
+  }
+
+  clearTimeout(timeoutBusca);
+  timeoutBusca = setTimeout(async () => {
+    try {
+      // Endpoint de busca de usuários (assumindo que existe ou simulando)
+      const response = await fetch(`/auth/usuarios/buscar?q=${query}&tipo=aluno`, {
+        headers: getAuthHeaders()
+      });
+
+      if (response.ok) {
+        const alunos = await response.json();
+        if (alunos.length === 0) {
+          resultadosDiv.innerHTML = '<div style="padding: 0.75rem; color: var(--slate);">Nenhum aluno encontrado.</div>';
+        } else {
+          let html = '';
+          alunos.forEach(aluno => {
+            html += `
+              <div onclick="adicionarAlunoTurma(${aluno.id})" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid #e2e8f0;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">
+                <strong>${aluno.nome}</strong><br>
+                <small>${aluno.email}</small>
+              </div>
+            `;
+          });
+          resultadosDiv.innerHTML = html;
+        }
+        resultadosDiv.style.display = 'block';
+      }
+    } catch (error) {
+      console.error('Erro na busca:', error);
+    }
+  }, 300);
+}
+
+async function adicionarAlunoTurma(alunoId) {
+  try {
+    const response = await fetch(`/turmas/${turmaIdGestaoAtual}/alunos`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ aluno_id: alunoId })
+    });
+
+    if (response.ok) {
+      document.getElementById('busca-aluno').value = '';
+      document.getElementById('resultados-busca-alunos').style.display = 'none';
+      carregarAlunosMatriculados();
+    } else {
+      const error = await response.json();
+      alert(error.detail || 'Erro ao adicionar aluno');
+    }
+  } catch (error) {
+    alert('Erro de conexão ao adicionar aluno.');
+  }
+}
+
+async function removerAlunoTurma(alunoId) {
+  if (!confirm('Deseja realmente remover este aluno da turma?')) return;
+
+  try {
+    const response = await fetch(`/turmas/${turmaIdGestaoAtual}/alunos/${alunoId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      carregarAlunosMatriculados();
+    } else {
+      const error = await response.json();
+      alert(error.detail || 'Erro ao remover aluno');
+    }
+  } catch (error) {
+    alert('Erro de conexão ao remover aluno.');
+  }
+}
+
+</script>
+{% endblock %}
