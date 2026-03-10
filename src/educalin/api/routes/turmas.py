@@ -30,6 +30,11 @@ class TurmaCreate(BaseModel):
     semestre: str
     professor_id: Optional[int] = None
 
+class TurmaUpdate(BaseModel):
+    """Payload para atualização de uma turma existente"""
+    disciplina: Optional[str] = None
+    semestre: Optional[str] = None
+
 class TurmaResponse(BaseModel):
     """Representação de turma na resposta da API"""
     id: int
@@ -154,6 +159,78 @@ def criar_turma(
         semestre=turma.semestre,
         professor_id=turma.professor_id
     )
+
+
+@router.put(
+    "/{turma_id}",
+    response_model=MensagemResponse,
+    summary="Atualizar dados de uma turma",
+)
+def atualizar_turma(
+    turma_id: int,
+    payload: TurmaUpdate,
+    conn: sqlite3.Connection = Depends(get_db),
+    current_user: UsuarioSchema = Depends(require_role("professor", "coordenador")),
+):
+    """
+    Atualiza os dados de uma turma (disciplina e semestre).
+    O código da turma não pode ser alterado.
+
+    Args:
+        turma_id: ID da turma a atualizar.
+        payload: Novos dados da turma.
+        conn: Conexão com o banco de dados.
+        current_user: Usuário autenticado.
+    """
+    repo = TurmaRepository(conn)
+    try:
+        # Verifica se o professor é o dono da turma (ou coordenador)
+        turma = repo.buscar_por_id(turma_id)
+        if not turma:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Turma não encontrada")
+        
+        if current_user.tipo_usuario == 'professor' and turma.professor_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado")
+
+        repo.atualizar(turma_id, payload.model_dump(exclude_unset=True))
+        return MensagemResponse(mensagem="Turma atualizada com sucesso")
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.delete(
+    "/{turma_id}",
+    response_model=MensagemResponse,
+    summary="Remover uma turma",
+)
+def deletar_turma(
+    turma_id: int,
+    conn: sqlite3.Connection = Depends(get_db),
+    current_user: UsuarioSchema = Depends(require_role("professor", "coordenador")),
+):
+    """
+    Remove uma turma do sistema.
+    As matrículas dos alunos são removidas automaticamente.
+
+    Args:
+        turma_id: ID da turma a remover.
+        conn: Conexão com o banco de dados.
+        current_user: Usuário autenticado.
+    """
+    repo = TurmaRepository(conn)
+    try:
+        # Verifica se o professor é o dono da turma (ou coordenador)
+        turma = repo.buscar_por_id(turma_id)
+        if not turma:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Turma não encontrada")
+        
+        if current_user.tipo_usuario == 'professor' and turma.professor_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado")
+
+        repo.deletar(turma_id)
+        return MensagemResponse(mensagem="Turma removida com sucesso")
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 @router.get(

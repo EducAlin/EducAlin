@@ -393,6 +393,38 @@ class UsuarioRepository:
             UsuarioModel._criar_instancia_polimórfica(row)
             for row in cursor.fetchall()
         ]
+
+    def buscar(self, query: str, tipo_usuario: Optional[str] = None, limite: int = 10) -> list[UsuarioModel]:
+        """
+        Busca usuários por nome ou e-mail que contenham a query.
+
+        Args:
+            query: Texto para busca (nome ou e-mail).
+            tipo_usuario: Opcional, filtra pelo tipo de usuário.
+            limite: Máximo de resultados.
+
+        Returns:
+            Lista de objetos UsuarioModel (subclasses polimórficas).
+        """
+        # Normalizar query
+        search_term = f"%{query.strip().lower()}%"
+        
+        sql = "SELECT * FROM usuarios WHERE (LOWER(nome) LIKE ? OR LOWER(email) LIKE ?)"
+        params = [search_term, search_term]
+
+        if tipo_usuario:
+            if tipo_usuario not in ('professor', 'coordenador', 'aluno'):
+                raise ValueError("tipo_usuario deve ser: professor, coordenador ou aluno")
+            sql += " AND tipo_usuario = ?"
+            params.append(tipo_usuario)
+
+        sql += " ORDER BY nome LIMIT ?"
+        params.append(limite)
+
+        cursor = self.conn.execute(sql, params)
+        rows = cursor.fetchall()
+
+        return [UsuarioModel._criar_instancia_polimórfica(row) for row in rows]
     
     def deletar(self, id: int) -> bool:
         """

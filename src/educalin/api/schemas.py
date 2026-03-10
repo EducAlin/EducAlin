@@ -208,6 +208,40 @@ class UsuarioSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UsuarioBuscaResponse(BaseModel):
+    """
+    Schema simplificado para resultados de busca de usuários.
+
+    Attributes:
+        id: ID do usuário
+        nome: Nome completo
+        email: Email do usuário
+        tipo_usuario: Tipo de usuário
+    """
+    id: int = Field(
+        ...,
+        description="ID único do usuário",
+        json_schema_extra={"example": 1}
+    )
+    nome: str = Field(
+        ...,
+        description="Nome completo do usuário",
+        json_schema_extra={"example": "João Silva"}
+    )
+    email: EmailStr = Field(
+        ...,
+        description="Email do usuário",
+        json_schema_extra={"example": "joao@email.com"}
+    )
+    tipo_usuario: Literal["professor", "coordenador", "aluno"] = Field(
+        ...,
+        description="Tipo de usuário",
+        json_schema_extra={"example": "aluno"}
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class UsuarioUpdateSchema(BaseModel):
     """
     Schema para atualização de dados de usuário.

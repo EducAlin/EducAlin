@@ -15,7 +15,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from dotenv import load_dotenv
@@ -84,17 +84,9 @@ app.include_router(mensagens.router)
 async def root():
     """
     Endpoint raiz da API.
-
-
-    Returns:
-        Informações básicas sobre a API
+    Redireciona para a página de login.
     """
-    return {
-        "message": "Bem-vindo à API EducAlin",
-        "version": "0.1.0",
-        "docs": "/docs",
-        "redoc": "/redoc"
-    }
+    return RedirectResponse(url="/login", status_code=302)
 
 
 # Rota de health check

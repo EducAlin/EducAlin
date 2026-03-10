@@ -304,6 +304,15 @@
             <button onclick="verDetalhesTurma({{ turma.id }})" class="btn-action btn-primary-action">
               Ver Detalhes
             </button>
+            <button onclick="abrirGestaoAlunos({{ turma.id }}, '{{ turma.codigo }}')" class="btn-action btn-primary-action" style="background: var(--petroleum-dk);">
+              Gerir Alunos
+            </button>
+            <button onclick="editarTurma({{ turma.id }}, '{{ turma.codigo }}', '{{ turma.disciplina }}', '{{ turma.semestre }}')" class="btn-action btn-primary-action" style="background: var(--slate);">
+              Editar
+            </button>
+            <button onclick="abrirConfirmacaoExclusao({{ turma.id }}, '{{ turma.codigo }}')" class="btn-action btn-primary-action" style="background: #ef4444;">
+              Excluir
+            </button>
             <button onclick="verAnaliseTopicos({{ turma.id }})" class="btn-action btn-primary-action" style="background: #8b5cf6;">
               Análise de Tópicos
             </button>
@@ -691,6 +700,79 @@
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal para Editar Turma -->
+<div id="modal-editar-turma" class="modal">
+  <div class="modal-content">
+    <button class="btn-close" onclick="fecharModal('modal-editar-turma')">&times;</button>
+    <h3>Editar Turma</h3>
+    <form id="form-editar-turma" onsubmit="submitEditarTurma(event)">
+      <input type="hidden" id="edit-turma-id" name="id">
+      <div class="form-group">
+        <label for="edit-codigo">Código (não editável)</label>
+        <input type="text" id="edit-codigo" disabled>
+      </div>
+      <div class="form-group">
+        <label for="edit-disciplina">Disciplina</label>
+        <input type="text" id="edit-disciplina" name="disciplina" required>
+      </div>
+      <div class="form-group">
+        <label for="edit-semestre">Semestre</label>
+        <input type="text" id="edit-semestre" name="semestre" required>
+      </div>
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+        <button type="button" onclick="fecharModal('modal-editar-turma')" class="btn-action" style="background: var(--slate); color: white;">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-action btn-primary-action">
+          Salvar Alterações
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal para Confirmar Exclusão -->
+<div id="modal-excluir-turma" class="modal">
+  <div class="modal-content">
+    <h3>Confirmar Exclusão</h3>
+    <p>Você tem certeza que deseja excluir a turma <strong id="excluir-turma-codigo"></strong>?</p>
+    <p style="color: #ef4444; font-size: 0.9rem; margin-top: 0.5rem;">
+      ⚠️ Esta ação é irreversível e removerá todos os vínculos de alunos e notas desta turma.
+    </p>
+    <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+      <button onclick="fecharModal('modal-excluir-turma')" class="btn-action" style="background: var(--slate); color: white;">
+        Cancelar
+      </button>
+      <button id="btn-confirmar-exclusao" class="btn-action" style="background: #ef4444; color: white;">
+        Excluir Turma
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Gestão de Alunos -->
+<div id="modal-gestao-alunos" class="modal">
+  <div class="modal-content" style="max-width: 700px;">
+    <button class="btn-close" onclick="fecharModal('modal-gestao-alunos')">&times;</button>
+    <h3>Gestão de Alunos - <span id="gestao-turma-codigo"></span></h3>
+    
+    <div style="margin-bottom: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+      <h4 style="margin-bottom: 1rem; color: var(--petroleum);">Adicionar Aluno à Turma</h4>
+      <div style="display: flex; gap: 0.5rem;">
+        <div style="flex: 1; position: relative;">
+          <input type="text" id="busca-aluno" placeholder="Buscar aluno por nome ou email..." oninput="buscarAlunos()" style="width: 100%; padding: 0.625rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+          <div id="resultados-busca-alunos" style="position: absolute; width: 100%; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #cbd5e1; border-top: none; display: none; z-index: 100;"></div>
+        </div>
+      </div>
+    </div>
+
+    <h4 style="margin-bottom: 1rem; color: var(--petroleum);">Alunos Matriculados</h4>
+    <div id="lista-alunos-gestao" style="max-height: 300px; overflow-y: auto;">
+      <!-- Lista de alunos carregada via JS -->
+    </div>
   </div>
 </div>
 
@@ -1582,6 +1664,199 @@ function mostrarAlertaUpload(mensagem, tipo) {
     alert.style.background = '#fee2e2';
     alert.style.color = '#991b1b';
     alert.style.border = '2px solid #ef4444';
+  }
+}
+
+// ========== GESTÃO DE TURMAS (CRUD) ==========
+
+function editarTurma(id, codigo, disciplina, semestre) {
+  document.getElementById('edit-turma-id').value = id;
+  document.getElementById('edit-codigo').value = codigo;
+  document.getElementById('edit-disciplina').value = disciplina;
+  document.getElementById('edit-semestre').value = semestre;
+  document.getElementById('modal-editar-turma').classList.add('active');
+}
+
+async function submitEditarTurma(event) {
+  event.preventDefault();
+  const id = document.getElementById('edit-turma-id').value;
+  const disciplina = document.getElementById('edit-disciplina').value;
+  const semestre = document.getElementById('edit-semestre').value;
+
+  try {
+    const response = await fetch(`/turmas/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ disciplina, semestre })
+    });
+
+    if (response.ok) {
+      alert('Turma atualizada com sucesso!');
+      location.reload();
+    } else {
+      const error = await response.json();
+      alert('Erro ao atualizar: ' + (error.detail || 'Desconhecido'));
+    }
+  } catch (error) {
+    alert('Erro de conexão ao atualizar turma.');
+  }
+}
+
+function abrirConfirmacaoExclusao(id, codigo) {
+  document.getElementById('excluir-turma-codigo').textContent = codigo;
+  const btn = document.getElementById('btn-confirmar-exclusao');
+  btn.onclick = () => executarExclusaoTurma(id);
+  document.getElementById('modal-excluir-turma').classList.add('active');
+}
+
+async function executarExclusaoTurma(id) {
+  try {
+    const response = await fetch(`/turmas/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      alert('Turma excluída com sucesso!');
+      location.reload();
+    } else {
+      const error = await response.json();
+      alert('Erro ao excluir: ' + (error.detail || 'Desconhecido'));
+    }
+  } catch (error) {
+    alert('Erro de conexão ao excluir turma.');
+  }
+}
+
+// ========== GESTÃO DE ALUNOS (MATRÍCULA) ==========
+
+let turmaIdGestaoAtual = null;
+
+async function abrirGestaoAlunos(id, codigo) {
+  turmaIdGestaoAtual = id;
+  document.getElementById('gestao-turma-codigo').textContent = codigo;
+  document.getElementById('modal-gestao-alunos').classList.add('active');
+  carregarAlunosMatriculados();
+}
+
+async function carregarAlunosMatriculados() {
+  const container = document.getElementById('lista-alunos-gestao');
+  container.innerHTML = '<p style="text-align: center;">Carregando alunos...</p>';
+
+  try {
+    const response = await fetch(`/turmas/${turmaIdGestaoAtual}`, {
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (!data.alunos || data.alunos.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--slate); padding: 1rem;">Nenhum aluno matriculado nesta turma.</p>';
+        return;
+      }
+
+      let html = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
+      data.alunos.forEach(aluno => {
+        html += `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: white; border: 1px solid #e2e8f0; border-radius: 6px;">
+            <div>
+              <strong style="color: var(--petroleum);">${aluno.nome}</strong><br>
+              <small style="color: var(--slate);">${aluno.email} | Matrícula: ${aluno.matricula || 'N/A'}</small>
+            </div>
+            <button onclick="removerAlunoTurma(${aluno.id})" style="padding: 0.4rem 0.8rem; background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
+              Remover
+            </button>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+  } catch (error) {
+    container.innerHTML = '<p style="color: #ef4444;">Erro ao carregar alunos.</p>';
+  }
+}
+
+let timeoutBusca = null;
+async function buscarAlunos() {
+  const query = document.getElementById('busca-aluno').value.trim();
+  const resultadosDiv = document.getElementById('resultados-busca-alunos');
+
+  if (query.length < 3) {
+    resultadosDiv.style.display = 'none';
+    return;
+  }
+
+  clearTimeout(timeoutBusca);
+  timeoutBusca = setTimeout(async () => {
+    try {
+      // Endpoint de busca de usuários (assumindo que existe ou simulando)
+      const response = await fetch(`/auth/usuarios/buscar?q=${query}&tipo=aluno`, {
+        headers: getAuthHeaders()
+      });
+
+      if (response.ok) {
+        const alunos = await response.json();
+        if (alunos.length === 0) {
+          resultadosDiv.innerHTML = '<div style="padding: 0.75rem; color: var(--slate);">Nenhum aluno encontrado.</div>';
+        } else {
+          let html = '';
+          alunos.forEach(aluno => {
+            html += `
+              <div onclick="adicionarAlunoTurma(${aluno.id})" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid #e2e8f0;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">
+                <strong>${aluno.nome}</strong><br>
+                <small>${aluno.email}</small>
+              </div>
+            `;
+          });
+          resultadosDiv.innerHTML = html;
+        }
+        resultadosDiv.style.display = 'block';
+      }
+    } catch (error) {
+      console.error('Erro na busca:', error);
+    }
+  }, 300);
+}
+
+async function adicionarAlunoTurma(alunoId) {
+  try {
+    const response = await fetch(`/turmas/${turmaIdGestaoAtual}/alunos`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ aluno_id: alunoId })
+    });
+
+    if (response.ok) {
+      document.getElementById('busca-aluno').value = '';
+      document.getElementById('resultados-busca-alunos').style.display = 'none';
+      carregarAlunosMatriculados();
+    } else {
+      const error = await response.json();
+      alert(error.detail || 'Erro ao adicionar aluno');
+    }
+  } catch (error) {
+    alert('Erro de conexão ao adicionar aluno.');
+  }
+}
+
+async function removerAlunoTurma(alunoId) {
+  if (!confirm('Deseja realmente remover este aluno da turma?')) return;
+
+  try {
+    const response = await fetch(`/turmas/${turmaIdGestaoAtual}/alunos/${alunoId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      carregarAlunosMatriculados();
+    } else {
+      const error = await response.json();
+      alert(error.detail || 'Erro ao remover aluno');
+    }
+  } catch (error) {
+    alert('Erro de conexão ao remover aluno.');
   }
 }
 

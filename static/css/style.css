@@ -18,6 +18,7 @@
 
   /* Aliases de compatibilidade (usados nas regras abaixo) */
   --petroleum:    var(--navy);
+  --petroleum-dk: #144557;   /* variação extra escura para botões de ação */
   --petroleum-md: var(--navy-md);
   --petroleum-lt: var(--navy-lt);
   --amber:        var(--teal);

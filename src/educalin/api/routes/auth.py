@@ -8,8 +8,8 @@ Este módulo implementa endpoints para:
 - Recuperação de senha
 """
 
-from typing import Dict
-from fastapi import APIRouter, HTTPException, status, Depends, Response
+from typing import Dict, List
+from fastapi import APIRouter, HTTPException, status, Depends, Response, Query
 from fastapi.security import HTTPAuthorizationCredentials
 
 from educalin.api.schemas import (
@@ -17,10 +17,11 @@ from educalin.api.schemas import (
     LoginSchema,
     TokenSchema,
     UsuarioSchema,
+    UsuarioBuscaResponse,
     RecuperarSenhaSchema,
     ErrorSchema
 )
-from educalin.api.dependencies import get_current_user, security, _blacklisted_tokens
+from educalin.api.dependencies import get_current_user, security, _blacklisted_tokens, require_role
 from educalin.repositories.usuario_repository import UsuarioRepository
 from educalin.repositories.base import get_connection
 from educalin.utils.security import criar_token_jwt
@@ -292,3 +293,39 @@ def get_me(current_user: UsuarioSchema = Depends(get_current_user)) -> UsuarioSc
         Dados completos do usuário autenticado
     """
     return current_user
+
+
+@router.get(
+    "/usuarios/buscar",
+    response_model=List[UsuarioBuscaResponse],
+    summary="Buscar usuários",
+    description="Busca usuários por nome ou email. Apenas para professores e coordenadores.",
+)
+def buscar_usuarios(
+    q: str = Query(..., min_length=3),
+    tipo: str = Query(None),
+    current_user: UsuarioSchema = Depends(require_role("professor", "coordenador")),
+) -> List[UsuarioBuscaResponse]:
+    """
+    Busca usuários no sistema.
+
+    Args:
+        q: Termo de busca (mínimo 3 caracteres)
+        tipo: Opcional, filtrar por 'aluno', 'professor', 'coordenador'
+        current_user: Usuário autenticado
+    """
+    conn = get_connection()
+    try:
+        repo = UsuarioRepository(conn)
+        usuarios = repo.buscar(q, tipo_usuario=tipo)
+        
+        return [
+            UsuarioBuscaResponse(
+                id=u.id,
+                nome=u.nome,
+                email=u.email,
+                tipo_usuario=u.tipo_usuario
+            ) for u in usuarios
+        ]
+    finally:
+        conn.close()
