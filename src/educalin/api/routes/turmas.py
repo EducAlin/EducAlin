@@ -658,7 +658,7 @@ def sugerir_materiais_aluno(
             INNER JOIN avaliacoes a ON ua.id = a.id
             INNER JOIN notas n ON a.id = n.avaliacao_id
             WHERE n.aluno_id = ?
-            GROUP BY topico, a.turma_id
+            GROUP BY a.topico, a.turma_id
             HAVING media_topico < 6.0
         )
         SELECT
