@@ -295,6 +295,13 @@
             <h4>{{ material.titulo }}</h4>
             <p>{{ material.turma_nome }} | Enviado por {{ material.professor_nome }}</p>
           </div>
+          <div style="margin-left: auto;">
+            {% if material.url %}
+              <a href="{{ material.url }}" target="_blank" class="btn-primary-action" style="padding: 0.5rem 1rem; text-decoration: none; border-radius: 6px; font-size: 0.85rem;">Acessar</a>
+            {% else %}
+              <a href="#" onclick="alert('Download simulado: Este arquivo não possui URL física armazenada.'); return false;" class="btn-primary-action" style="padding: 0.5rem 1rem; text-decoration: none; border-radius: 6px; font-size: 0.85rem;">Download</a>
+            {% endif %}
+          </div>
         </div>
         {% endfor %}
       {% else %}

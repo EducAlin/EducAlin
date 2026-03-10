@@ -403,7 +403,7 @@ def dashboard_aluno_page(
         # Buscar materiais disponíveis para o aluno autenticado
         cursor = conn.execute("""
             SELECT DISTINCT
-                m.id, m.titulo, m.tipo_material AS tipo,
+                m.id, m.titulo, m.tipo_material AS tipo, m.url,
                 t.codigo as turma_nome,
                 u.nome as professor_nome
             FROM materiais m
@@ -421,6 +421,7 @@ def dashboard_aluno_page(
                 'id': row['id'],
                 'titulo': row['titulo'],
                 'tipo': row['tipo'],
+                'url': row['url'],
                 'turma_nome': row['turma_nome'],
                 'professor_nome': row['professor_nome']
             })

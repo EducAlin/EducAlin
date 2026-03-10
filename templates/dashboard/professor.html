@@ -627,6 +627,7 @@
           accept=".pdf,.mp4,.mp3,.avi,.mkv,.mov,.webm"
           required
           style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
+          onchange="tratarMudancaArquivoUpload(event)"
         />
         <small style="color: var(--slate); font-size: 0.85rem;">
           Formatos: PDF, MP4, MP3, AVI, MKV, MOV, WEBM (máx. 50MB)
@@ -673,6 +674,44 @@
           style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
         />
       </div>
+
+      <!-- Campos Dinâmicos -->
+      <div id="campos-pdf" style="display: none; margin-bottom: 1.25rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Número de Páginas <span style="color: #ef4444;">*</span>:
+        </label>
+        <input
+          type="number"
+          id="upload-num-paginas"
+          name="num_paginas"
+          min="1"
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
+        />
+      </div>
+
+      <div id="campos-video" style="display: none; margin-bottom: 1.25rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Duração em Segundos <span style="color: #ef4444;">*</span>:
+        </label>
+        <input
+          type="number"
+          id="upload-duracao"
+          name="duracao_segundos"
+          min="1"
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem; margin-bottom: 0.75rem;"
+        />
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--petroleum);">
+          Codec <span style="color: #ef4444;">*</span>:
+        </label>
+        <input
+          type="text"
+          id="upload-codec"
+          name="codec"
+          placeholder="Ex: h264, mp4a"
+          style="width: 100%; padding: 0.625rem; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;"
+        />
+      </div>
+      <!-- Fim Campos Dinâmicos -->
 
       <div id="upload-alert" style="display: none; padding: 0.75rem; margin-bottom: 1rem; border-radius: 6px;"></div>
 
@@ -1555,6 +1594,36 @@ function exibirSugestoesMateriais(data) {
 
 // ========== FUNÇÕES DE UPLOAD DE MATERIAIS ==========
 
+function tratarMudancaArquivoUpload(event) {
+  const arquivo = event.target.files[0];
+  const camposPdf = document.getElementById('campos-pdf');
+  const camposVideo = document.getElementById('campos-video');
+  const inputNumPaginas = document.getElementById('upload-num-paginas');
+  const inputDuracao = document.getElementById('upload-duracao');
+  const inputCodec = document.getElementById('upload-codec');
+
+  camposPdf.style.display = 'none';
+  camposVideo.style.display = 'none';
+  inputNumPaginas.required = false;
+  inputDuracao.required = false;
+  inputCodec.required = false;
+
+  if (!arquivo) return;
+
+  const nomeArquivo = arquivo.name.toLowerCase();
+  
+  if (nomeArquivo.endsWith('.pdf')) {
+    camposPdf.style.display = 'block';
+    inputNumPaginas.required = true;
+  } else if (nomeArquivo.endsWith('.mp4') || nomeArquivo.endsWith('.avi') || 
+             nomeArquivo.endsWith('.mkv') || nomeArquivo.endsWith('.mov') || 
+             nomeArquivo.endsWith('.webm') || nomeArquivo.endsWith('.mp3')) {
+    camposVideo.style.display = 'block';
+    inputDuracao.required = true;
+    inputCodec.required = true;
+  }
+}
+
 function abrirUploadMaterial() {
   // Preencher turmas no seletor
   const select = document.getElementById('upload-turma-id');
@@ -1568,6 +1637,7 @@ function abrirUploadMaterial() {
   });
 
   document.getElementById('form-upload-material').reset();
+  tratarMudancaArquivoUpload({ target: { files: [] } }); // Esconder campos
   document.getElementById('upload-alert').style.display = 'none';
   document.getElementById('upload-progress').style.display = 'none';
   document.getElementById('modal-upload').classList.add('active');
@@ -1584,6 +1654,10 @@ async function uploadMaterial(event) {
   const titulo = document.getElementById('upload-titulo').value.trim();
   const descricao = document.getElementById('upload-descricao').value.trim();
   const topico = document.getElementById('upload-topico').value.trim();
+  
+  const numPaginas = document.getElementById('upload-num-paginas').value;
+  const duracao = document.getElementById('upload-duracao').value;
+  const codec = document.getElementById('upload-codec').value.trim();
 
   // Validações
   if (!arquivo) {
@@ -1607,6 +1681,24 @@ async function uploadMaterial(event) {
   formData.append('descricao', descricao);
   if (topico) {
     formData.append('topico', topico);
+  }
+  
+  const nomeArquivo = arquivo.name.toLowerCase();
+  if (nomeArquivo.endsWith('.pdf')) {
+    if (!numPaginas) {
+      mostrarAlertaUpload('Número de páginas é obrigatório para PDF', 'error');
+      return;
+    }
+    formData.append('num_paginas', numPaginas);
+  } else if (nomeArquivo.endsWith('.mp4') || nomeArquivo.endsWith('.avi') || 
+             nomeArquivo.endsWith('.mkv') || nomeArquivo.endsWith('.mov') || 
+             nomeArquivo.endsWith('.webm') || nomeArquivo.endsWith('.mp3')) {
+    if (!duracao || !codec) {
+      mostrarAlertaUpload('Duração e codec são obrigatórios para vídeo/áudio', 'error');
+      return;
+    }
+    formData.append('duracao_segundos', duracao);
+    formData.append('codec', codec);
   }
 
   // Mostrar progresso
