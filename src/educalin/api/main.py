@@ -28,6 +28,15 @@ from .routes import auth, turmas, notas, materiais, planos, views, mensagens
 async def lifespan(app: FastAPI):
     """Inicializa o banco de dados na startup da aplicação."""
     init_db()
+    
+    # Exibir URLs de acesso
+    print("\n" + "="*60)
+    print("EducAlin - Sistema de Gestão Educacional")
+    print("="*60)
+    print("Acesse: http://localhost:8000/login")
+    print("Documentação: http://localhost:8000/docs")
+    print("="*60 + "\n")
+    
     yield
 
 
