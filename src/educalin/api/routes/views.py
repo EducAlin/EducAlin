@@ -387,13 +387,13 @@ def dashboard_aluno_page(
 
         # Buscar materiais disponíveis para o aluno autenticado
         cursor = conn.execute("""
-            SELECT
-                m.id, m.titulo, m.tipo,
+            SELECT DISTINCT
+                m.id, m.titulo, m.tipo_material AS tipo,
                 t.codigo as turma_nome,
                 u.nome as professor_nome
             FROM materiais m
-            INNER JOIN turmas t ON m.turma_id = t.id
-            INNER JOIN usuarios u ON t.professor_id = u.id
+            INNER JOIN usuarios u ON m.autor_id = u.id
+            INNER JOIN turmas t ON t.professor_id = u.id
             INNER JOIN turma_alunos ta ON t.id = ta.turma_id
             WHERE ta.aluno_id = ?
             ORDER BY m.data_upload DESC
